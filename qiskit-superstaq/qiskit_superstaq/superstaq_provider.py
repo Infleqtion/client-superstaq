@@ -27,27 +27,20 @@
 from __future__ import annotations
 
 import warnings
-from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Generic, Union, cast, overload
+from collections.abc import Callable, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Generic, cast, overload
 
 import general_superstaq as gss
 import qiskit
 from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
-from typing_extensions import TypeVar
 
 import qiskit_superstaq as qss
+from qiskit_superstaq.superstaq_backend import QssCompileResultT_co
 
 if TYPE_CHECKING:
     import numpy as np
     import numpy.typing as npt
     from _typeshed import SupportsItems
-
-QssCompileResultT_co = TypeVar(
-    "QssCompileResultT_co",
-    bound=Union[qss.compiler_output.CompilerOutput, qss.SuperstaqJobV3],
-    covariant=True,
-    default=qss.compiler_output.CompilerOutput,
-)
 
 
 class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
@@ -72,7 +65,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         self: SuperstaqProvider[qss.compiler_output.CompilerOutput],
         api_key: str | None = None,
         remote_host: str | None = None,
-        api_version: gss.typing.ApiV2Like = "v0.2.0",
+        api_version: gss.typing.ApiV2 = "v0.2.0",
         max_retry_seconds: int = 3600,
         verbose: bool = False,
         cq_token: str | None = None,
@@ -89,7 +82,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         self: SuperstaqProvider[qss.SuperstaqJobV3],
         api_key: str | None = None,
         remote_host: str | None = None,
-        api_version: gss.typing.ApiV3Like = "v0.3.0",
+        api_version: gss.typing.ApiV3 = "v0.3.0",
         max_retry_seconds: int = 3600,
         verbose: bool = False,
         cq_token: str | None = None,
@@ -105,7 +98,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         self,
         api_key: str | None = None,
         remote_host: str | None = None,
-        api_version: gss.typing.ApiV2Like | gss.typing.ApiV3Like = gss.API_VERSION,
+        api_version: gss.typing.ApiV2 | gss.typing.ApiV3 = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
         cq_token: str | None = None,
@@ -206,12 +199,12 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
              legacy behavior will be preserved and return a `qss.CompilerOutput`.
 
         Raises:
-            KeyError: If `json_dict` is missing a job ID for the v0.3.0 API version.
+            TypeError: If `json_dict` is missing a job ID for the v0.3.0 API version.
         """
         if isinstance(self._client, gss.superstaq_client._SuperstaqClientV3):
             job_id = json_dict.get("job_id")
             if not isinstance(job_id, str):
-                raise KeyError("No valid job id was found in the compile request.")
+                raise TypeError("No valid job id was found in the compile request.")
             return cast(
                 "QssCompileResultT_co", qss.SuperstaqJobV3(client=self._client, job_id=job_id)
             )
@@ -226,7 +219,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
             ),
         )
 
-    def get_backend(self, target: str) -> qss.SuperstaqBackend:
+    def get_backend(self, target: str) -> qss.SuperstaqBackend[QssCompileResultT_co]:
         """Returns a Superstaq backend.
 
         Args:
@@ -235,7 +228,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         Returns:
             A Superstaq backend.
         """
-        return qss.SuperstaqBackend(provider=self, target=target)
+        return qss.SuperstaqBackend[QssCompileResultT_co](provider=self, target=target)
 
     def backends(
         self,
@@ -335,7 +328,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         pulses: object = None,
         variables: object = None,
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3:
+    ) -> QssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
 
         AQT is a superconducting transmon quantum computing testbed at Lawrence Berkeley National
@@ -378,7 +371,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         if not target.startswith("aqt_"):
             raise ValueError(f"{target!r} is not a valid AQT target.")
 
-        return self.get_backend(target).compile(
+        return self.get_backend(target).aqt_compile(
             circuits,
             num_eca_circuits=num_eca_circuits,
             random_seed=random_seed,
@@ -399,7 +392,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         atol: float | None = None,
         gate_defs: Mapping[str, str | npt.NDArray[np.number[Any]] | None] | None = None,
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3:
+    ) -> QssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
         Lawrence Berkeley National Laboratory using Equivalent Circuit Averaging (ECA).
 
@@ -460,7 +453,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         dynamical_decoupling: bool = True,
         dd_strategy: str = "adaptive",
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3:
+    ) -> QssCompileResultT_co:
         """Returns pulse schedule(s) for the given qiskit circuit(s) and target.
 
         Superstaq currently supports the following dynamical decoupling strategies:
@@ -518,7 +511,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         keep_qubit_order: bool = False,
         random_seed: int | None = None,
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3:
+    ) -> QssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
         Sandia National Laboratories [1].
 
@@ -607,7 +600,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         control_radius: float = 1.0,
         stripped_cz_rads: float = 0.0,
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3:
+    ) -> QssCompileResultT_co:
         """Compiles the given circuit(s) to CQ device, optimized to its native gate set.
 
         Args:

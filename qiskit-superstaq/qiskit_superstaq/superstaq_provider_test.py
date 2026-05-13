@@ -13,9 +13,12 @@
 # limitations under the License.
 from __future__ import annotations
 
+import datetime
 import json
 import os
 import textwrap
+import uuid
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 from unittest import mock
 from unittest.mock import MagicMock, patch
@@ -293,6 +296,103 @@ def test_invalid_target_ibmq_compile() -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
     with pytest.raises(ValueError, match=r"'ss_example_qpu' is not a valid IBMQ target."):
         provider.ibmq_compile(qiskit.QuantumCircuit(), target="ss_example_qpu")
+
+
+@pytest.mark.parametrize(
+    ("compile_call", "target"),
+    [
+        pytest.param(
+            lambda p, c, t: p.aqt_compile(c, target=t), "aqt_keysight_qpu", id="aqt_compile"
+        ),
+        pytest.param(
+            lambda p, c, t: p.qscout_compile(c, target=t),
+            "qscout_peregrine_qpu",
+            id="qscout_compile",
+        ),
+        pytest.param(
+            lambda p, c, t: p.cq_compile(c, target=t), "cq_sqale_simulator", id="cq_compile"
+        ),
+        pytest.param(
+            lambda p, c, t: p.ibmq_compile(c, target=t),
+            "ibmq_fez_qpu",
+            id="ibmq_compile",
+        ),
+    ],
+)
+def test_provider_compile_jobV3(
+    compile_call: Callable[
+        [qss.SuperstaqProvider[qss.SuperstaqJobV3], qiskit.QuantumCircuit, str], qss.SuperstaqJobV3
+    ],
+    target: str,
+) -> None:
+    provider = qss.SuperstaqProvider(
+        api_key="key", remote_host="http://example.com", api_version="v0.3.0"
+    )
+
+    mock_client = mock.MagicMock(spec=gss.superstaq_client._SuperstaqClientV3)
+    mock_client.api_version = "v0.3.0"
+    mock_client.client_kwargs = {}
+    provider._client = mock_client
+
+    job_id = uuid.UUID(int=42)
+    job_id_str = str(job_id)
+
+    input_circuit = qiskit.QuantumCircuit(1)
+    input_circuit.h(0)
+    input_circuit.t(0)
+    compiled_circuit = input_circuit
+
+    with pytest.raises(TypeError, match=r"No valid job id"):
+        _ = compile_call(provider, input_circuit, target)
+
+    if target.startswith("aqt_"):
+        mock_client.aqt_compile.return_value = {"job_id": job_id_str}
+    elif target.startswith("qscout_"):
+        mock_client.qscout_compile.return_value = {"job_id": job_id_str}
+    else:
+        mock_client.compile.return_value = {"job_id": job_id_str}
+
+    mock_client.fetch_jobs.return_value = {
+        job_id_str: {
+            "job_type": "compile",
+            "statuses": ["completed"],
+            "status_messages": [None],
+            "user_email": "test@email.com",
+            "target": target,
+            "provider_id": [None],
+            "num_circuits": 1,
+            "compiled_circuits": [qss.serialization.serialize_circuits(compiled_circuit)],
+            "input_circuits": [qss.serialization.serialize_circuits(input_circuit)],
+            "circuit_type": "qiskit",
+            "counts": [None],
+            "results_dicts": [None],
+            "shots": [0],
+            "dry_run": False,
+            "submission_timestamp": datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc),
+            "last_updated_timestamp": [datetime.datetime(2026, 1, 2, tzinfo=datetime.timezone.utc)],
+            "initial_logical_to_physicals": [{0: 5}],
+            "final_logical_to_physicals": [{0: 5}],
+            "logical_qubits": [None],
+            "physical_qubits": [None],
+        }
+    }
+
+    job = compile_call(provider, input_circuit, target)
+    assert isinstance(job, qss.SuperstaqJobV3)
+    assert job.job_id() == job_id
+    assert job.status() == qiskit.providers.jobstatus.JobStatus.DONE
+    assert job.done() is True
+    assert job.input_circuits(0) == input_circuit
+    assert job.compiled_circuits(0) == compiled_circuit
+    assert job.input_circuits() == [input_circuit]
+    assert job.compiled_circuits() == [compiled_circuit]
+    assert job.initial_logical_to_physical(0) == {0: 5}
+    assert job.final_logical_to_physical(0) == {0: 5}
+    assert job.shots() == 0
+    assert job.target() == target
+
+    with pytest.raises(NotImplementedError, match=r"There are no result"):
+        _ = job.result().get_counts()
 
 
 @patch(

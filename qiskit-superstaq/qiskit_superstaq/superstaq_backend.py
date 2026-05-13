@@ -30,27 +30,34 @@ import numbers
 import uuid
 import warnings
 from collections.abc import Iterable, Mapping, Sequence
-from typing import (
-    TYPE_CHECKING,
-    Any,
-)
+from typing import TYPE_CHECKING, Any, Generic, Union
 
 import general_superstaq as gss
 import numpy as np
 import qiskit
 from general_superstaq.superstaq_client import _SuperstaqClient
+from typing_extensions import TypeVar
 
 import qiskit_superstaq as qss
+
+from .superstaq_job import SuperstaqJobV3
 
 if TYPE_CHECKING:
     import numpy.typing as npt
     from _typeshed import SupportsItems
 
+QssCompileResultT_co = TypeVar(
+    "QssCompileResultT_co",
+    bound=Union[qss.compiler_output.CompilerOutput, SuperstaqJobV3],
+    covariant=True,
+    default=qss.compiler_output.CompilerOutput,
+)
 
-class SuperstaqBackend(qiskit.providers.BackendV2):
+
+class SuperstaqBackend(qiskit.providers.BackendV2, Generic[QssCompileResultT_co]):
     """This class represents a Superstaq backend."""
 
-    def __init__(self, provider: qss.SuperstaqProvider, target: str) -> None:
+    def __init__(self, provider: qss.SuperstaqProvider[QssCompileResultT_co], target: str) -> None:
         """Initializes a `SuperstaqBackend`.
 
         Args:
@@ -236,7 +243,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         """
         warnings.warn(
             "The `.retrieve_job()` method of `SuperstaqBackend` has been deprecated, and will be "
-            "removed in a future version of qiskit-superstaq. Instead, use the `.get_job()`"
+            "removed in a future version of qiskit-superstaq. Instead, use the `.get_job()` "
             "method of `SuperstaqProvider`.",
             DeprecationWarning,
             stacklevel=2,
@@ -249,7 +256,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         self,
         circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3:
+    ) -> QssCompileResultT_co:
         """Compiles the given circuit(s) to the backend's native gateset.
 
         Args:
@@ -313,7 +320,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         pulses: object = None,
         variables: object = None,
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3:
+    ) -> QssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
 
         AQT is a superconducting transmon quantum computing testbed at Lawrence Berkeley National
@@ -342,7 +349,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             kwargs: Other desired compile options.
 
         Returns:
-            For the `v0.2.0` API, a `qss.CompilerOutput` object whose .circuit(s) attribute contains
+            For the v0.2.0 API, a `qss.CompilerOutput` object whose .circuit(s) attribute contains
             the optimized circuits(s). Alternatively for ECA, an object whose .circuits attribute is
             a list (or list of lists) of logically equivalent circuits. If `qtrl` is installed, the
             object's .seq attribute is a qtrl Sequence object containing pulse sequences for each
@@ -387,7 +394,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         dynamical_decoupling: bool = True,
         dd_strategy: str = "adaptive",
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3:
+    ) -> QssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for IBMQ devices.
 
         Superstaq currently supports the following dynamical decoupling strategies:
@@ -412,7 +419,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             kwargs: Other desired compile options.
 
         Returns:
-            For the `v0.2.0` API, a `qss.CompilerOutput` whose .circuit(s) attribute contains the
+            For the v0.2.0 API, a `qss.CompilerOutput` whose .circuit(s) attribute contains the
             compiled qiskit.QuantumCircuit(s), and whose .pulse_gate_circuit(s) attribute contains
             the corresponding pulse schedule(s) (when available). Otherwise (for the v0.3.0 API), an
             asynchronous `qss.SuperstaqJobV3` on which compiled circuits can be queried via
@@ -449,7 +456,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         keep_qubit_order: bool = False,
         random_seed: int | None = None,
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3:
+    ) -> QssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at Sandia
         National Laboratories [1].
 
@@ -553,7 +560,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         control_radius: float = 1.0,
         stripped_cz_rads: float = 0.0,
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3:
+    ) -> QssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for CQ devices.
 
         Args:

@@ -155,7 +155,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         api_key: str | None = None,
         remote_host: str | None = None,
         default_target: str | None = None,
-        api_version: gss.typing.ApiV2Like = "v0.2.0",
+        api_version: gss.typing.ApiV2 = "v0.2.0",
         max_retry_seconds: int = 3600,
         verbose: bool = False,
         cq_token: str | None = None,
@@ -173,7 +173,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         api_key: str | None = None,
         remote_host: str | None = None,
         default_target: str | None = None,
-        api_version: gss.typing.ApiV3Like = "v0.3.0",
+        api_version: gss.typing.ApiV3 = "v0.3.0",
         max_retry_seconds: int = 3600,
         verbose: bool = False,
         cq_token: str | None = None,
@@ -190,7 +190,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         api_key: str | None = None,
         remote_host: str | None = None,
         default_target: str | None = None,
-        api_version: gss.typing.ApiV2Like | gss.typing.ApiV3Like = gss.API_VERSION,
+        api_version: gss.typing.ApiV2 | gss.typing.ApiV3 = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
         cq_token: str | None = None,
@@ -286,12 +286,12 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             behavior will be preserved and return a `css.CompilerOutput`.
 
         Raises:
-            KeyError: If `json_dict` is missing a job ID for the v0.3.0 API version.
+            TypeError: If `json_dict` is missing a job ID for the v0.3.0 API version.
         """
         if isinstance(self._client, gss.superstaq_client._SuperstaqClientV3):
             job_id = json_dict.get("job_id")
             if not isinstance(job_id, str):
-                raise KeyError("No valid job id was found in the compile request.")
+                raise TypeError("No valid job id was found in the compile request.")
             return cast("CssCompileResultT_co", css.JobV3(client=self._client, job_id=job_id))
         return cast(
             "CssCompileResultT_co",
@@ -900,7 +900,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             kwargs: Other desired compile options.
 
         Returns:
-            For the `v0.2.0` API, a `css.CompilerOutput` whose .circuit(s) attribute contains the
+            For the v0.2.0 API, a `css.CompilerOutput` whose .circuit(s) attribute contains the
             compiled cirq.Circuit(s), and whose .pulse_gate_circuit(s) attribute contains the
             corresponding pulse schedule(s) (when available). Otherwise (for the v0.3.0 API), an
             asynchronous `css.JobV3` on which compiled circuits can be queried via
@@ -1071,8 +1071,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         Raises:
             ValueError: If `ids` is not of size two.
             ~gss.SuperstaqServerException: If there was an error accessing the API or
-                the jobs submitted
-                through `submit_dfe` have not finished running.
+                the jobs submitted through `submit_dfe` have not finished running.
         """
         return self._client.process_dfe(ids)
 
@@ -1238,8 +1237,8 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
 
         Args:
             job_id: String corresponding to the CB job id.
-            counts: Optional list of dictionaries containing results counts to
-        compute fidelities for.
+            counts: Optional list of dictionaries containing results counts to compute fidelities
+                for.
 
         Returns:
             A dict containing the Cycle Benchmarking process data.
