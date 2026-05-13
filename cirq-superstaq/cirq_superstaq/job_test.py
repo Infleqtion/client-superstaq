@@ -736,14 +736,6 @@ def test_job_counts_pollV3(jobV3: css.JobV3, job_dictV3: dict[str, object]) -> N
     wait.assert_called_once_with(0, 100, 25)
 
 
-def test_compile_job_counts(jobV3: css.JobV3, job_dictV3: dict[str, object]) -> None:
-    jobV3._job_data = gss.models.JobData(
-        **modifiy_job_result(job_dictV3, job_type="compile", counts=[None])
-    )
-    with pytest.raises(NotImplementedError, match=r"There are no counts to be retrieved for this"):
-        _ = jobV3.counts()
-
-
 @mock.patch("time.sleep", return_value=None)
 @mock.patch("time.time", side_effect=range(20))
 def test_job_counts_poll_timeout(

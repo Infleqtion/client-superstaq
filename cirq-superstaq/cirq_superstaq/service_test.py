@@ -1039,24 +1039,34 @@ def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
 
 
 @pytest.mark.parametrize(
-    "compile_call",
+    ("compile_call", "target"),
     [
         pytest.param(
-            lambda s, c: s.compile(c, target="ss_unconstrained_simulator"),
+            lambda s, c, t: s.compile(c, target=t),
+            "ss_unconstrained_simulator",
             id="compile",
         ),
-        pytest.param(lambda s, c: s.aqt_compile(c), id="aqt_compile"),
-        pytest.param(lambda s, c: s.qscout_compile(c), id="qscout_compile"),
-        pytest.param(lambda s, c: s.cq_compile(c), id="cq_compile"),
         pytest.param(
-            lambda s, c: s.ibmq_compile(c, target="ibmq_fake_qpu"),
+            lambda s, c, t: s.aqt_compile(c, target=t), "aqt_keysight_qpu", id="aqt_compile"
+        ),
+        pytest.param(
+            lambda s, c, t: s.qscout_compile(c, target=t),
+            "qscout_peregrine_qpu",
+            id="qscout_compile",
+        ),
+        pytest.param(
+            lambda s, c, t: s.cq_compile(c, target=t), "cq_sqale_simulator", id="cq_compile"
+        ),
+        pytest.param(
+            lambda s, c, t: s.ibmq_compile(c, target=t),
+            "ibmq_fez_qpu",
             id="ibmq_compile",
         ),
     ],
 )
 def test_service_compile_jobV3(
-    compile_call: Callable[[css.Service[css.JobV3], cirq.Circuit], css.JobV3],
-    request: pytest.FixtureRequest,
+    compile_call: Callable[[css.Service[css.JobV3], cirq.Circuit, str], css.JobV3],
+    target: str,
 ) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com", api_version="v0.3.0")
 
@@ -1072,23 +1082,14 @@ def test_service_compile_jobV3(
     compiled_circuit = input_circuit
 
     with pytest.raises(TypeError, match=r"No valid job id"):
-        _ = compile_call(service, input_circuit)
+        _ = compile_call(service, input_circuit, target)
 
-    compile_method_type = request.node.callspec.id
-    if compile_method_type == "aqt_compile":
+    if target.startswith("aqt_"):
         mock_client.post_request.return_value = {"job_id": job_id_str}
-        target = "aqt_keysight_qpu"
-    elif compile_method_type == "qscout_compile":
+    elif target.startswith("qscout_"):
         mock_client.qscout_compile.return_value = {"job_id": job_id_str}
-        target = "qscout_peregrine_qpu"
     else:
         mock_client.compile.return_value = {"job_id": job_id_str}
-        if compile_method_type.startswith("cq_"):
-            target = "cq_sqale_qpu"
-        elif compile_method_type.startswith("ibmq_"):
-            target = "ibmq_fake_qpu"
-        else:
-            target = "ss_unconstrained_simulator"
 
     mock_client.fetch_jobs.return_value = {
         job_id_str: {
@@ -1115,8 +1116,7 @@ def test_service_compile_jobV3(
         }
     }
 
-    job = compile_call(service, input_circuit)
-
+    job = compile_call(service, input_circuit, target)
     assert isinstance(job, css.JobV3)
     assert job.job_id() == job_id
     assert job.status() == gss.models.CircuitStatus.COMPLETED
@@ -1128,6 +1128,9 @@ def test_service_compile_jobV3(
     assert job.final_logical_to_physical(0) == {q0: q0}
     assert job.repetitions() == 0
     assert job.target() == target
+
+    with pytest.raises(NotImplementedError, match=r"There are no counts"):
+        _ = job.counts()
 
 
 @mock.patch(

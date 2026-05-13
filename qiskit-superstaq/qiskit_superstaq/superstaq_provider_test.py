@@ -299,22 +299,31 @@ def test_invalid_target_ibmq_compile() -> None:
 
 
 @pytest.mark.parametrize(
-    "compile_call",
+    ("compile_call", "target"),
     [
-        pytest.param(lambda p, c: p.aqt_compile(c), id="aqt_compile"),
-        pytest.param(lambda p, c: p.qscout_compile(c), id="qscout_compile"),
-        pytest.param(lambda p, c: p.cq_compile(c), id="cq_compile"),
         pytest.param(
-            lambda p, c: p.ibmq_compile(c, target="ibmq_fake_qpu"),
+            lambda p, c, t: p.aqt_compile(c, target=t), "aqt_keysight_qpu", id="aqt_compile"
+        ),
+        pytest.param(
+            lambda p, c, t: p.qscout_compile(c, target=t),
+            "qscout_peregrine_qpu",
+            id="qscout_compile",
+        ),
+        pytest.param(
+            lambda p, c, t: p.cq_compile(c, target=t), "cq_sqale_simulator", id="cq_compile"
+        ),
+        pytest.param(
+            lambda p, c, t: p.ibmq_compile(c, target=t),
+            "ibmq_fez_qpu",
             id="ibmq_compile",
         ),
     ],
 )
 def test_provider_compile_jobV3(
     compile_call: Callable[
-        [qss.SuperstaqProvider[qss.SuperstaqJobV3], qiskit.QuantumCircuit], qss.SuperstaqJobV3
+        [qss.SuperstaqProvider[qss.SuperstaqJobV3], qiskit.QuantumCircuit, str], qss.SuperstaqJobV3
     ],
-    request: pytest.FixtureRequest,
+    target: str,
 ) -> None:
     provider = qss.SuperstaqProvider(
         api_key="key", remote_host="http://example.com", api_version="v0.3.0"
@@ -334,18 +343,14 @@ def test_provider_compile_jobV3(
     compiled_circuit = input_circuit
 
     with pytest.raises(TypeError, match=r"No valid job id"):
-        _ = compile_call(provider, input_circuit)
+        _ = compile_call(provider, input_circuit, target)
 
-    compile_method_type = request.node.callspec.id
-    if compile_method_type == "aqt_compile":
+    if target.startswith("aqt_"):
         mock_client.aqt_compile.return_value = {"job_id": job_id_str}
-        target = "aqt_keysight_qpu"
-    elif compile_method_type == "qscout_compile":
+    elif target.startswith("qscout_"):
         mock_client.qscout_compile.return_value = {"job_id": job_id_str}
-        target = "qscout_peregrine_qpu"
     else:
         mock_client.compile.return_value = {"job_id": job_id_str}
-        target = "cq_sqale_qpu" if compile_method_type.startswith("cq_") else "ibmq_fake_qpu"
 
     mock_client.fetch_jobs.return_value = {
         job_id_str: {
@@ -372,7 +377,7 @@ def test_provider_compile_jobV3(
         }
     }
 
-    job = compile_call(provider, input_circuit)
+    job = compile_call(provider, input_circuit, target)
     assert isinstance(job, qss.SuperstaqJobV3)
     assert job.job_id() == job_id
     assert job.status() == qiskit.providers.jobstatus.JobStatus.DONE
