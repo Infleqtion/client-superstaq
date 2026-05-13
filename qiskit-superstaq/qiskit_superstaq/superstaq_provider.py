@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Callable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Generic, Union, cast, overload
+from typing import TYPE_CHECKING, Any, Generic, cast, overload
 
 import general_superstaq as gss
 import qiskit
