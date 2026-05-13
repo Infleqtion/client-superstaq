@@ -222,7 +222,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         Returns:
             A Superstaq backend.
         """
-        return qss.SuperstaqBackend(provider=self, target=target)
+        return qss.SuperstaqBackend[QssCompileResultT_co](provider=self, target=target)
 
     def backends(
         self,
