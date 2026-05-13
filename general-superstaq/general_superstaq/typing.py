@@ -20,11 +20,13 @@ from typing import TYPE_CHECKING, Any, Literal, TypedDict
 import pydantic
 from typing_extensions import TypeVar
 
+from .superstaq_client import ApiVersion
+
 if TYPE_CHECKING:
     from typing_extensions import TypeAlias
 
-ApiV2: TypeAlias = Literal["v0.2.0"]
-ApiV3: TypeAlias = Literal["v0.3.0"]
+ApiV2: TypeAlias = Literal[ApiVersion.V0_2_0, "v0.2.0"]
+ApiV3: TypeAlias = Literal[ApiVersion.V0_3_0, "v0.3.0"]
 TQuboKey = TypeVar("TQuboKey", bound=Hashable)
 
 
