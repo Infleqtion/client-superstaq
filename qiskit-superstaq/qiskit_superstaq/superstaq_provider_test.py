@@ -345,8 +345,7 @@ def test_provider_compile_jobV3(
     with pytest.raises(TypeError, match=r"No valid job id"):
         _ = compile_call(provider, input_circuit, target)
 
-    mock_client.compile.return_value = {"job_id": job_id_str}
-    mock_client.fetch_jobs.return_value = {
+    job_data = {
         job_id_str: {
             "job_type": "compile",
             "statuses": ["completed"],
@@ -368,8 +367,21 @@ def test_provider_compile_jobV3(
             "final_logical_to_physicals": [{0: 5}],
             "logical_qubits": [None],
             "physical_qubits": [None],
+            "metadata": {},
         }
     }
+    jaqal_metadata = {
+        "metadata": {
+            "jaqal_program": "from qscout.v1.std usepulses *\\n\\nregister allqubits[1]\\n\\"
+            "nprepare_all\\nR allqubits[0] -1.5707963267948966 1.5707963267948966\\nRz "
+            "allqubits[0] -2.356194490192345\\nmeasure_all\\n"
+        }
+    }
+    if target.startswith("qscout_"):
+        job_data[job_id_str] |= jaqal_metadata
+
+    mock_client.compile.return_value = {"job_id": job_id_str}
+    mock_client.fetch_jobs.return_value = job_data
 
     job = compile_call(provider, input_circuit, target)
     assert isinstance(job, qss.SuperstaqJobV3)
@@ -384,6 +396,11 @@ def test_provider_compile_jobV3(
     assert job.final_logical_to_physical(0) == {0: 5}
     assert job.shots() == 0
     assert job.target() == target
+    assert (
+        isinstance(job.jaqal_program(), str)
+        if target.startswith("qscout_")
+        else job.jaqal_program() is None
+    )
 
     with pytest.raises(NotImplementedError, match=r"There are no result"):
         _ = job.result().get_counts()
