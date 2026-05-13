@@ -33,21 +33,14 @@ from typing import TYPE_CHECKING, Any, Generic, Union, cast, overload
 import general_superstaq as gss
 import qiskit
 from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
-from typing_extensions import TypeVar
 
 import qiskit_superstaq as qss
+from qiskit_superstaq.superstaq_backend import QssCompileResultT_co
 
 if TYPE_CHECKING:
     import numpy as np
     import numpy.typing as npt
     from _typeshed import SupportsItems
-
-QssCompileResultT_co = TypeVar(
-    "QssCompileResultT_co",
-    bound=Union[qss.compiler_output.CompilerOutput, qss.SuperstaqJobV3],
-    covariant=True,
-    default=qss.compiler_output.CompilerOutput,
-)
 
 
 class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):

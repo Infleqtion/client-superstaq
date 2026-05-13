@@ -30,19 +30,28 @@ import numbers
 import uuid
 import warnings
 from collections.abc import Iterable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Generic
+from typing import TYPE_CHECKING, Any, Generic, Union
 
 import general_superstaq as gss
 import numpy as np
 import qiskit
 from general_superstaq.superstaq_client import _SuperstaqClient
+from typing_extensions import TypeVar
 
 import qiskit_superstaq as qss
-from qiskit_superstaq.superstaq_provider import QssCompileResultT_co
+
+from .superstaq_job import SuperstaqJobV3
 
 if TYPE_CHECKING:
     import numpy.typing as npt
     from _typeshed import SupportsItems
+
+QssCompileResultT_co = TypeVar(
+    "QssCompileResultT_co",
+    bound=Union[qss.compiler_output.CompilerOutput, SuperstaqJobV3],
+    covariant=True,
+    default=qss.compiler_output.CompilerOutput,
+)
 
 
 class SuperstaqBackend(qiskit.providers.BackendV2, Generic[QssCompileResultT_co]):
