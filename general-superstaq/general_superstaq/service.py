@@ -625,7 +625,7 @@ class QasmService(Service):
         }
         json_dict = self._client.compile(request_json)
         return gss.compiler_output.CompilerOutput._generate_compiler_output(
-            json_dict, parser="read_json", circuits_is_list=circuits_is_list
+            json_dict, circuits_is_list=circuits_is_list
         )
 
     def aqt_compile(
@@ -708,7 +708,7 @@ class QasmService(Service):
         )
         return gss.compiler_output.CompilerOutput._generate_compiler_output(
             json_dict,
-            parser="read_json_aqt",
+            parser="aqt",
             circuits_is_list=circuits_is_list,
             num_eca_circuits=num_eca_circuits,
         )
@@ -812,7 +812,7 @@ class QasmService(Service):
         )
         return gss.compiler_output.CompilerOutput._generate_compiler_output(
             json_dict,
-            parser="read_json_qscout",
+            parser="qscout",
             circuits_is_list=circuits_is_list,
             num_eca_circuits=num_eca_circuits,
         )
