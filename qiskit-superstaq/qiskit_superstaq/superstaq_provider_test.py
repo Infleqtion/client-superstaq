@@ -345,13 +345,7 @@ def test_provider_compile_jobV3(
     with pytest.raises(TypeError, match=r"No valid job id"):
         _ = compile_call(provider, input_circuit, target)
 
-    if target.startswith("aqt_"):
-        mock_client.aqt_compile.return_value = {"job_id": job_id_str}
-    elif target.startswith("qscout_"):
-        mock_client.qscout_compile.return_value = {"job_id": job_id_str}
-    else:
-        mock_client.compile.return_value = {"job_id": job_id_str}
-
+    mock_client.compile.return_value = {"job_id": job_id_str}
     mock_client.fetch_jobs.return_value = {
         job_id_str: {
             "job_type": "compile",

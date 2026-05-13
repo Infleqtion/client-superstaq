@@ -1071,6 +1071,7 @@ def test_service_compile_jobV3(
     service = css.Service(api_key="key", remote_host="http://example.com", api_version="v0.3.0")
 
     mock_client = mock.MagicMock(spec=_SuperstaqClientV3)
+    mock_client.api_version = "v0.3.0"
     mock_client.client_kwargs = {}
     service._client = mock_client
 
@@ -1084,13 +1085,7 @@ def test_service_compile_jobV3(
     with pytest.raises(TypeError, match=r"No valid job id"):
         _ = compile_call(service, input_circuit, target)
 
-    if target.startswith("aqt_"):
-        mock_client.post_request.return_value = {"job_id": job_id_str}
-    elif target.startswith("qscout_"):
-        mock_client.qscout_compile.return_value = {"job_id": job_id_str}
-    else:
-        mock_client.compile.return_value = {"job_id": job_id_str}
-
+    mock_client.compile.return_value = {"job_id": job_id_str}
     mock_client.fetch_jobs.return_value = {
         job_id_str: {
             "job_type": "compile",
