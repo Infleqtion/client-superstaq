@@ -213,7 +213,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
             )
         return cast("QssCompileResultT_co", legacy_parser(json_dict))
 
-    def get_backend(self, target: str) -> qss.SuperstaqBackend:
+    def get_backend(self, target: str) -> qss.SuperstaqBackend[QssCompileResultT_co]:
         """Returns a Superstaq backend.
 
         Args:
@@ -322,7 +322,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         pulses: object = None,
         variables: object = None,
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3:
+    ) -> QssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
 
         AQT is a superconducting transmon quantum computing testbed at Lawrence Berkeley National
@@ -386,7 +386,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         atol: float | None = None,
         gate_defs: Mapping[str, str | npt.NDArray[np.number[Any]] | None] | None = None,
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3:
+    ) -> QssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
         Lawrence Berkeley National Laboratory using Equivalent Circuit Averaging (ECA).
 
@@ -447,7 +447,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         dynamical_decoupling: bool = True,
         dd_strategy: str = "adaptive",
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3:
+    ) -> QssCompileResultT_co:
         """Returns pulse schedule(s) for the given qiskit circuit(s) and target.
 
         Superstaq currently supports the following dynamical decoupling strategies:
@@ -505,7 +505,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         keep_qubit_order: bool = False,
         random_seed: int | None = None,
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3:
+    ) -> QssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
         Sandia National Laboratories [1].
 
@@ -594,7 +594,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         control_radius: float = 1.0,
         stripped_cz_rads: float = 0.0,
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3:
+    ) -> QssCompileResultT_co:
         """Compiles the given circuit(s) to CQ device, optimized to its native gate set.
 
         Args:
