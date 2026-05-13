@@ -501,18 +501,17 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
     def result(
         self,
         index: int | None = None,
-        timeout_seconds: float = 7200,
-        polling_seconds: float = 1.0,
+        timeout: float = 7200,
+        wait: float = 1.0,
         qubit_indices: Sequence[int] | None = None,
     ) -> qiskit.result.Result:
         """Retrieves the result data associated with a Superstaq job.
 
         Args:
             index: An optional index to retrieve a specific result from a result list.
-            timeout_seconds: The total number of seconds to poll results retrieval for. Defaults to
-                7200.
-            polling_seconds: The time interval (in seconds) with which to poll Superstaq job
-                results. Defaults to 1.
+            timeout: The total number of seconds to poll results retrieval for. Defaults to 7200.
+            wait: The time interval (in seconds) with which to poll Superstaq job results. Defaults
+                to 1.0.
             qubit_indices: The qubit indices to return the results of individually.
 
         Returns:
@@ -524,7 +523,7 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         if self.job_data.job_type in (gss.models.JobType.COMPILE, gss.models.JobType.CONVERT):
             raise NotImplementedError("There are no result data to be retrieved for this job type.")
 
-        self.wait_until_terminal_state(index, timeout_seconds, polling_seconds)
+        self.wait_until_terminal_state(index, timeout, wait)
         # Check to see if unsuccessful
         self._check_if_unsuccessful(index)
 
@@ -566,17 +565,17 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
     def combined_result(
         self,
         *,
-        timeout_seconds: float = 7200,
-        polling_seconds: float = 5.0,
+        timeout: float = 7200,
+        wait: float = 5.0,
         qubit_indices: Sequence[int] | None = None,
     ) -> qiskit.result.Result:
         """Create a results object combining the counts from all circuits.
 
         Args:
-            timeout_seconds: An optional parameter that fixes when result retrieval times out. Units
-                are in seconds. Defaults to 7200.
-            polling_seconds: An optional parameter that sets the interval to check for Superstaq job
-                results. Units are in seconds. Defaults to 5.
+            timeout: An optional parameter that fixes when result retrieval times out. Units are in
+                seconds. Defaults to 7200.
+            wait: An optional parameter that sets the interval to check for Superstaq job results.
+                Units are in seconds. Defaults to 5.
             qubit_indices: The qubit indices to return the results of individually.
 
         Returns:
@@ -586,8 +585,8 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
             ValueError: If this job's circuits don't have the same number of measurements.
         """
         result = self.result(
-            timeout_seconds=timeout_seconds,
-            polling_seconds=polling_seconds,
+            timeout=timeout,
+            wait=wait,
             qubit_indices=qubit_indices,
         )
         counts = result.get_counts()
@@ -627,22 +626,21 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         self,
         index: int | None = None,
         *,
-        timeout_seconds: int = 7200,
-        polling_seconds: float = 1.0,
+        timeout: int = 7200,
+        wait: float = 1.0,
     ) -> qiskit.QuantumCircuit | list[qiskit.QuantumCircuit]:
         """Gets the compiled circuits that were processed for this job.
 
         Args:
             index: An optional index of the specific circuit to retrieve.
-            timeout_seconds: The total number of seconds to poll job data retrieval for. Defaults to
-                7200.
-            polling_seconds: The time interval (in seconds) with which to poll job data retrieval.
-                Defaults to 1.
+            timeout: The total number of seconds to poll results retrieval for. Defaults to 7200.
+            wait: The time interval (in seconds) with which to poll Superstaq job results. Defaults
+                to 1.0.
 
         Returns:
             A single compiled circuit or list of compiled circuits.
         """
-        self.wait_until_terminal_state(index, timeout_seconds, polling_seconds)
+        self.wait_until_terminal_state(index, timeout, wait)
         self._check_if_unsuccessful(index)
         if index is None:
             if all(c is None for c in self.job_data.compiled_circuits):
@@ -689,16 +687,16 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
 
     @overload
     def initial_logical_to_physical(
-        self, index: None = None, *, timeout_seconds: int = 7200, polling_seconds: float = 1.0
+        self, index: None = None, *, timeout: int = 7200, wait: float = 1.0
     ) -> list[dict[int, int]]: ...
 
     @overload
     def initial_logical_to_physical(
-        self, index: int, *, timeout_seconds: int = 7200, polling_seconds: float = 1.0
+        self, index: int, *, timeout: int = 7200, wait: float = 1.0
     ) -> dict[int, int]: ...
 
     def initial_logical_to_physical(
-        self, index: int | None = None, *, timeout_seconds: int = 7200, polling_seconds: float = 1.0
+        self, index: int | None = None, *, timeout: int = 7200, wait: float = 1.0
     ) -> dict[int, int] | list[dict[int, int]]:
         """Mapping of logical qubits to physical qubits at the start of the circuit(s).
 
@@ -707,16 +705,15 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
 
         Args:
             index: An optional index of the specific circuit to retrieve.
-            timeout_seconds: The total number of seconds to poll job data retrieval for. Defaults to
-                7200.
-            polling_seconds: The time interval (in seconds) with which to poll job data retrieval.
-                Defaults to 1.
+            timeout: The total number of seconds to poll job data retrieval for. Defaults to 7200.
+            wait: The time interval (in seconds) with which to poll job data retrieval. Defaults to
+                1.0.
 
         Returns:
             A single logical to physical map (if `index` is passed) or list of maps for all input
             circuits.
         """
-        self.wait_until_terminal_state(index, timeout_seconds, polling_seconds)
+        self.wait_until_terminal_state(index, timeout, wait)
         if index is None:
             return [self.initial_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
 
@@ -726,16 +723,16 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
 
     @overload
     def final_logical_to_physical(
-        self, index: None = None, *, timeout_seconds: int = 7200, polling_seconds: float = 1.0
+        self, index: None = None, *, timeout: int = 7200, wait: float = 1.0
     ) -> list[dict[int, int]]: ...
 
     @overload
     def final_logical_to_physical(
-        self, index: int, *, timeout_seconds: int = 7200, polling_seconds: float = 1.0
+        self, index: int, *, timeout: int = 7200, wait: float = 1.0
     ) -> dict[int, int]: ...
 
     def final_logical_to_physical(
-        self, index: int | None = None, *, timeout_seconds: int = 7200, polling_seconds: float = 1.0
+        self, index: int | None = None, *, timeout: int = 7200, wait: float = 1.0
     ) -> dict[int, int] | list[dict[int, int]]:
         """Mapping of logical qubits to physical qubits at the end of the circuit(s).
 
@@ -744,16 +741,15 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
 
         Args:
             index: An optional index of the specific circuit to retrieve.
-            timeout_seconds: The total number of seconds to poll job data retrieval for. Defaults to
-                7200.
-            polling_seconds: The time interval (in seconds) with which to poll job data retrieval.
-                Defaults to 1.
+            timeout: The total number of seconds to poll job data retrieval for. Defaults to 7200.
+            wait: The time interval (in seconds) with which to poll job data retrieval. Defaults to
+                1.0.
 
         Returns:
             A single logical to physical map (if `index` is passed) or list of maps for all input
             circuits.
         """
-        self.wait_until_terminal_state(index, timeout_seconds, polling_seconds)
+        self.wait_until_terminal_state(index, timeout, wait)
         if index is None:
             return [self.final_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
 
