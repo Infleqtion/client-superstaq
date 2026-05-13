@@ -684,7 +684,11 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             }
 
         request_json["options"] = cirq.to_json(options_dict)
-        json_dict = self._client.post_request("/aqt_compile", request_json)
+        json_dict = (
+            self._client.aqt_compile(request_json)
+            if self._client.api_version == "v0.2.0"
+            else self._client.compile(request_json)
+        )
         return self._map_compile_request_to_client_result(
             json_dict,
             legacy_parser=lambda j_dict: css.compiler_output.read_json_aqt(
@@ -798,12 +802,15 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             **kwargs,
         )
 
-        json_dict = self._client.qscout_compile(
-            {
-                "cirq_circuits": serialized_circuits,
-                "options": cirq.to_json(options_dict),
-                "target": target,
-            }
+        request_json = {
+            "cirq_circuits": serialized_circuits,
+            "options": cirq.to_json(options_dict),
+            "target": target,
+        }
+        json_dict = (
+            self._client.qscout_compile(request_json)
+            if self._client.api_version == "v0.2.0"
+            else self._client.compile(request_json)
         )
         return self._map_compile_request_to_client_result(
             json_dict,
