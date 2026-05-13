@@ -663,6 +663,26 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
 
         return qss.deserialize_circuits(serialized_circuit)[0]
 
+    def jaqal_program(
+        self,
+        *,
+        timeout: int = 7200,
+        wait: float = 1.0,
+    ) -> str | None:
+        """Gets any Jaqal program that was processed for this job.
+
+        Args:
+            timeout: The total number of seconds to poll results retrieval for. Defaults to 7200.
+            wait: The time interval (in seconds) with which to poll Superstaq job results. Defaults
+                to 1.0.
+
+        Returns:
+            A string containing the Jaqal program, if available. Otherwise, `None`.
+        """
+        # TODO: Support `index` arg to get a subcircuit program if a list
+        self.wait_until_terminal_state(timeout_seconds=timeout, polling_seconds=wait)
+        return self.job_data.metadata.get("jaqal_program")
+
     @overload
     def input_circuits(self, index: int) -> qiskit.QuantumCircuit: ...
 

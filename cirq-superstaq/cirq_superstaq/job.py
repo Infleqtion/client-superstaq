@@ -426,7 +426,7 @@ class Job:
             timeout_seconds: The total number of seconds to poll results retrieval for. Defaults to
                 7200.
             polling_seconds: The time interval (in seconds) with which to poll Superstaq job
-                results. Defaults to 1.
+                results. Defaults to 1.0.
             qubit_indices: If provided, only include measurements counts of these qubits.
 
         Returns:
@@ -565,7 +565,7 @@ class JobV3(gss.job.Job):
             timeout_seconds: The total number of seconds to poll job data retrieval for. Defaults to
                 7200.
             polling_seconds: The time interval (in seconds) with which to poll job data retrieval.
-                Defaults to 1.
+                Defaults to 1.0.
 
         Returns:
             A single compiled circuit or list of compiled circuits.
@@ -591,6 +591,26 @@ class JobV3(gss.job.Job):
                 f"Circuit {index} of job {self._job_id} does not have a compiled circuit."
             )
         return css.deserialize_circuits(serialized_circuit)[0]
+
+    def jaqal_program(
+        self, *, timeout_seconds: int = 7200, polling_seconds: float = 1.0
+    ) -> str | None:
+        """Gets any Jaqal program that was processed for this job.
+
+        Args:
+            timeout_seconds: The total number of seconds to poll job data retrieval for. Defaults to
+                7200.
+            polling_seconds: The time interval (in seconds) with which to poll job data retrieval.
+                Defaults to 1.0.
+
+        Returns:
+            A string containing the Jaqal program, if available. Otherwise, `None`.
+        """
+        # TODO: Support `index` arg to get a subcircuit program if a list
+        self.wait_until_terminal_state(
+            timeout_seconds=timeout_seconds, polling_seconds=polling_seconds
+        )
+        return self.job_data.metadata.get("jaqal_program")
 
     @overload
     def input_circuits(self, index: int) -> cirq.Circuit: ...
@@ -635,7 +655,7 @@ class JobV3(gss.job.Job):
             timeout_seconds: The total number of seconds to poll job data retrieval for. Defaults to
                 7200.
             polling_seconds: The time interval (in seconds) with which to poll job data retrieval.
-                Defaults to 1.
+                Defaults to 1.0.
 
         Returns:
             A single logical to physical map (if `index` is passed) or list of maps for all input
@@ -676,7 +696,7 @@ class JobV3(gss.job.Job):
             timeout_seconds: The total number of seconds to poll job data retrieval for. Defaults to
                 7200.
             polling_seconds: The time interval (in seconds) with which to poll job data retrieval.
-                Defaults to 1.
+                Defaults to 1.0.
 
         Returns:
             A single logical to physical map (if `index` is passed) or list of maps for all input
@@ -726,7 +746,7 @@ class JobV3(gss.job.Job):
             timeout_seconds: The total number of seconds to poll counts retrieval for. Defaults to
                 7200.
             polling_seconds: The time interval (in seconds) with which to poll Superstaq job
-                counts. Defaults to 1.
+                counts. Defaults to 1.0.
             qubit_indices: If provided, only include measurements counts of these qubits.
 
         Returns:
