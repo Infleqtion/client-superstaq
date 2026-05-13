@@ -766,9 +766,10 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
 
         Returns:
             For the v0.2.0 API, a `css.CompilerOutput` object whose .circuit(s) attribute contains
-            optimized `cirq.Circuit`(s), and`.jaqal_program` attribute contains the corresponding
+            optimized `cirq.Circuit`(s), and `.jaqal_program` attribute contains the corresponding
             Jaqal program(s). Otherwise (for the v0.3.0 API), an asynchronous `css.JobV3` on which
-            compiled circuits can be queried via `.compiled_circuits()`.
+            compiled circuits and Jaqal program can be obtained via `.compiled_circuits()` and
+            `.jaqal_program()` respectively.
 
         Raises:
             ValueError: If `base_entangling_gate` is not a valid gate option.
