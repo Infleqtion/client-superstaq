@@ -271,18 +271,17 @@ class SuperstaqBackend(qiskit.providers.BackendV2, Generic[QssCompileResultT_co]
         Raises:
             ValueError: If this backend does not support compilation.
         """
-        if self._provider._client.api_version == "v0.2.0":
-            if self.name.startswith("ibmq_"):
-                return self.ibmq_compile(circuits, **kwargs)
+        if self.name.startswith("ibmq_"):
+            return self.ibmq_compile(circuits, **kwargs)
 
-            if self.name.startswith("aqt_"):
-                return self.aqt_compile(circuits, **kwargs)
+        if self.name.startswith("aqt_"):
+            return self.aqt_compile(circuits, **kwargs)
 
-            if self.name.startswith("qscout_"):
-                return self.qscout_compile(circuits, **kwargs)
+        if self.name.startswith("qscout_"):
+            return self.qscout_compile(circuits, **kwargs)
 
-            if self.name.startswith("cq_"):
-                return self.cq_compile(circuits, **kwargs)
+        if self.name.startswith("cq_"):
+            return self.cq_compile(circuits, **kwargs)
 
         request_json = self._get_compile_request_json(circuits, **kwargs)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
@@ -386,7 +385,12 @@ class SuperstaqBackend(qiskit.providers.BackendV2, Generic[QssCompileResultT_co]
 
         request_json = self._get_compile_request_json(circuits, **options)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
-        json_dict = self._provider._client.aqt_compile(request_json)
+        client = self._provider._client
+        json_dict = (
+            client.aqt_compile(request_json)
+            if client.api_version == "v0.2.0"
+            else client.compile(request_json)
+        )
         return self._provider._map_compile_request_to_client_result(
             json_dict,
             legacy_parser=lambda j_dict: qss.compiler_output.read_json_aqt(
@@ -552,7 +556,12 @@ class SuperstaqBackend(qiskit.providers.BackendV2, Generic[QssCompileResultT_co]
         )
 
         request_json = self._get_compile_request_json(circuits, **options)
-        json_dict = self._provider._client.qscout_compile(request_json)
+        client = self._provider._client
+        json_dict = (
+            client.qscout_compile(request_json)
+            if client.api_version == "v0.2.0"
+            else client.compile(request_json)
+        )
         return self._provider._map_compile_request_to_client_result(
             json_dict,
             legacy_parser=lambda j_dict: qss.compiler_output.read_json_qscout(
