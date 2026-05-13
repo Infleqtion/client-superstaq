@@ -104,7 +104,7 @@ def test_counts_to_results() -> None:
 
 def test_service_wrong_version() -> None:
     with pytest.raises(ValueError, match=r"`api_version` can only take value 'v0.2.0' or 'v0.3.0'"):
-        css.Service(api_version="v0.1.0")  # type: ignore [call-overload]
+        css.Service(api_version="v0.1.0")  # type: ignore[call-overload]
 
 
 @pytest.mark.parametrize("api_version", ["v0.2.0", "v0.3.0"])
