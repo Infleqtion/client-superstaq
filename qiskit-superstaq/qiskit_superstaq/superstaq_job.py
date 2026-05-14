@@ -618,10 +618,18 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         )
 
     @overload
-    def compiled_circuits(self, index: int) -> qiskit.QuantumCircuit: ...
+    def compiled_circuits(
+        self,
+        index: int,
+        *,
+        timeout: float | None = None,
+        wait: float = 5,
+    ) -> qiskit.QuantumCircuit: ...
 
     @overload
-    def compiled_circuits(self, index: None = None) -> list[qiskit.QuantumCircuit]: ...
+    def compiled_circuits(
+        self, index: None = None, *, timeout: float | None = None, wait: float = 5
+    ) -> list[qiskit.QuantumCircuit]: ...
 
     def compiled_circuits(
         self,
