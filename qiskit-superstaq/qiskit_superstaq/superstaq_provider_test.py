@@ -129,7 +129,7 @@ def test_get_job(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqPro
         "general_superstaq.superstaq_client._SuperstaqClient.create_job",
         return_value={"job_ids": ["job_id1,job_id2"], "status": "ready"},
     ):
-        job = backend.run([qc, qc], method="dry-run", shots=100)
+        _ = backend.run([qc, qc], method="dry-run", shots=100)
 
     mock_post.return_value.json = lambda: {
         "job_id1": {
@@ -331,6 +331,7 @@ def test_provider_compile_jobV3(
 
     mock_client = mock.MagicMock(spec=gss.superstaq_client._SuperstaqClientV3)
     mock_client.api_version = "v0.3.0"
+    mock_client.max_retry_seconds = 1
     mock_client.client_kwargs = {}
     provider._client = mock_client
 
@@ -383,27 +384,34 @@ def test_provider_compile_jobV3(
     mock_client.compile.return_value = {"job_id": job_id_str}
     mock_client.fetch_jobs.return_value = job_data
 
-    job = compile_call(provider, input_circuit, target)
-    assert isinstance(job, qss.SuperstaqJobV3)
-    assert job.job_id() == job_id
-    assert job.status() == qiskit.providers.jobstatus.JobStatus.DONE
-    assert job.done() is True
-    assert job.input_circuits(0) == input_circuit
-    assert job.compiled_circuits(0) == compiled_circuit
-    assert job.input_circuits() == [input_circuit]
-    assert job.compiled_circuits() == [compiled_circuit]
-    assert job.initial_logical_to_physical(0) == {0: 5}
-    assert job.final_logical_to_physical(0) == {0: 5}
-    assert job.shots() == 0
-    assert job.target() == target
-    assert (
-        isinstance(job.jaqal_program(), str)
-        if target.startswith("qscout_")
-        else job.jaqal_program() is None
-    )
+    original_job = compile_call(provider, input_circuit, target)
+    assert isinstance(original_job, qss.SuperstaqJobV3)
 
-    with pytest.raises(NotImplementedError, match=r"There are no result"):
-        _ = job.result().get_counts()
+    # Test retrieving the same job
+    alt_job = provider.get_job(job_id)
+    assert isinstance(alt_job, qss.SuperstaqJobV3)
+    assert original_job == alt_job
+
+    for job in (original_job, alt_job):
+        assert job.job_id() == job_id
+        assert job.status() == qiskit.providers.jobstatus.JobStatus.DONE
+        assert job.done() is True
+        assert job.input_circuits(0) == input_circuit
+        assert job.compiled_circuits(0) == compiled_circuit
+        assert job.input_circuits() == [input_circuit]
+        assert job.compiled_circuits() == [compiled_circuit]
+        assert job.initial_logical_to_physical(0) == {0: 5}
+        assert job.final_logical_to_physical(0) == {0: 5}
+        assert job.shots() == 0
+        assert job.target() == target
+        assert (
+            isinstance(job.jaqal_program(), str)
+            if target.startswith("qscout_")
+            else job.jaqal_program() is None
+        )
+
+        with pytest.raises(NotImplementedError, match=r"There are no result"):
+            _ = job.result().get_counts()
 
 
 @patch(
