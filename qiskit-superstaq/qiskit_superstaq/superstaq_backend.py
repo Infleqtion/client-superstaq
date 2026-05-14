@@ -521,7 +521,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2, Generic[QssCompileResultT_co]
 
         Returns:
             For the v0.2.0 API, a `qss.CompilerOutput` object whose .circuit(s) attribute contains
-            optimized `qiskit.QuantumCircuit`(s), and`.jaqal_program` attribute contains the
+            optimized `qiskit.QuantumCircuit`(s), and `.jaqal_program` attribute contains the
             corresponding Jaqal program(s). Otherwise (for the v0.3.0 API), an asynchronous
             `qss.SuperstaqJobV3` on which compiled circuits and Jaqal program can be obtained via
             `.compiled_circuits()` and `.jaqal_program()` respectively.

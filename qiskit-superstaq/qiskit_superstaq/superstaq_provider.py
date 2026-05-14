@@ -278,7 +278,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
 
         Raises:
             ~gss.SuperstaqServerException: If there was an error accessing the API.
-            ~gss.SuperstaqException: If retrived jobs are from different targets.
+            ~gss.SuperstaqException: If retrieved jobs are from different targets.
         """
         client = self._client
         if isinstance(client, gss.superstaq_client._SuperstaqClientV3):
