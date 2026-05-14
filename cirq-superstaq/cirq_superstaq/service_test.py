@@ -44,8 +44,6 @@ import pytest
 import qiskit
 import qiskit_superstaq as qss
 import sympy
-from general_superstaq import ResourceEstimate
-from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 
 import cirq_superstaq as css
 
@@ -121,8 +119,8 @@ def test_service_resolve_target(api_version: gss.typing.ApiV2 | gss.typing.ApiV3
 
 def test_service_run_and_get_counts() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-    assert isinstance(service._client, _SuperstaqClient)
-    mock_client = mock.MagicMock(spec=_SuperstaqClient)
+    assert isinstance(service._client, gss.superstaq_client._SuperstaqClient)
+    mock_client = mock.MagicMock(spec=gss.superstaq_client._SuperstaqClient)
     mock_client.create_job.return_value = {
         "job_ids": ["job_id"],
         "status": "Ready",
@@ -198,8 +196,8 @@ def test_service_run_and_get_counts() -> None:
 
 def test_service_run_and_get_countsV3() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com", api_version="v0.3.0")
-    assert isinstance(service._client, _SuperstaqClientV3)
-    mock_client = mock.MagicMock(spec=_SuperstaqClientV3)
+    assert isinstance(service._client, gss.superstaq_client._SuperstaqClientV3)
+    mock_client = mock.MagicMock(spec=gss.superstaq_client._SuperstaqClientV3)
     job_id = uuid.UUID(int=42)
     mock_client.create_job.return_value = {"job_id": job_id, "num_circuits": 1}
     job_dict = {
@@ -297,8 +295,8 @@ def test_service_run_and_get_countsV3() -> None:
 
 def test_service_sampler() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-    assert isinstance(service._client, _SuperstaqClient)
-    mock_client = mock.MagicMock(spec=_SuperstaqClient)
+    assert isinstance(service._client, gss.superstaq_client._SuperstaqClient)
+    mock_client = mock.MagicMock(spec=gss.superstaq_client._SuperstaqClient)
     service._client = mock_client
     mock_client.create_job.return_value = {
         "job_ids": ["job_id"],
@@ -331,8 +329,8 @@ def test_service_sampler() -> None:
 
 def test_service_samplerV3() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com", api_version="v0.3.0")
-    assert isinstance(service._client, _SuperstaqClientV3)
-    mock_client = mock.MagicMock(spec=_SuperstaqClientV3)
+    assert isinstance(service._client, gss.superstaq_client._SuperstaqClientV3)
+    mock_client = mock.MagicMock(spec=gss.superstaq_client._SuperstaqClientV3)
     job_id = uuid.UUID(int=42)
     mock_client.create_job.return_value = {"job_id": job_id, "num_circuits": 1}
 
@@ -373,8 +371,8 @@ def test_service_samplerV3() -> None:
 
 def test_service_get_job() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-    assert isinstance(service._client, _SuperstaqClient)
-    mock_client = mock.MagicMock(spec=_SuperstaqClient)
+    assert isinstance(service._client, gss.superstaq_client._SuperstaqClient)
+    mock_client = mock.MagicMock(spec=gss.superstaq_client._SuperstaqClient)
     job_dict = {"status": "Ready"}
     mock_client.fetch_jobs.return_value = {"job_id": job_dict}
     service._client = mock_client
@@ -392,8 +390,8 @@ def test_service_get_job() -> None:
 
 def test_service_get_jobV3() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com", api_version="v0.3.0")
-    assert isinstance(service._client, _SuperstaqClientV3)
-    mock_client = mock.MagicMock(spec=_SuperstaqClientV3)
+    assert isinstance(service._client, gss.superstaq_client._SuperstaqClientV3)
+    mock_client = mock.MagicMock(spec=gss.superstaq_client._SuperstaqClientV3)
     job_dict = {
         "job_type": "simulate",
         "statuses": ["completed"],
@@ -429,8 +427,8 @@ def test_service_get_jobV3() -> None:
 
 def test_service_create_job() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com")
-    assert isinstance(service._client, _SuperstaqClient)
-    mock_client = mock.MagicMock(spec=_SuperstaqClient)
+    assert isinstance(service._client, gss.superstaq_client._SuperstaqClient)
+    mock_client = mock.MagicMock(spec=gss.superstaq_client._SuperstaqClient)
     mock_client.create_job.return_value = {"job_ids": ["job_id"], "status": "Ready"}
     mock_client.fetch_jobs.return_value = {"job_id": {"status": "Done"}}
     service._client = mock_client
@@ -454,8 +452,8 @@ def test_service_create_job() -> None:
 
 def test_service_create_jobV3() -> None:
     service = css.Service(api_key="key", remote_host="http://example.com", api_version="v0.3.0")
-    assert isinstance(service._client, _SuperstaqClientV3)
-    mock_client = mock.MagicMock(spec=_SuperstaqClientV3)
+    assert isinstance(service._client, gss.superstaq_client._SuperstaqClientV3)
+    mock_client = mock.MagicMock(spec=gss.superstaq_client._SuperstaqClientV3)
     job_id = uuid.UUID(int=42)
     mock_client.create_job.return_value = {"job_id": job_id, "num_circuits": 1}
     job_dict = {
@@ -635,7 +633,7 @@ def test_service_aqt_compile_eca(mock_post_request: mock.MagicMock) -> None:
 def test_service_resource_estimate(mock_resource_estimate: mock.MagicMock) -> None:
     service = css.Service(remote_host="http://example.com", api_key="key")
 
-    resource_estimate = ResourceEstimate(0, 1, 2)
+    resource_estimate = gss.ResourceEstimate(0, 1, 2)
 
     mock_resource_estimate.return_value = {
         "resource_estimates": [{"num_single_qubit_gates": 0, "num_two_qubit_gates": 1, "depth": 2}]
@@ -652,7 +650,7 @@ def test_service_resource_estimate(mock_resource_estimate: mock.MagicMock) -> No
 def test_service_resource_estimate_list(mock_resource_estimate: mock.MagicMock) -> None:
     service = css.Service(remote_host="http://example.com", api_key="key")
 
-    resource_estimates = [ResourceEstimate(0, 1, 2), ResourceEstimate(3, 4, 5)]
+    resource_estimates = [gss.ResourceEstimate(0, 1, 2), gss.ResourceEstimate(3, 4, 5)]
 
     mock_resource_estimate.return_value = {
         "resource_estimates": [
@@ -1070,7 +1068,7 @@ def test_service_compile_jobV3(
 ) -> None:
     service = css.Service(api_key="key", remote_host="http://example.com", api_version="v0.3.0")
 
-    mock_client = mock.MagicMock(spec=_SuperstaqClientV3)
+    mock_client = mock.MagicMock(spec=gss.superstaq_client._SuperstaqClientV3)
     mock_client.api_version = "v0.3.0"
     mock_client.client_kwargs = {}
     service._client = mock_client
@@ -1123,26 +1121,32 @@ def test_service_compile_jobV3(
     mock_client.compile.return_value = {"job_id": job_id_str}
     mock_client.fetch_jobs.return_value = job_data
 
-    job = compile_call(service, input_circuit, target)
-    assert isinstance(job, css.JobV3)
-    assert job.job_id() == job_id
-    assert job.status() == gss.models.CircuitStatus.COMPLETED
-    assert job.input_circuits(0) == input_circuit
-    assert job.compiled_circuits(0) == compiled_circuit
-    assert job.input_circuits() == [input_circuit]
-    assert job.compiled_circuits() == [compiled_circuit]
-    assert job.initial_logical_to_physical(0) == {q0: q0}
-    assert job.final_logical_to_physical(0) == {q0: q0}
-    assert job.repetitions() == 0
-    assert job.target() == target
-    assert (
-        isinstance(job.jaqal_program(), str)
-        if target.startswith("qscout_")
-        else job.jaqal_program() is None
-    )
+    original_job = compile_call(service, input_circuit, target)
+    assert isinstance(original_job, css.JobV3)
 
-    with pytest.raises(NotImplementedError, match=r"There are no counts"):
-        _ = job.counts()
+    alt_job = service.get_job(job_id)
+    assert isinstance(alt_job, css.JobV3)
+    assert alt_job == original_job
+
+    for job in (original_job, alt_job):
+        assert job.job_id() == job_id
+        assert job.status() == gss.models.CircuitStatus.COMPLETED
+        assert job.input_circuits(0) == input_circuit
+        assert job.compiled_circuits(0) == compiled_circuit
+        assert job.input_circuits() == [input_circuit]
+        assert job.compiled_circuits() == [compiled_circuit]
+        assert job.initial_logical_to_physical(0) == {q0: q0}
+        assert job.final_logical_to_physical(0) == {q0: q0}
+        assert job.repetitions() == 0
+        assert job.target() == target
+        assert (
+            isinstance(job.jaqal_program(), str)
+            if target.startswith("qscout_")
+            else job.jaqal_program() is None
+        )
+
+        with pytest.raises(NotImplementedError, match=r"There are no counts"):
+            _ = job.counts()
 
 
 @mock.patch(
