@@ -567,7 +567,7 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         self,
         *,
         timeout: float | None = None,
-        wait: float = 5.0,
+        wait: float = 5,
         qubit_indices: Sequence[int] | None = None,
     ) -> qiskit.result.Result:
         """Create a results object combining the counts from all circuits.
