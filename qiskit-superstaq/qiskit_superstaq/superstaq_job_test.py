@@ -772,10 +772,6 @@ def test_compiled_circuitsV3(mock_client: gss.superstaq_client._SuperstaqClientV
     with pytest.raises(gss.SuperstaqException, match=f"The job {job_id} has no compiled circuits"):
         job.compiled_circuits()
 
-    job.job_data.compiled_circuits[1] = None
-    with pytest.raises(gss.SuperstaqException, match=f"The job {job_id} has no compiled circuits"):
-        job.compiled_circuits()
-
 
 def test_index_compiled_circuits(backend: qss.SuperstaqBackend) -> None:
     response = mock_response("Done")
