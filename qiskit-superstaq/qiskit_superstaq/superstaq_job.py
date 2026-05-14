@@ -509,8 +509,8 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
 
         Args:
             index: An optional index to retrieve a specific result from a result list.
-            timeout: The total number of seconds to poll results retrieval for. If `None`, uses the
-                client instance’s max retry seconds.
+            timeout: Optional total number of seconds to poll results retrieval for. If `None`, uses
+                the client instance’s max retry seconds.
             wait: The time interval (in seconds) with which to poll Superstaq job results. Defaults
                 to 5.
             qubit_indices: The qubit indices to return the results of individually.
@@ -634,8 +634,8 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
 
         Args:
             index: An optional index of the specific circuit to retrieve.
-            timeout: The total number of seconds to poll results retrieval for. If `None`, uses the
-                client instance’s max retry seconds.
+            timeout: Optional total number of seconds to poll results retrieval for. If `None`, uses
+                the client instance’s max retry seconds.
             wait: The time interval (in seconds) with which to poll Superstaq job results. Defaults
                 to 5.
 
@@ -674,8 +674,8 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         """Gets any Jaqal program that was processed for this job.
 
         Args:
-            timeout: The total number of seconds to poll results retrieval for. If `None`, uses the
-                client instance’s max retry seconds.
+            timeout: Optional total number of seconds to poll results retrieval for. If `None`, uses
+                the client instance’s max retry seconds.
             wait: The time interval (in seconds) with which to poll Superstaq job results. Defaults
                 to 5.
 
@@ -728,8 +728,8 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
 
         Args:
             index: An optional index of the specific circuit to retrieve.
-            timeout: The total number of seconds to poll job data retrieval for. If `None`, uses the
-                client instance’s max retry seconds.
+            timeout: Optional total number of seconds to poll job data retrieval for. If `None`,
+                uses the client instance’s max retry seconds.
             wait: The time interval (in seconds) with which to poll job data retrieval. Defaults to
                 5.
 
@@ -765,8 +765,8 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
 
         Args:
             index: An optional index of the specific circuit to retrieve.
-            timeout: The total number of seconds to poll job data retrieval for. If `None`, uses the
-                client instance’s max retry seconds.
+            timeout: Optional total number of seconds to poll job data retrieval for. If `None`,
+                uses the client instance’s max retry seconds.
             wait: The time interval (in seconds) with which to poll job data retrieval. Defaults to
                 5.
 
