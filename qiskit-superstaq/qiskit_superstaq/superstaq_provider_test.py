@@ -331,6 +331,7 @@ def test_provider_compile_jobV3(
 
     mock_client = mock.MagicMock(spec=gss.superstaq_client._SuperstaqClientV3)
     mock_client.api_version = "v0.3.0"
+    mock_client.max_retry_seconds = 1
     mock_client.client_kwargs = {}
     provider._client = mock_client
 
