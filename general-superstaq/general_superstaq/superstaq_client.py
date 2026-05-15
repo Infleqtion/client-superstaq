@@ -260,7 +260,7 @@ class _BaseSuperstaqClient:
             ~gss.SuperstaqServerException: If an error has occurred in making a request
                 to the Superstaq API.
         """
-        if response.status_code == requests.codes.unauthorized:
+        if response.status_code == http.HTTPStatus.UNAUTHORIZED.value:
             if response.json() == (
                 "You must accept the Terms of Use (superstaq.infleqtion.com/terms_of_use)."
             ):
@@ -279,7 +279,7 @@ class _BaseSuperstaqClient:
                 response.status_code,
             )
 
-        if response.status_code == requests.codes.gateway_timeout:
+        if response.status_code == http.HTTPStatus.GATEWAY_TIMEOUT.value:
             # Job took too long. Don't retry, it probably won't be any faster.
             raise gss.SuperstaqServerException(
                 "Connection timed out while processing your request. Try submitting a smaller "
