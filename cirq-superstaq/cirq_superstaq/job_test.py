@@ -757,6 +757,15 @@ def test_job_counts_poll_timeout(
     assert mock_sleep.call_count == 11
 
 
+def test_jobv3_status(jobV3: css.JobV3, job_dictV3: dict[str, object]) -> None:
+    # Update `_job_data` to a failed job
+    jobV3._job_data = gss.models.JobData(
+        **modifiy_job_result(job_dictV3, statuses=["failed", "failed"], counts=[None, None])
+    )
+    assert all(isinstance(jobV3.status(index=i), gss.models.CircuitStatus) for i in range(2))
+    assert all(jobV3.status(index=i) == "failed" for i in range(2))
+
+
 def test_job_counts_poll_timeoutV3(jobV3: css.JobV3, job_dictV3: dict[str, object]) -> None:
     # Update `_job_data` to a still running job
     jobV3._job_data = gss.models.JobData(
@@ -770,12 +779,7 @@ def test_job_counts_poll_timeoutV3(jobV3: css.JobV3, job_dictV3: dict[str, objec
         pytest.raises(TimeoutError, match=r"Final status was"),
     ):
         jobV3.counts(index=0, timeout_seconds=1, polling_seconds=0.5)
-
-        job_zero_status = jobV3.status(index=0)
-        assert jobV3.status() == job_zero_status
-        assert isinstance(job_zero_status, gss.models.CircuitStatus)
-        assert job_zero_status == "running"
-        assert mock_job_refresh.call_count == 2
+    assert mock_job_refresh.call_count == 4
 
 
 @mock.patch("time.sleep", return_value=None)
