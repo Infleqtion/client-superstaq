@@ -213,7 +213,7 @@ class Job:
             return self._overall_status
 
         gss.validation.validate_integer_param(index, min_val=0)
-        return self.job_data.statuses[index]
+        return gss.models.CircuitStatus(self.job_data.statuses[index])
 
     def cancel(self, **kwargs: object) -> None:
         """Cancel the current job if it is not in a terminal state.
