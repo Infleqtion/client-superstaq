@@ -604,7 +604,7 @@ def test_superstaq_client_create_job_dont_retry_on_timeout(
     client = request.getfixturevalue(client_name)
 
     response = requests.Response()
-    response.status_code = requests.codes.gateway_timeout
+    response.status_code = http.HTTPStatus.GATEWAY_TIMEOUT.value
     response._content = b"invalid/json"
     mock_post.return_value = response
 

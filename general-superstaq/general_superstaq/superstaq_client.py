@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import copy
 import enum
+import http
 import json
 import os
 import pathlib
@@ -70,7 +71,7 @@ class _BaseSuperstaqClient:
     """
 
     RETRIABLE_STATUS_CODES: ClassVar[set[int]] = {
-        requests.codes.service_unavailable,
+        http.HTTPStatus.SERVICE_UNAVAILABLE.value,
     }
     SUPPORTED_VERSIONS: ClassVar[set[str]] = {v.value for v in ApiVersion}
 
@@ -184,9 +185,7 @@ class _BaseSuperstaqClient:
         response = self._make_request(request)
         return self._handle_response(response)
 
-    def post_request(
-        self, endpoint: str, json_dict: Mapping[str, object], **credentials: str
-    ) -> Any:
+    def post_request(self, endpoint: str, json_dict: Mapping[str, Any], **credentials: str) -> Any:
         """Performs a POST request on a given endpoint with a given payload.
 
         Args:
@@ -214,9 +213,7 @@ class _BaseSuperstaqClient:
         response = self._make_request(request)
         return self._handle_response(response)
 
-    def put_request(
-        self, endpoint: str, json_dict: Mapping[str, object], **credentials: str
-    ) -> Any:
+    def put_request(self, endpoint: str, json_dict: Mapping[str, Any], **credentials: str) -> Any:
         """Performs a PUT request on a given endpoint with a given payload.
 
         Args:
@@ -364,7 +361,7 @@ class _BaseSuperstaqClient:
         """
         raise gss.SuperstaqServerException(
             "You'll need to accept the Terms of Use before usage of Superstaq.",
-            requests.codes.unauthorized,
+            http.HTTPStatus.UNAUTHORIZED.value,
         )
 
     @staticmethod
@@ -963,7 +960,7 @@ class _AbstractUserClient(_BaseSuperstaqClient, ABC):
         if response != "Accepted. You can now continue using Superstaq.":
             raise gss.SuperstaqServerException(
                 "You'll need to accept the Terms of Use before usage of Superstaq.",
-                requests.codes.unauthorized,
+                http.HTTPStatus.UNAUTHORIZED.value,
             )
 
     @staticmethod
