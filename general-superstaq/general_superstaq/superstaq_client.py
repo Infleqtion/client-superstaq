@@ -346,7 +346,7 @@ class _BaseSuperstaqClient:
             delay_seconds *= 2
 
     def _custom_headers(self, **credentials: str) -> dict[str, str]:
-        custom_headers = copy.deepcopy(self.headers)
+        custom_headers = dict(self.headers)
         for key in ["ibmq_token", "ibmq_instance", "ibmq_channel", "cq_token"]:
             if key in credentials:
                 custom_headers[key] = credentials[key]
