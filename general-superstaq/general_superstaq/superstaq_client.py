@@ -28,7 +28,6 @@
 
 from __future__ import annotations
 
-import copy
 import enum
 import http
 import json
@@ -41,7 +40,7 @@ import urllib
 import uuid
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, NoReturn
 
 import numpy as np
@@ -345,8 +344,8 @@ class _BaseSuperstaqClient:
             time.sleep(delay_seconds)
             delay_seconds *= 2
 
-    def _custom_headers(self, **credentials: str) -> dict[str, str]:
-        custom_headers = dict(self.headers)
+    def _custom_headers(self, **credentials: str) -> MutableMapping[str, str | bytes]:
+        custom_headers: dict[str, str | bytes] = dict(self.headers)
         for key in ["ibmq_token", "ibmq_instance", "ibmq_channel", "cq_token"]:
             if key in credentials:
                 custom_headers[key] = credentials[key]
