@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import datetime
+import http
 import json
 import textwrap
 import uuid
@@ -71,7 +72,7 @@ def _job_dict() -> dict[str, object]:
 
 def _mocked_response(content: object) -> requests.Response:
     response = requests.Response()
-    response.status_code = requests.codes.OK
+    response.status_code = http.HTTPStatus.OK.value
     response._content = json.dumps(content).encode()
     return response
 

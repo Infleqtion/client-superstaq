@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import contextlib
 import datetime
+import http
 import io
 import json
 import os
@@ -414,7 +415,7 @@ def test_supertstaq_client_create_job(
     client = request.getfixturevalue(client_name)
     api_version = client.api_version
 
-    mock_post.return_value.status_code = requests.codes.ok
+    mock_post.return_value.status_code = http.HTTPStatus.OK.value
     mock_post.return_value.json.return_value = {"job_id": job_id, "num_circuits": 1}
 
     response = client.create_job(
@@ -516,7 +517,7 @@ def test_superstaq_client_create_job_not_retriable(
     client = request.getfixturevalue(client_name)
 
     mock_post.return_value.ok = False
-    mock_post.return_value.status_code = requests.codes.not_implemented
+    mock_post.return_value.status_code = http.HTTPStatus.NOT_IMPLEMENTED.value
 
     with pytest.raises(gss.SuperstaqServerException, match=r"Status code: 501"):
         _ = client.create_job({"cirq_circuits": "World"}, target="ss_example_qpu")
@@ -582,7 +583,7 @@ def test_superstaq_client_create_job_invalid_json(
     client = request.getfixturevalue(client_name)
 
     response = requests.Response()
-    response.status_code = requests.codes.not_implemented
+    response.status_code = http.HTTPStatus.NOT_IMPLEMENTED.value
     response._content = b"invalid/json"
     mock_post.return_value = response
 
@@ -2223,7 +2224,7 @@ def test_new_worker(
 ) -> None:
     token = secrets.token_hex(nbytes=32)
     mock_post.return_value = requests.Response()
-    mock_post.return_value.status_code = requests.codes.ok
+    mock_post.return_value.status_code = http.HTTPStatus.OK.value
     mock_post.return_value._content = json.dumps({"worker_name": "worker", "token": token}).encode()
 
     target = "sqale_test_qpu"
@@ -2244,7 +2245,7 @@ def test_regenerate_worker_token(
     token = secrets.token_hex(nbytes=32)
 
     mock_post.return_value = requests.Response()
-    mock_post.return_value.status_code = requests.codes.ok
+    mock_post.return_value.status_code = http.HTTPStatus.OK.value
     mock_post.return_value._content = json.dumps(
         {"worker_name": "sqale_worker", "token": token}
     ).encode()
