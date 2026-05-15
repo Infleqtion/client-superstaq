@@ -55,7 +55,7 @@ def test_unaccepted_terms_of_use(mock_get: mock.MagicMock) -> None:
     machine_api = MachineAPI("machine_api", api_key="token")
 
     mock_get.return_value = requests.Response()
-    mock_get.return_value.status_code = requests.codes.unauthorized
+    mock_get.return_value.status_code = gss.superstaq_client.HTTP_UNAUTHORIZED
     mock_get.return_value._content = (
         b'"You must accept the Terms of Use (superstaq.infleqtion.com/terms_of_use)."'
     )
