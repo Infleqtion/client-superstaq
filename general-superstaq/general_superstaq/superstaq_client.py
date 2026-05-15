@@ -54,10 +54,6 @@ if TYPE_CHECKING:
 RECOGNISED_CIRCUIT_TYPES = Literal[gss.models.CircuitType.CIRQ, gss.models.CircuitType.QISKIT]
 """The circuit types that are currently implemented within the `SuperstaqClient`."""
 
-HTTP_UNAUTHORIZED: int = int(requests.codes.unauthorized)
-HTTP_SERVICE_UNAVAILABLE: int = int(requests.codes.service_unavailable)
-HTTP_GATEWAY_TIMEOUT: int = int(requests.codes.gateway_timeout)
-
 
 class ApiVersion(str, enum.Enum):
     """The supported API versions."""
@@ -74,7 +70,7 @@ class _BaseSuperstaqClient:
     """
 
     RETRIABLE_STATUS_CODES: ClassVar[set[int]] = {
-        HTTP_SERVICE_UNAVAILABLE,
+        requests.codes.service_unavailable,
     }
     SUPPORTED_VERSIONS: ClassVar[set[str]] = {v.value for v in ApiVersion}
 
@@ -268,7 +264,7 @@ class _BaseSuperstaqClient:
             ~gss.SuperstaqServerException: If an error has occurred in making a request
                 to the Superstaq API.
         """
-        if response.status_code == HTTP_UNAUTHORIZED:
+        if response.status_code == requests.codes.unauthorized:
             if response.json() == (
                 "You must accept the Terms of Use (superstaq.infleqtion.com/terms_of_use)."
             ):
@@ -287,7 +283,7 @@ class _BaseSuperstaqClient:
                 response.status_code,
             )
 
-        if response.status_code == HTTP_GATEWAY_TIMEOUT:
+        if response.status_code == requests.codes.gateway_timeout:
             # Job took too long. Don't retry, it probably won't be any faster.
             raise gss.SuperstaqServerException(
                 "Connection timed out while processing your request. Try submitting a smaller "
@@ -368,7 +364,7 @@ class _BaseSuperstaqClient:
         """
         raise gss.SuperstaqServerException(
             "You'll need to accept the Terms of Use before usage of Superstaq.",
-            HTTP_UNAUTHORIZED,
+            requests.codes.unauthorized,
         )
 
     @staticmethod
@@ -967,7 +963,7 @@ class _AbstractUserClient(_BaseSuperstaqClient, ABC):
         if response != "Accepted. You can now continue using Superstaq.":
             raise gss.SuperstaqServerException(
                 "You'll need to accept the Terms of Use before usage of Superstaq.",
-                HTTP_UNAUTHORIZED,
+                requests.codes.unauthorized,
             )
 
     @staticmethod

@@ -329,7 +329,7 @@ def test_superstaq_client_needs_accept_terms_of_use(
 
     fake_get_response = mock.MagicMock()
     fake_get_response.ok = False
-    fake_get_response.status_code = gss.superstaq_client.HTTP_UNAUTHORIZED
+    fake_get_response.status_code = requests.codes.unauthorized
     fake_get_response.json.return_value = (
         "You must accept the Terms of Use (superstaq.infleqtion.com/terms_of_use)."
     )
@@ -366,7 +366,7 @@ def test_superstaq_client_validate_email_error(
     client = request.getfixturevalue(client_name)
 
     mock_post.return_value.ok = False
-    mock_post.return_value.status_code = gss.superstaq_client.HTTP_UNAUTHORIZED
+    mock_post.return_value.status_code = requests.codes.unauthorized
     mock_post.return_value.json.return_value = "You must validate your registered email."
 
     with pytest.raises(
@@ -485,7 +485,7 @@ def test_superstaq_client_create_job_unauthorized(
     client = request.getfixturevalue(client_name)
 
     mock_post.return_value.ok = False
-    mock_post.return_value.status_code = gss.superstaq_client.HTTP_UNAUTHORIZED
+    mock_post.return_value.status_code = requests.codes.unauthorized
 
     with pytest.raises(gss.SuperstaqServerException, match=r"Not authorized"):
         _ = client.create_job({"cirq_circuits": "World"}, target="ss_example_qpu")
@@ -539,7 +539,7 @@ def test_superstaq_client_create_job_retry(
         verbose=True,
     )
 
-    response1 = mock.MagicMock(ok=False, status_code=gss.superstaq_client.HTTP_SERVICE_UNAVAILABLE)
+    response1 = mock.MagicMock(ok=False, status_code=requests.codes.service_unavailable)
     response1.json.return_value = {"job_id": job_id, "num_circuits": 1}
     response2 = mock.MagicMock(ok=True)
     response2.json.return_value = {"job_id": job_id, "num_circuits": 1}
@@ -604,7 +604,7 @@ def test_superstaq_client_create_job_dont_retry_on_timeout(
     client = request.getfixturevalue(client_name)
 
     response = requests.Response()
-    response.status_code = gss.superstaq_client.HTTP_GATEWAY_TIMEOUT
+    response.status_code = requests.codes.gateway_timeout
     response._content = b"invalid/json"
     mock_post.return_value = response
 
@@ -628,7 +628,7 @@ def test_superstaq_client_create_job_timeout(mock_post: mock.MagicMock, api_vers
     )
 
     mock_post.return_value.ok = False
-    mock_post.return_value.status_code = gss.superstaq_client.HTTP_SERVICE_UNAVAILABLE
+    mock_post.return_value.status_code = requests.codes.service_unavailable
 
     with pytest.raises(TimeoutError):
         _ = client.create_job({"qiskit_circuits": "World"}, target="ss_example_qpu")
@@ -1026,7 +1026,7 @@ def test_superstaq_client_fetch_jobs_unauthorized(
 
     with mock.patch(call_type) as mock_call:
         mock_call.return_value.ok = False
-        mock_call.return_value.status_code = gss.superstaq_client.HTTP_UNAUTHORIZED
+        mock_call.return_value.status_code = requests.codes.unauthorized
 
         with pytest.raises(gss.SuperstaqServerException, match=r"Not authorized"):
             _ = client.fetch_jobs([job_id])
@@ -1095,7 +1095,7 @@ def test_superstaq_client_fetch_jobs_retry(
 
     response1 = mock.MagicMock()
     response1.ok = False
-    response1.status_code = gss.superstaq_client.HTTP_SERVICE_UNAVAILABLE
+    response1.status_code = requests.codes.service_unavailable
 
     response2 = mock.MagicMock()
     response2.ok = True
@@ -1124,7 +1124,7 @@ def test_superstaq_client_cancel_jobs_unauthorized(
 
     with mock.patch(call_type) as mock_call:
         mock_call.return_value.ok = False
-        mock_call.return_value.status_code = gss.superstaq_client.HTTP_UNAUTHORIZED
+        mock_call.return_value.status_code = requests.codes.unauthorized
 
         with pytest.raises(gss.SuperstaqServerException, match=r"Not authorized"):
             _ = client.cancel_jobs([job_id])
@@ -1191,7 +1191,7 @@ def test_superstaq_client_cancel_jobs_retry(
 ) -> None:
     client = request.getfixturevalue(client_name)
 
-    response1 = mock.MagicMock(ok=False, status_code=gss.superstaq_client.HTTP_SERVICE_UNAVAILABLE)
+    response1 = mock.MagicMock(ok=False, status_code=requests.codes.service_unavailable)
     response2 = mock.MagicMock(ok=True)
     if client.api_version == "v0.3.0":
         response2.json.return_value = {
