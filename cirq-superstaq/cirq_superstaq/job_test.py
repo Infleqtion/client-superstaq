@@ -769,7 +769,8 @@ def test_job_counts_poll_timeoutV3(
 
     with mock.patch("requests.Session.get", side_effect=[running_mock, running_mock]) as mock_get:
         with pytest.raises(
-            TimeoutError, match=r"Timed out while waiting for results. Final status was 'running'"
+            TimeoutError,
+            match=r"Timed out while waiting for results. Final status was 'CircuitStatus.RUNNING'",
         ):
             jobV3.counts(index=0, timeout_seconds=5, polling_seconds=10)
 
