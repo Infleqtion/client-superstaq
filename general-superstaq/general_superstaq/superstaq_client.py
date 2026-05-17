@@ -344,8 +344,8 @@ class _BaseSuperstaqClient:
             time.sleep(delay_seconds)
             delay_seconds *= 2
 
-    def _custom_headers(self, **credentials: str) -> MutableMapping[str, str]:
-        custom_headers: dict[str, str] = dict(self.headers)
+    def _custom_headers(self, **credentials: str) -> MutableMapping[str, str | bytes]:
+        custom_headers: dict[str, str | bytes] = dict(self.headers)
         for key in ["ibmq_token", "ibmq_instance", "ibmq_channel", "cq_token"]:
             if key in credentials:
                 custom_headers[key] = credentials[key]
