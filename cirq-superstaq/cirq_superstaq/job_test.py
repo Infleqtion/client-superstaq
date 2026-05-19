@@ -777,6 +777,7 @@ def test_job_counts_poll_timeoutV3(jobV3: css.JobV3, job_dictV3: dict[str, objec
             jobV3, "_refresh_job", autospec=True, return_value=None
         ) as mock_job_refresh,
         pytest.raises(TimeoutError, match=r"Final status was"),
+        mock.patch("time.sleep", return_value=None),
     ):
         jobV3.counts(index=0, timeout_seconds=1, polling_seconds=0.5)
     assert mock_job_refresh.call_count == 4
