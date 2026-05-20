@@ -35,6 +35,21 @@ project = "Superstaq"
 copyright = "2026, ColdQuanta, Inc., DBA Infleqtion"  # noqa: A001
 author = "ColdQuanta, Inc., DBA Infleqtion"
 
+DOCS_GITHUB_ORG = "Infleqtion"
+DOCS_GITHUB_REPO = "client-superstaq"
+DOCS_GITHUB_BRANCH = "main"
+DOCS_SOURCE_DIR = "docs/source"
+
+BINDER_NOTEBOOK_BASE_URL = (
+    "https://mybinder.org/v2/gh/"
+    f"{DOCS_GITHUB_ORG}/{DOCS_GITHUB_REPO}/{DOCS_GITHUB_BRANCH}"
+    f"?labpath={DOCS_SOURCE_DIR}/"
+)
+COLAB_NOTEBOOK_BASE_URL = (
+    "https://colab.research.google.com/github/"
+    f"{DOCS_GITHUB_ORG}/{DOCS_GITHUB_REPO}/blob/{DOCS_GITHUB_BRANCH}/{DOCS_SOURCE_DIR}/"
+)
+
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
@@ -50,6 +65,24 @@ extensions = [
 # since our notebooks can involve network I/O (or even costing $), we don't want them to be
 # run every time we build the docs. Instead, just use the pre-executed outputs.
 nbsphinx_execute = "never"
+
+_nbsphinx_doc_path = "{{ env.doc2path(env.docname, base=None) }}"
+nbsphinx_prolog = f"""
+.. raw:: html
+
+   <div class="admonition note">
+     <p class="admonition-title">Run this notebook</p>
+     <p>
+       <a href="{BINDER_NOTEBOOK_BASE_URL}{_nbsphinx_doc_path}" target="_blank" rel="noopener noreferrer">
+         Launch in Binder
+       </a>
+       &nbsp;|&nbsp;
+       <a href="{COLAB_NOTEBOOK_BASE_URL}{_nbsphinx_doc_path}" target="_blank" rel="noopener noreferrer">
+         Open in Colab
+       </a>
+     </p>
+   </div>
+"""
 
 # In addition, we set the mathjax path to v3, which allows \ket{} (and other commands) to render
 mathjax_path = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
