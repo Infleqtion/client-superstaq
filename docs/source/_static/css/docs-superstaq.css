@@ -4930,3 +4930,10 @@ span.linenos.special { color: #303030; background-color: #ECECEC; padding-left: 
 .colon {
     display:none;
 }
+.notebook-launch-badges {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 0.5rem 0 1rem;
+}
+.notebook-launch-badges img { height: 20px; }
