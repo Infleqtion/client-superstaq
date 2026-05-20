@@ -70,17 +70,15 @@ _nbsphinx_doc_path = "{{ env.doc2path(env.docname, base=None) }}"
 nbsphinx_prolog = f"""
 .. raw:: html
 
-   <div class="admonition note">
-     <p class="admonition-title">Run this notebook</p>
-     <p>
-       <a href="{BINDER_NOTEBOOK_BASE_URL}{_nbsphinx_doc_path}" target="_blank" rel="noopener noreferrer">
-         Launch in Binder
-       </a>
-       &nbsp;|&nbsp;
-       <a href="{COLAB_NOTEBOOK_BASE_URL}{_nbsphinx_doc_path}" target="_blank" rel="noopener noreferrer">
-         Open in Colab
-       </a>
-     </p>
+   <div class="notebook-launch-badges">
+     <a href="{COLAB_NOTEBOOK_BASE_URL}{_nbsphinx_doc_path}" target="_blank" rel="noopener
+          noreferrer">
+        <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open in Colab">
+     </a>
+     <a href="{BINDER_NOTEBOOK_BASE_URL}{_nbsphinx_doc_path}" target="_blank" rel="noopener
+     noreferrer">
+       <img src="https://mybinder.org/badge_logo.svg" alt="Launch Binder">
+     </a>
    </div>
 """
 
