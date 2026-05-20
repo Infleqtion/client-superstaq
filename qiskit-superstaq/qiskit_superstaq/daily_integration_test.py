@@ -58,6 +58,7 @@ def test_backends(provider: qss.SuperstaqProvider) -> None:
         retired=False,
         accessible=True,
     )
+
     unfiltered_targets = {t.target: t for t in result}
     assert ibmq_backend_info.target in unfiltered_targets
 

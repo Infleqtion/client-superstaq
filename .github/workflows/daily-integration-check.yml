@@ -49,12 +49,20 @@ jobs:
                   python -m pip install -e ./general-superstaq
             - name: Pytest integration check (group ${{ matrix.group }} of 3)
               run: |
-                  checks/pytest_.py --integration -n=4 --dist=loadgroup --splits=3 --group=${{ matrix.group }} -v ${{ matrix.type }}
-            - name: Create issue if integration check failed
-              if: ${{ failure() }}
+                  checks/pytest_.py -n=4 --integration --splits=3 --group=${{ matrix.group }} -v ${{ matrix.type }}
+
+    create-issue-if-integration-check-failed:
+        name: Create issue if scheduled integration check failed
+        needs: daily-integration-check
+        if: ${{ always() && github.event_name == 'schedule' && needs.daily-integration-check.result == 'failure' }}
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+            - name: Create issue
               uses: JasonEtco/create-an-issue@v2
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
               with:
                   filename: .github/integration-check-failure-issue.md
                   update_existing: true

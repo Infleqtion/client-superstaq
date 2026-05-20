@@ -28,8 +28,8 @@
 
 from __future__ import annotations
 
-import copy
 import enum
+import http
 import json
 import os
 import pathlib
@@ -40,7 +40,7 @@ import urllib
 import uuid
 import warnings
 from abc import ABC, abstractmethod
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, NoReturn
 
 import numpy as np
@@ -70,7 +70,7 @@ class _BaseSuperstaqClient:
     """
 
     RETRIABLE_STATUS_CODES: ClassVar[set[int]] = {
-        requests.codes.service_unavailable,
+        http.HTTPStatus.SERVICE_UNAVAILABLE.value,
     }
     SUPPORTED_VERSIONS: ClassVar[set[str]] = {v.value for v in ApiVersion}
 
@@ -184,9 +184,7 @@ class _BaseSuperstaqClient:
         response = self._make_request(request)
         return self._handle_response(response)
 
-    def post_request(
-        self, endpoint: str, json_dict: Mapping[str, object], **credentials: str
-    ) -> Any:
+    def post_request(self, endpoint: str, json_dict: Mapping[str, Any], **credentials: str) -> Any:
         """Performs a POST request on a given endpoint with a given payload.
 
         Args:
@@ -214,9 +212,7 @@ class _BaseSuperstaqClient:
         response = self._make_request(request)
         return self._handle_response(response)
 
-    def put_request(
-        self, endpoint: str, json_dict: Mapping[str, object], **credentials: str
-    ) -> Any:
+    def put_request(self, endpoint: str, json_dict: Mapping[str, Any], **credentials: str) -> Any:
         """Performs a PUT request on a given endpoint with a given payload.
 
         Args:
@@ -264,7 +260,7 @@ class _BaseSuperstaqClient:
             ~gss.SuperstaqServerException: If an error has occurred in making a request
                 to the Superstaq API.
         """
-        if response.status_code == requests.codes.unauthorized:
+        if response.status_code == http.HTTPStatus.UNAUTHORIZED.value:
             if response.json() == (
                 "You must accept the Terms of Use (superstaq.infleqtion.com/terms_of_use)."
             ):
@@ -283,7 +279,7 @@ class _BaseSuperstaqClient:
                 response.status_code,
             )
 
-        if response.status_code == requests.codes.gateway_timeout:
+        if response.status_code == http.HTTPStatus.GATEWAY_TIMEOUT.value:
             # Job took too long. Don't retry, it probably won't be any faster.
             raise gss.SuperstaqServerException(
                 "Connection timed out while processing your request. Try submitting a smaller "
@@ -348,8 +344,8 @@ class _BaseSuperstaqClient:
             time.sleep(delay_seconds)
             delay_seconds *= 2
 
-    def _custom_headers(self, **credentials: str) -> dict[str, str]:
-        custom_headers = copy.deepcopy(self.headers)
+    def _custom_headers(self, **credentials: str) -> MutableMapping[str, str | bytes]:
+        custom_headers: dict[str, str | bytes] = dict(self.headers)
         for key in ["ibmq_token", "ibmq_instance", "ibmq_channel", "cq_token"]:
             if key in credentials:
                 custom_headers[key] = credentials[key]
@@ -364,7 +360,7 @@ class _BaseSuperstaqClient:
         """
         raise gss.SuperstaqServerException(
             "You'll need to accept the Terms of Use before usage of Superstaq.",
-            requests.codes.unauthorized,
+            http.HTTPStatus.UNAUTHORIZED.value,
         )
 
     @staticmethod
@@ -963,7 +959,7 @@ class _AbstractUserClient(_BaseSuperstaqClient, ABC):
         if response != "Accepted. You can now continue using Superstaq.":
             raise gss.SuperstaqServerException(
                 "You'll need to accept the Terms of Use before usage of Superstaq.",
-                requests.codes.unauthorized,
+                http.HTTPStatus.UNAUTHORIZED.value,
             )
 
     @staticmethod

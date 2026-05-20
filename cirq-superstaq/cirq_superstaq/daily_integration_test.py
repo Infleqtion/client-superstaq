@@ -230,9 +230,9 @@ def test_get_targets(service: css.Service) -> None:
         retired=False,
         accessible=False,
     )
-    assert aqt_target_info in result
 
     unfiltered_targets = {t.target: t for t in result}
+    assert aqt_target_info in result
     assert ibmq_target_info.target in unfiltered_targets
 
     for target in filtered_result:
