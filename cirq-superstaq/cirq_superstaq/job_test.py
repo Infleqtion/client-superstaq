@@ -28,6 +28,7 @@
 from __future__ import annotations
 
 import datetime
+import http
 import json
 import textwrap
 import uuid
@@ -190,7 +191,7 @@ def multi_circuit_job() -> css.Job:
 
 def _mocked_request_response(content: object) -> requests.Response:
     response = requests.Response()
-    response.status_code = requests.codes.OK
+    response.status_code = http.HTTPStatus.OK.value
     response._content = json.dumps(content).encode()
     return response
 
