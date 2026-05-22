@@ -24,6 +24,7 @@ import general_superstaq as gss
 from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 
 if TYPE_CHECKING:
+    import numpy as np
     import numpy.typing as npt
     from _typeshed import SupportsItems
 
@@ -51,8 +52,9 @@ class BaseService:
             remote_host: The URL of the server exposing the Superstaq API. This will strip anything
                 besides the base scheme and netloc, i.e. it only takes the part of the host of
                 the form `http://example.com` of `http://example.com/test`.
-            api_version: Which version of the API to use. Defaults to `client_superstaq.API_VERSION`
-                (which is the most recent version when this client was downloaded).
+            api_version: Which version of the API to use. Defaults to
+                `general_superstaq.API_VERSION` (which is the most recent version when this
+                client was downloaded).
             max_retry_seconds: The time to continue retriable responses. Defaults to 3600.
             verbose: Whether to print to stderr and stdio any retriable errors that are encountered.
         """
@@ -583,6 +585,235 @@ class Service(BaseService):
         return f"Submitted request for atom picture with ID: {request_id}"
 
 
+class QasmService(Service):
+    """This class contains services relating to Superstaq and OpenQasm input."""
+
+    def compile(
+        self,
+        qasm_strs: str | Sequence[str],
+        target: str,
+        **kwargs: Any,
+    ) -> gss.compiler_output.CompilerOutput:
+        """Compiles the given circuit(s) to the target device's native gateset.
+
+        Args:
+            qasm_strs: The OpenQasm string(s) to compile.
+            target: String of target device.
+            kwargs: Other desired compile options.
+
+        Returns:
+            A `CompilerOutput` object whose .circuit(s) attribute contains optimized compiled
+            circuit(s).
+        """
+        target = gss.validation.validate_target(target)
+        if target.startswith("aqt_"):
+            return self.aqt_compile(qasm_strs, **kwargs)
+        if target.startswith("qscout_"):
+            return self.qscout_compile(qasm_strs, **kwargs)
+
+        circuits_is_list = not isinstance(qasm_strs, str)
+        qasm_circuits = qasm_strs if circuits_is_list else [qasm_strs]
+        options = {**self._client.client_kwargs, **kwargs}
+        request_json = {
+            "qasm_strs": json.dumps(qasm_circuits),
+            "target": target,
+            "options": json.dumps(options),  # TODO: need broader serialization support
+        }
+        json_dict = self._client.compile(request_json)
+        return gss.compiler_output.CompilerOutput._generate_compiler_output(
+            json_dict, circuits_is_list=circuits_is_list
+        )
+
+    def aqt_compile(
+        self,
+        qasm_strs: str | Sequence[str],
+        target: str = "aqt_keysight_qpu",
+        *,
+        num_eca_circuits: int | None = None,
+        random_seed: int | None = None,
+        atol: float | None = None,
+        gate_defs: Mapping[str, str | npt.NDArray[np.number[Any]] | None] | None = None,
+        gateset: Mapping[str, Sequence[Sequence[int]]] | None = None,
+        pulses: object = None,
+        variables: object = None,
+        **kwargs: Any,
+    ) -> gss.compiler_output.CompilerOutput:
+        """Compiles and optimizes the input OpenQasm str(s) for the Advanced Quantum Testbed (AQT).
+
+        AQT is a superconducting transmon quantum computing testbed at Lawrence Berkeley National
+        Laboratory. More information can be found at https://aqt.lbl.gov.
+
+        Specifying a nonzero value for `num_eca_circuits` enables compilation with Equivalent
+        Circuit Averaging (ECA). See https://arxiv.org/abs/2111.04572 for a description of ECA.
+
+        Args:
+            qasm_strs: The OpenQasm string(s) to compile.
+            target: String name of the target AQT device.
+            num_eca_circuits: Optional number of logically equivalent random OpenQasm string to
+                generate from each input OpenQasm string for Equivalent Circuit Averaging (ECA).
+            random_seed: Optional seed used for approximate synthesis and ECA.
+            atol: An optional tolerance to use for approximate gate synthesis.
+            gate_defs: An optional dictionary mapping names in `qtrl` configs to operations, where
+                each operation can be either a unitary matrix or None. More specific associations
+                take precedence, for example `{"SWAP": <matrix1>, "SWAP/C5C4": <matrix2>}` implies
+                `<matrix1>` for all "SWAP" calibrations except "SWAP/C5C4" (which will instead be
+                mapped to `<matrix2>` applied to qubits 4 and 5). Setting any calibration to None
+                will disable that calibration.
+            gateset: Which gates to use for compilation. Should be a dictionary with entries in the
+                for `gate_name: [[1, 2], [3, 4]`, where the keys refer to specific gates, and the
+                values indicate which qubit(s) they act upon.
+            pulses: Qtrl `PulseManager` or file path for pulse configuration.
+            variables: Qtrl `VariableManager` or file path for variable configuration.
+            kwargs: Other desired compile options.
+
+        Returns:
+            Object whose .circuit(s) attribute contains optimized OpenQasm strings.
+
+        Raises:
+            ValueError: If `target` is not a valid AQT target.
+        """
+        target = gss.validation.validate_target(target)
+        if not target.startswith("aqt_"):
+            raise ValueError("Using `aqt_compile()` requires a valid AQT target.")
+
+        aqt_options = gss.validation.get_validated_aqt_options(
+            num_eca_circuits=num_eca_circuits,
+            random_seed=random_seed,
+            atol=atol,
+            gateset=gateset,
+            **kwargs,
+        )
+        if pulses or variables:
+            aqt_options["aqt_configs"] = {
+                "pulses": self._qtrl_config_to_yaml_str(pulses),
+                "variables": self._qtrl_config_to_yaml_str(variables),
+            }
+        if gate_defs is not None:
+            aqt_options["gate_defs"] = gate_defs
+
+        options = {**self._client.client_kwargs, **aqt_options}
+        circuits_is_list = not isinstance(qasm_strs, str)
+        qasm_circuits = qasm_strs if circuits_is_list else [qasm_strs]
+
+        json_dict = self._client.aqt_compile(
+            {
+                "qasm_strs": json.dumps(qasm_circuits),
+                "options": json.dumps(options),
+                "target": target,
+            }
+        )
+        return gss.compiler_output.CompilerOutput._generate_compiler_output(
+            json_dict,
+            parser="aqt",
+            circuits_is_list=circuits_is_list,
+            num_eca_circuits=num_eca_circuits,
+        )
+
+    def qscout_compile(
+        self,
+        qasm_strs: str | Sequence[str],
+        target: str = "qscout_peregrine_qpu",
+        *,
+        num_eca_circuits: int | None = None,
+        mirror_swaps: bool = False,
+        base_entangling_gate: str = "xx",
+        num_qubits: int | None = None,
+        error_rates: SupportsItems[tuple[int, ...], float] | None = None,
+        atol: float = 1e-8,
+        atol_map: SupportsItems[tuple[int, ...], float] | None = None,
+        keep_qubit_order: bool = False,
+        random_seed: int | None = None,
+        **kwargs: Any,
+    ) -> gss.compiler_output.CompilerOutput:
+        """Compiles and optimizes the given OpenQasm for a QSCOUT `target`.
+
+        Specifying a nonzero value for `num_eca_circuits` enables compilation with Equivalent
+        Circuit Averaging (ECA). See [1] for a description of ECA.
+
+        References:
+            [1] A. Hashim, et al., Optimized fermionic SWAP networks with equivalent circuit
+                averaging for QAOA. Phys. Rev. Research 4, 033028 (2022).
+                https://arxiv.org/abs/2111.04572
+
+        Args:
+            qasm_strs: The OpenQasm string(s) to compile.
+            target: String of target representing target device.
+            num_eca_circuits: Optional number of logically equivalent random OpenQasm strings to
+                generate from each input OpenQasm string for Equivalent Circuit Averaging (ECA).
+            mirror_swaps: Whether to use mirror swapping to reduce two-qubit gate overhead.
+            base_entangling_gate: The base entangling gate to use: ("xx", "zz", "sxx", or "szz").
+                Compilation with the "xx" and "zz" entangling bases will use arbitrary
+                parameterized two-qubit interactions, while the "sxx" and "szz" bases will only use
+                fixed maximally-entangling rotations. Defaults to "xx".
+            num_qubits: An optional number of qubits that should be initialized in the returned
+                OpenQasm string(s) (by default this will be determined from the input `qasm_strs`).
+            error_rates: Optional dictionary assigning relative error rates to pairs of physical
+                qubits, in the form `{<qubit_indices>: <error_rate>, ...}` where `<qubit_indices>`
+                is a tuple physical qubit indices (ints) and `<error_rate>` is a relative error rate
+                for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`). If
+                provided, Superstaq will attempt to map the circuit to minimize the total error on
+                each qubit. Omitted qubit pairs are assumed to be error-free.
+            atol: Optional tolerance (trace distance bound) used for approximate compilation.
+                Superstaq will elide gates which can be approximated within the given tolerance by
+                identity operations.
+            atol_map: Optional dictionary assigning compilation tolerances to physical qubits, in
+                the form `{<qubit_indices>: <atol>, ...}` where `<qubit_indices>` is a tuple of
+                physical qubit indices (ints) and `<atol>` is an absolute tolerance (trace distance
+                bound) for gates acting on those qubits (for example `{(0, 1): 0.3, (1, 2): 0.2}`).
+                If provided, these tolerances will override `atol` for gates on the given qubits.
+                Omitted qubit pairs default to `atol`.
+            keep_qubit_order: If `True`, do not reorder input qubits when compiling with ECA.
+            random_seed: Used to seed any stochastic compilation passes (especially for ECA).
+            kwargs: Other desired `/qscout_compile` options.
+
+        Returns:
+            Object whose .circuit(s) attribute contains optimized OpenQasm strings.
+
+        Raises:
+            ValueError: If `base_entangling_gate` is not a valid gate option.
+            ValueError: If `target` is not a valid QSCOUT target.
+            ValueError: If provided `num_qubits` is less than the register size required by
+                `qasm_strs`.
+        """
+        target = gss.validation.validate_target(target)
+        if not target.startswith("qscout_"):
+            raise ValueError("Using `qscout_compile()` requires a valid QSCOUT target.")
+
+        circuits_is_list = not isinstance(qasm_strs, str)
+        qasm_circuits = [qasm_strs] if isinstance(qasm_strs, str) else qasm_strs
+        inferred_num_qubits = gss.validation.get_validated_assembly_qubits(
+            qasm_circuits, circuit_type="qasm_strs"
+        )
+        qscout_options = gss.validation.get_validated_qscout_options(
+            inferred_num_qubits,
+            num_eca_circuits=num_eca_circuits,
+            mirror_swaps=mirror_swaps,
+            base_entangling_gate=base_entangling_gate,
+            num_qubits=num_qubits,
+            error_rates=error_rates,
+            atol=atol,
+            atol_map=atol_map,
+            keep_qubit_order=keep_qubit_order,
+            random_seed=random_seed,
+            **kwargs,
+        )
+        options = {**self._client.client_kwargs, **qscout_options}
+
+        json_dict = self._client.qscout_compile(
+            {
+                "qasm_strs": json.dumps(qasm_circuits),
+                "options": json.dumps(options),
+                "target": target,
+            }
+        )
+        return gss.compiler_output.CompilerOutput._generate_compiler_output(
+            json_dict,
+            parser="qscout",
+            circuits_is_list=circuits_is_list,
+            num_eca_circuits=num_eca_circuits,
+        )
+
+
 class JaqalService(BaseService):
     """This class contains services relating to Superstaq and Jaqal input."""
 
@@ -661,9 +892,11 @@ class JaqalService(BaseService):
             raise ValueError("Using `qscout_compile()` requires a valid QSCOUT target.")
 
         jaqal_programs = [jaqal_programs] if isinstance(jaqal_programs, str) else jaqal_programs
-        inferred_num_qubits = gss.validation.get_validated_jaqal_qubits(jaqal_programs)
+        inferred_num_qubits = gss.validation.get_validated_assembly_qubits(
+            jaqal_programs, circuit_type="jaqal_strs"
+        )
 
-        options = gss.validation.get_validated_qscout_options(
+        qscout_options = gss.validation.get_validated_qscout_options(
             inferred_num_qubits,
             num_eca_circuits=num_eca_circuits,
             mirror_swaps=mirror_swaps,
@@ -676,6 +909,7 @@ class JaqalService(BaseService):
             random_seed=random_seed,
             **kwargs,
         )
+        options = {**self._client.client_kwargs, **qscout_options}
 
         json_dict = self._client.qscout_compile(
             {
@@ -684,4 +918,6 @@ class JaqalService(BaseService):
                 "target": target,
             }
         )
-        return gss.compiler_output.read_json_jaqal(json_dict, num_eca_circuits=num_eca_circuits)
+        return gss.compiler_output.CompilerOutput._read_json_jaqal(
+            json_dict, num_eca_circuits=num_eca_circuits
+        )

@@ -26,15 +26,17 @@
 # that they have been altered from the originals.
 from __future__ import annotations
 
+import uuid
 import warnings
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Generic, cast, overload
 
 import general_superstaq as gss
 import qiskit
 from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 
 import qiskit_superstaq as qss
+from qiskit_superstaq.superstaq_backend import QssCompileResultT_co
 
 if TYPE_CHECKING:
     import numpy as np
@@ -42,7 +44,7 @@ if TYPE_CHECKING:
     from _typeshed import SupportsItems
 
 
-class SuperstaqProvider(gss.service.Service):
+class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
     """Provider for Superstaq backend.
 
     Typical usage is:
@@ -59,11 +61,45 @@ class SuperstaqProvider(gss.service.Service):
     and `target` is the name of the desired backend.
     """
 
+    @overload
+    def __init__(
+        self: SuperstaqProvider[qss.compiler_output.CompilerOutput],
+        api_key: str | None = None,
+        remote_host: str | None = None,
+        api_version: gss.typing.ApiV2 = "v0.2.0",
+        max_retry_seconds: int = 3600,
+        verbose: bool = False,
+        cq_token: str | None = None,
+        ibmq_token: str | None = None,
+        ibmq_instance: str | None = None,
+        ibmq_channel: str | None = None,
+        use_stored_ibmq_credentials: bool = False,
+        ibmq_name: str | None = None,
+        **kwargs: object,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+        self: SuperstaqProvider[qss.SuperstaqJobV3],
+        api_key: str | None = None,
+        remote_host: str | None = None,
+        api_version: gss.typing.ApiV3 = "v0.3.0",
+        max_retry_seconds: int = 3600,
+        verbose: bool = False,
+        cq_token: str | None = None,
+        ibmq_token: str | None = None,
+        ibmq_instance: str | None = None,
+        ibmq_channel: str | None = None,
+        use_stored_ibmq_credentials: bool = False,
+        ibmq_name: str | None = None,
+        **kwargs: object,
+    ) -> None: ...
+
     def __init__(
         self,
         api_key: str | None = None,
         remote_host: str | None = None,
-        api_version: str = gss.API_VERSION,
+        api_version: gss.typing.ApiV2 | gss.typing.ApiV3 = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
         cq_token: str | None = None,
@@ -143,7 +179,48 @@ class SuperstaqProvider(gss.service.Service):
     def __repr__(self) -> str:
         return f"<SuperstaqProvider(api_key={self._client.api_key}, name={self._name})>"
 
-    def get_backend(self, target: str) -> qss.SuperstaqBackend:
+    def _map_compile_request_to_client_result(
+        self,
+        json_dict: dict[str, Any],
+        *,
+        circuits_is_list: bool,
+        parser: str = "std",
+        num_eca_circuits: int | None = None,
+    ) -> QssCompileResultT_co:
+        """Maps a compile endpoint's JSON response to the output type expected by the API version.
+
+        Args:
+             json_dict: The JSON output from a compile endpoint.
+             circuits_is_list: blah
+             parser: blah
+             num_eca_circuits: blah
+
+        Returns:
+             For v0.3.0, compile-like endpoints will return a `qss.SuperstaqJobV3`. For v0.2.0,
+             legacy behavior will be preserved and return a `qss.CompilerOutput`.
+
+        Raises:
+            TypeError: If `json_dict` is missing a job ID for the v0.3.0 API version.
+        """
+        if isinstance(self._client, gss.superstaq_client._SuperstaqClientV3):
+            job_id = json_dict.get("job_id")
+            if not isinstance(job_id, str):
+                raise TypeError("No valid job id was found in the compile request.")
+            return cast(
+                "QssCompileResultT_co", qss.SuperstaqJobV3(client=self._client, job_id=job_id)
+            )
+        return cast(
+            "QssCompileResultT_co",
+            qss.compiler_output.CompilerOutput._generate_compiler_output(
+                json_dict=json_dict,
+                circuits_is_list=circuits_is_list,
+                parser=parser,
+                num_eca_circuits=num_eca_circuits,
+                api_version=self._client.api_version,
+            ),
+        )
+
+    def get_backend(self, target: str) -> qss.SuperstaqBackend[QssCompileResultT_co]:
         """Returns a Superstaq backend.
 
         Args:
@@ -152,7 +229,7 @@ class SuperstaqProvider(gss.service.Service):
         Returns:
             A Superstaq backend.
         """
-        return qss.SuperstaqBackend(provider=self, target=target)
+        return qss.SuperstaqBackend[QssCompileResultT_co](provider=self, target=target)
 
     def backends(
         self,
@@ -201,25 +278,30 @@ class SuperstaqProvider(gss.service.Service):
             superstaq_backends.append(self.get_backend(backend.target))
         return superstaq_backends
 
-    def get_job(self, job_id: str) -> qss.SuperstaqJob:
+    def get_job(self, job_id: uuid.UUID | str) -> qss.SuperstaqJob | qss.SuperstaqJobV3:
         """Gets a job that has been created on the Superstaq API.
 
         Args:
-            job_id: The UUID of the job. Jobs are assigned these numbers by the server during the
-            creation of the job.
+            job_id: The UUID or string of the job id. Jobs are assigned these numbers by the server
+                during the creation of the job.
 
         Returns:
-            A `qss.SuperstaqJob` which can be queried for status or results.
+            A `qss.SuperstaqJob` or `qss.SuperstaqJobV3` for the v0.2.0 and v0.3.0 API respectively
+            on which job data associated with `job_id` can be queried and/or retrieved.
 
         Raises:
             ~gss.SuperstaqServerException: If there was an error accessing the API.
-            ~gss.SuperstaqException: If retrived jobs are from different targets.
+            ~gss.SuperstaqException: If retrieved jobs are from different targets.
         """
+        client = self._client
+        if isinstance(client, gss.superstaq_client._SuperstaqClientV3):
+            return qss.SuperstaqJobV3(client=client, job_id=job_id)
+
+        job_id = str(job_id)
         job_ids = job_id.split(",")
-        jobs = self._client.fetch_jobs(job_ids)
+        jobs = client.fetch_jobs(job_ids)
 
         target = jobs[job_ids[0]]["target"]
-
         if isinstance(target, str) and all(target == val["target"] for val in jobs.values()):
             return qss.SuperstaqJob(self.get_backend(target), job_id)
         raise gss.SuperstaqException("Job ids belong to jobs at different targets.")
@@ -252,7 +334,7 @@ class SuperstaqProvider(gss.service.Service):
         pulses: object = None,
         variables: object = None,
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput:
+    ) -> QssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
 
         AQT is a superconducting transmon quantum computing testbed at Lawrence Berkeley National
@@ -282,10 +364,12 @@ class SuperstaqProvider(gss.service.Service):
             kwargs: Other desired compile options.
 
         Returns:
-            Object whose .circuit(s) attribute contains the optimized circuits(s). Alternatively for
-            ECA, an Object whose .circuits attribute is a list (or list of lists) of logically
-            equivalent circuits. If `qtrl` is installed, the object's .seq attribute is a qtrl
-            Sequence object containing pulse sequences for each compiled circuit.
+            For the `v0.2.0` API, a `qss.CompilerOutput` object whose .circuit(s) attribute contains
+            the optimized circuits(s). Alternatively for ECA, an object whose .circuits attribute is
+            a list (or list of lists) of logically equivalent circuits. If `qtrl` is installed, the
+            object's .seq attribute is a qtrl Sequence object containing pulse sequences for each
+            compiled circuit. Otherwise (for the v0.3.0 API), an asynchronous `qss.SuperstaqJobV3`
+            on which compiled circuits can be queried via `.compiled_circuits()`.
 
         Raises:
             ValueError: If `target` is not a valid AQT target.
@@ -293,7 +377,7 @@ class SuperstaqProvider(gss.service.Service):
         if not target.startswith("aqt_"):
             raise ValueError(f"{target!r} is not a valid AQT target.")
 
-        return self.get_backend(target).compile(
+        return self.get_backend(target).aqt_compile(
             circuits,
             num_eca_circuits=num_eca_circuits,
             random_seed=random_seed,
@@ -314,7 +398,7 @@ class SuperstaqProvider(gss.service.Service):
         atol: float | None = None,
         gate_defs: Mapping[str, str | npt.NDArray[np.number[Any]] | None] | None = None,
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput:
+    ) -> QssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT) at
         Lawrence Berkeley National Laboratory using Equivalent Circuit Averaging (ECA).
 
@@ -340,9 +424,11 @@ class SuperstaqProvider(gss.service.Service):
             kwargs: Other desired aqt_compile_eca options.
 
         Returns:
-            Object whose .circuits attribute is a list (or list of lists) of logically equivalent
-            circuits. If `qtrl` is installed, the object's .seq attribute is a qtrl Sequence object
-            containing pulse sequences for each compiled circuit.
+            For the v0.2.0 API, a `qss.CompilerOutput` whose .circuits attribute is a list (or list
+            of lists) of logically equivalent circuits. If `qtrl` is installed, the object's `.seq`
+            attribute is a qtrl Sequence object containing pulse sequences for each compiled
+            circuit. Otherwise (for the v0.3.0 API), an asynchronous `qss.SuperstaqJobV3` on which
+            compiled circuits can be queried via `.compiled_circuits()`.
 
         Raises:
             ValueError: If `target` is not a valid AQT target.
@@ -373,7 +459,7 @@ class SuperstaqProvider(gss.service.Service):
         dynamical_decoupling: bool = True,
         dd_strategy: str = "adaptive",
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput:
+    ) -> QssCompileResultT_co:
         """Returns pulse schedule(s) for the given qiskit circuit(s) and target.
 
         Superstaq currently supports the following dynamical decoupling strategies:
@@ -399,9 +485,11 @@ class SuperstaqProvider(gss.service.Service):
             kwargs: Other desired compile options.
 
         Returns:
-            Object whose .circuit(s) attribute contains the compiled circuits(s), and whose
-            .pulse_gate_circuit(s) attribute contains the corresponding pulse schedule(s) (when
-            available).
+            For the `v0.2.0` API, a `qss.CompilerOutput` whose .circuit(s) attribute contains the
+            compiled qiskit.QuantumCircuit(s), and whose .pulse_gate_circuit(s) attribute contains
+            the corresponding pulse schedule(s) (when available). Otherwise (for the v0.3.0 API), an
+            asynchronous `qss.SuperstaqJobV3` on which compiled circuits can be queried via
+            `.compiled_circuits()`.
 
         Raises:
             ValueError: If `target` is not a valid IBMQ target.
@@ -429,7 +517,7 @@ class SuperstaqProvider(gss.service.Service):
         keep_qubit_order: bool = False,
         random_seed: int | None = None,
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput:
+    ) -> QssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
         Sandia National Laboratories [1].
 
@@ -482,8 +570,11 @@ class SuperstaqProvider(gss.service.Service):
             kwargs: Other desired qscout_compile options.
 
         Returns:
-            Object whose .circuit(s) attribute contains optimized `qiskit.QuantumCircuit`(s), and
-            `.jaqal_program` attribute contains the corresponding Jaqal program(s).
+            For the v0.2.0 API, a `qss.CompilerOutput` object whose .circuit(s) attribute contains
+            optimized `qiskit.QuantumCircuit`(s), and `.jaqal_program` attribute contains the
+            corresponding Jaqal program(s). Otherwise (for the v0.3.0 API), an asynchronous
+            `qss.SuperstaqJobV3` on which compiled circuits and Jaqal program can be obtained via
+            `.compiled_circuits()` and `.jaqal_program()` respectively.
 
         Raises:
             ValueError: If `target` is not a valid QSCOUT target.
@@ -515,7 +606,7 @@ class SuperstaqProvider(gss.service.Service):
         control_radius: float = 1.0,
         stripped_cz_rads: float = 0.0,
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput:
+    ) -> QssCompileResultT_co:
         """Compiles the given circuit(s) to CQ device, optimized to its native gate set.
 
         Args:
@@ -529,7 +620,9 @@ class SuperstaqProvider(gss.service.Service):
             kwargs: Other desired cq_compile options.
 
         Returns:
-            object whose .circuit(s) attribute is an optimized qiskit circuit(s).
+            For the v0.3.0 API, an asynchronous `qss.SuperstaqJobV3` on which compiled circuits can
+            be queried via `.compiled_circuits()`. Otherwise (for the v0.2.0 API), a
+            `qss.CompilerOutput` whose .circuit(s) attribute contains the compiled circuit(s).
 
         Raises:
             ValueError: If `target` is not a valid CQ target.
