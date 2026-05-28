@@ -31,7 +31,7 @@ from __future__ import annotations
 
 import collections
 import time
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any, overload
 
 import cirq
@@ -378,7 +378,7 @@ class Job:
                 deserialized_circuits = []
                 for serialized_circuit in serialized_circuits:
                     deserialized_circuit = css.serialization.deserialize_qiskit_circuits(
-                        serialized_circuit, False
+                        serialized_circuit, circuits_is_list=False
                     )
                     if deserialized_circuit is None:
                         raise ValueError("Some circuits could not be deserialized.")
@@ -387,7 +387,9 @@ class Job:
         else:
             gss.validation.validate_integer_param(index, min_val=0)
             serialized_circuit = self._job[job_ids[index]]["pulse_gate_circuits"]
-            return css.serialization.deserialize_qiskit_circuits(serialized_circuit, False)
+            return css.serialization.deserialize_qiskit_circuits(
+                serialized_circuit, circuits_is_list=False
+            )
 
         error = f"Target '{self.target()}' does not use pulse gate circuits."
         raise ValueError(error)
@@ -399,7 +401,7 @@ class Job:
         timeout_seconds: int = 7200,
         polling_seconds: float = 1.0,
         qubit_indices: Sequence[int] | None = None,
-    ) -> dict[str, int]: ...
+    ) -> dict[str, float]: ...
 
     @overload
     def counts(
@@ -408,7 +410,7 @@ class Job:
         timeout_seconds: int = 7200,
         polling_seconds: float = 1.0,
         qubit_indices: Sequence[int] | None = None,
-    ) -> list[dict[str, int]]: ...
+    ) -> list[dict[str, float]]: ...
 
     def counts(
         self,
@@ -416,7 +418,7 @@ class Job:
         timeout_seconds: int = 7200,
         polling_seconds: float = 1.0,
         qubit_indices: Sequence[int] | None = None,
-    ) -> dict[str, int] | list[dict[str, int]]:
+    ) -> dict[str, float] | list[dict[str, float]]:
         """Polls the Superstaq API for counts results (frequency of each measurement outcome).
 
         Args:
@@ -667,7 +669,7 @@ class JobV3(gss.job.Job):
         timeout_seconds: int = 7200,
         polling_seconds: float = 1.0,
         qubit_indices: Sequence[int] | None = None,
-    ) -> dict[str, int]: ...
+    ) -> dict[str, float]: ...
 
     @overload
     def counts(
@@ -676,7 +678,7 @@ class JobV3(gss.job.Job):
         timeout_seconds: int = 7200,
         polling_seconds: float = 1.0,
         qubit_indices: Sequence[int] | None = None,
-    ) -> list[dict[str, int]]: ...
+    ) -> list[dict[str, float]]: ...
 
     def counts(
         self,
@@ -684,7 +686,7 @@ class JobV3(gss.job.Job):
         timeout_seconds: int = 7200,
         polling_seconds: float = 1.0,
         qubit_indices: Sequence[int] | None = None,
-    ) -> dict[str, int] | list[dict[str, int]]:
+    ) -> dict[str, float] | list[dict[str, float]]:
         """Polls the Superstaq API for counts results (frequency of each measurement outcome).
 
         Args:
@@ -725,11 +727,72 @@ class JobV3(gss.job.Job):
             return _get_marginal_counts(single_counts, qubit_indices)
         return single_counts
 
+    def combined_counts(
+        self,
+        *,
+        timeout_seconds: int = 7200,
+        polling_seconds: float = 1.0,
+        qubit_indices: Sequence[int] | None = None,
+    ) -> dict[str, float]:
+        """Creates a single counts dictionary combining the counts from all circuits.
+
+        Args:
+            timeout_seconds: The total number of seconds to poll for.
+            polling_seconds: The interval with which to poll.
+            qubit_indices: If provided, only include measurements counts of these qubits.
+
+        Returns:
+            A dictionary containing the combined counts from each sub-job.
+
+        Raises:
+            ValueError: If this job's circuits don't have the same number of measurements.
+        """
+        counts = self.counts(
+            timeout_seconds=timeout_seconds,
+            polling_seconds=polling_seconds,
+            qubit_indices=qubit_indices,
+        )
+        combined = sum(map(collections.Counter, counts), collections.Counter())
+        key_lens = {len(key) for key in combined.keys()}
+        if len(key_lens) > 1:
+            raise ValueError("Circuits must have the same number of measurements to be combined.")
+        return dict(combined)
+
+    def _terminal_measurement_qubit_indices(self, index: int) -> list[int]:
+        """Determines the ordered physical qubit indices for each measurement in a compiled circuit.
+
+        Assumes all measurements are terminal.
+
+        Args:
+            index: The index of the compiled circuit for which to return qubit indices.
+
+        Returns:
+            A list of measured qubit indices, ordered as they should appear in (big-endian)
+            bitstrings.
+        """
+        compiled_circuit = self.compiled_circuits(index)
+        assert compiled_circuit.are_all_measurements_terminal()
+
+        if compiled_circuit.has_measurements():
+            key_to_qids: dict[str, tuple[cirq.Qid, ...]] = {}
+            for _, op in compiled_circuit.findall_operations(cirq.is_measurement):
+                key = cirq.measurement_key_name(op)
+                key_to_qids[key] = op.qubits
+
+            qid_list: list[cirq.Qid] = []
+            for key in sorted(key_to_qids):
+                qid_list.extend(key_to_qids[key])
+
+            circuit_qubits = sorted(compiled_circuit.all_qubits())
+            return [circuit_qubits.index(q) for q in qid_list]
+
+        return super()._terminal_measurement_qubit_indices(index)
+
     def __repr__(self) -> str:
         return f"css.JobV3(client={self._client!r}, job_id={self.job_id()!r})"
 
 
-def _get_marginal_counts(counts: dict[str, int], indices: Sequence[int]) -> dict[str, int]:
+def _get_marginal_counts(counts: Mapping[str, float], indices: Sequence[int]) -> dict[str, float]:
     """Compute a marginal distribution, accumulating total counts on specific bits (by index).
 
     Args:
@@ -739,8 +802,9 @@ def _get_marginal_counts(counts: dict[str, int], indices: Sequence[int]) -> dict
     Returns:
         A dictionary of counts on the target indices.
     """
-    target_counts: dict[str, int] = collections.defaultdict(int)
+    target_counts: dict[str, float] = {}
     for bitstring, count in counts.items():
         target_key = "".join([bitstring[index] for index in indices])
+        target_counts.setdefault(target_key, 0)
         target_counts[target_key] += count
     return dict(target_counts)

@@ -232,10 +232,10 @@ class MerminBell(Benchmark):
             cirq.Circuit(), self.stabilizer, self.num_qubits, self.qubits
         )
 
-        stabilizers.prepare_X_matrix(measurement_circuit)
-        stabilizers.row_reduce_X_matrix(measurement_circuit)
-        stabilizers.patch_Z_matrix(measurement_circuit)
-        stabilizers.change_X_to_Z_basis(measurement_circuit)
+        stabilizers.prepare_x_matrix(measurement_circuit)
+        stabilizers.row_reduce_x_matrix(measurement_circuit)
+        stabilizers.patch_z_matrix(measurement_circuit)
+        stabilizers.change_x_to_z_basis(measurement_circuit)
         # terminate with measurements
         measurement_circuit.get_circuit().append(cirq.measure(*self.qubits))
 

@@ -52,23 +52,24 @@ if TYPE_CHECKING:
 
 
 def _exp_decay(
-    x: npt.NDArray[np.float64], A: float, alpha: float, B: float
+    x: npt.NDArray[np.float64], a: float, alpha: float, b: float
 ) -> npt.NDArray[np.float64]:
-    r"""Exponential decay of the form.
+    r"""Exponential decay of the form:.
 
     .. math::
 
-        A \alpha^x + B
+        a \alpha^x + b
 
     Args:
         x: x
-        A: Decay constant
+        a: Decay constant
         alpha: Decay coefficient
-        B: Additive constant
+        b: Additive constant
+
     Returns:
-        Exponential decay applied to x.
+        Exponential decay applied to `x`.
     """
-    return A * (alpha**x) + B
+    return a * (np.asarray(alpha) ** x) + b
 
 
 @dataclass(repr=False)
@@ -187,6 +188,7 @@ class SSB(QCVVExperiment[SSBResults]):
         num_circuits: int,
         cycle_depths: Iterable[int],
         *,
+        qubits: Sequence[cirq.Qid] | None = None,
         random_seed: int | np.random.Generator | None = None,
         _samples: list[Sample] | None = None,
         **kwargs: str,
@@ -196,10 +198,14 @@ class SSB(QCVVExperiment[SSBResults]):
         Args:
             num_circuits: Number of circuits to sample.
             cycle_depths: The cycle depths to sample.
+            qubits: Optional target qubits
             random_seed: An optional seed to use for randomization.
             kwargs: Additional kwargs passed to the base QCVVExperiment.
         """
-        qubits = cirq.LineQubit.range(2)
+        if qubits is None:
+            qubits = cirq.LineQubit.range(2)
+        elif len(qubits) != 2:
+            raise ValueError("SSB benchmarking is only designed for 2 qubits.")
 
         # Moments containing parallel rotations.
         X = css.ParallelRGate(np.pi / 2, 0.0, 2)

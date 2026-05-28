@@ -17,7 +17,7 @@
 from __future__ import annotations
 
 
-class SuperstaqException(Exception):
+class SuperstaqException(Exception):  # noqa: N818
     """An exception for errors coming from Superstaq's API."""
 
     def __init__(self, message: str) -> None:

@@ -64,4 +64,4 @@ def deserialize(serialized_obj: str) -> Any:
     Returns:
         The serialized object.
     """
-    return pickle.loads(str_to_bytes(serialized_obj))
+    return pickle.loads(str_to_bytes(serialized_obj))  # noqa: S301

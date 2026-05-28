@@ -57,8 +57,15 @@ def test_ssb_init() -> None:
     for rot in experiment._reconciliation_rotation:
         assert len(rot) == 4
 
+    qubits = cirq.GridQubit.rect(1, 2)
+    experiment = SSB(num_circuits=10, cycle_depths=[2, 3, 5], qubits=qubits)
+    assert experiment.qubits == tuple(qubits)
+
     with pytest.raises(ValueError, match=r"Cannot perform SSB with a cycle depth of 1."):
         SSB(num_circuits=10, cycle_depths=[1, 2, 3, 5])
+
+    with pytest.raises(ValueError, match=r"SSB benchmarking is only designed for 2 qubits."):
+        SSB(1, [2], qubits=cirq.LineQubit.range(3))
 
 
 @pytest.fixture
