@@ -343,9 +343,9 @@ def test_job(service: css.Service) -> None:
     assert multi_job.counts(0) == {"0": 10}
     assert multi_job.counts(1) == {"1": 10}
 
-    assert job.status() == "Done"
-    assert multi_job.status(0) == "Done"
-    assert multi_job.status(1) == "Done"
+    assert job.status() == gss.models.CircuitStatus.COMPLETED
+    assert multi_job.status(0) == gss.models.CircuitStatus.COMPLETED
+    assert multi_job.status(1) == gss.models.CircuitStatus.COMPLETED
 
     assert job.job_id() == job_id
     assert multi_job.job_id() == multi_job_id
@@ -357,7 +357,7 @@ def test_job(service: css.Service) -> None:
 
     # State retrieved from the server should be the same:
     assert job.counts(0) == {"0": 10}
-    assert job.status() == "Done"
+    assert job.status() == gss.models.CircuitStatus.COMPLETED
     assert job.job_id() == job_id
 
 

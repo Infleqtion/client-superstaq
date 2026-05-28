@@ -128,7 +128,7 @@ class Job:
         while (status := self._status(index)) not in terminal_states:
             if time_waited > timeout_seconds:
                 raise TimeoutError(
-                    f"Timed out while waiting for results. Final status was '{status}'."
+                    f"Timed out while waiting for results. Final status was '{status.value}'"
                 )
             time.sleep(polling_seconds)
             time_waited += polling_seconds
