@@ -13,9 +13,12 @@
 # limitations under the License.
 from __future__ import annotations
 
+import datetime
 import json
 import os
 import textwrap
+import uuid
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 from unittest import mock
 from unittest.mock import MagicMock, patch
@@ -65,7 +68,7 @@ def test_provider_args() -> None:
     assert isinstance(ss_provider._client, gss.superstaq_client._SuperstaqClientV3)
 
     with pytest.raises(ValueError, match=r"`api_version` can only take value 'v0.2.0' or 'v0.3.0'"):
-        ss_provider = qss.SuperstaqProvider(api_key="MY_TOKEN", api_version="v0.4.0")
+        _ = qss.SuperstaqProvider(api_key="MY_TOKEN", api_version="v0.1.0")  # type: ignore[call-overload]
 
 
 @patch.dict(os.environ, {"SUPERSTAQ_API_KEY": ""})
@@ -126,7 +129,7 @@ def test_get_job(mock_post: MagicMock, fake_superstaq_provider: MockSuperstaqPro
         "general_superstaq.superstaq_client._SuperstaqClient.create_job",
         return_value={"job_ids": ["job_id1,job_id2"], "status": "ready"},
     ):
-        job = backend.run([qc, qc], method="dry-run", shots=100)
+        _ = backend.run([qc, qc], method="dry-run", shots=100)
 
     mock_post.return_value.json = lambda: {
         "job_id1": {
@@ -293,6 +296,122 @@ def test_invalid_target_ibmq_compile() -> None:
     provider = qss.SuperstaqProvider(api_key="MY_TOKEN")
     with pytest.raises(ValueError, match=r"'ss_example_qpu' is not a valid IBMQ target."):
         provider.ibmq_compile(qiskit.QuantumCircuit(), target="ss_example_qpu")
+
+
+@pytest.mark.parametrize(
+    ("compile_call", "target"),
+    [
+        pytest.param(
+            lambda p, c, t: p.aqt_compile(c, target=t), "aqt_keysight_qpu", id="aqt_compile"
+        ),
+        pytest.param(
+            lambda p, c, t: p.qscout_compile(c, target=t),
+            "qscout_peregrine_qpu",
+            id="qscout_compile",
+        ),
+        pytest.param(
+            lambda p, c, t: p.cq_compile(c, target=t), "cq_sqale_simulator", id="cq_compile"
+        ),
+        pytest.param(
+            lambda p, c, t: p.ibmq_compile(c, target=t),
+            "ibmq_fez_qpu",
+            id="ibmq_compile",
+        ),
+    ],
+)
+def test_provider_compile_jobV3(
+    compile_call: Callable[
+        [qss.SuperstaqProvider[qss.SuperstaqJobV3], qiskit.QuantumCircuit, str], qss.SuperstaqJobV3
+    ],
+    target: str,
+) -> None:
+    provider = qss.SuperstaqProvider(
+        api_key="key", remote_host="http://example.com", api_version="v0.3.0"
+    )
+
+    mock_client = mock.MagicMock(spec=gss.superstaq_client._SuperstaqClientV3)
+    mock_client.api_version = "v0.3.0"
+    mock_client.max_retry_seconds = 1
+    mock_client.client_kwargs = {}
+    provider._client = mock_client
+
+    job_id = uuid.UUID(int=42)
+    job_id_str = str(job_id)
+
+    input_circuit = qiskit.QuantumCircuit(1)
+    input_circuit.h(0)
+    input_circuit.t(0)
+    compiled_circuit = input_circuit
+
+    with pytest.raises(TypeError, match=r"No valid job id"):
+        _ = compile_call(provider, input_circuit, target)
+
+    job_data = {
+        job_id_str: {
+            "job_type": "compile",
+            "statuses": ["completed"],
+            "status_messages": [None],
+            "user_email": "test@email.com",
+            "target": target,
+            "provider_id": [None],
+            "num_circuits": 1,
+            "compiled_circuits": [qss.serialization.serialize_circuits(compiled_circuit)],
+            "input_circuits": [qss.serialization.serialize_circuits(input_circuit)],
+            "circuit_type": "qiskit",
+            "counts": [None],
+            "results_dicts": [None],
+            "shots": [0],
+            "dry_run": False,
+            "submission_timestamp": datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc),
+            "last_updated_timestamp": [datetime.datetime(2026, 1, 2, tzinfo=datetime.timezone.utc)],
+            "initial_logical_to_physicals": [{0: 5}],
+            "final_logical_to_physicals": [{0: 5}],
+            "logical_qubits": [None],
+            "physical_qubits": [None],
+            "metadata": {},
+        }
+    }
+    jaqal_metadata = {
+        "metadata": {
+            "jaqal_program": "from qscout.v1.std usepulses *\\n\\nregister allqubits[1]\\n\\"
+            "nprepare_all\\nR allqubits[0] -1.5707963267948966 1.5707963267948966\\nRz "
+            "allqubits[0] -2.356194490192345\\nmeasure_all\\n"
+        }
+    }
+    if target.startswith("qscout_"):
+        job_data[job_id_str] |= jaqal_metadata
+
+    mock_client.compile.return_value = {"job_id": job_id_str}
+    mock_client.fetch_jobs.return_value = job_data
+
+    original_job = compile_call(provider, input_circuit, target)
+    assert isinstance(original_job, qss.SuperstaqJobV3)
+
+    # Test retrieving the same job
+    alt_job = provider.get_job(job_id)
+    assert isinstance(alt_job, qss.SuperstaqJobV3)
+    assert original_job == alt_job
+
+    for job in (original_job, alt_job):
+        assert job.job_id() == job_id
+        assert job.status() == qiskit.providers.jobstatus.JobStatus.DONE
+        assert job.done() is True
+        assert job.input_circuits(0) == input_circuit
+        assert job.compiled_circuits(0) == compiled_circuit
+        assert job.input_circuits() == [input_circuit]
+        assert job.compiled_circuits() == [compiled_circuit]
+        assert job.initial_logical_to_physical(0) == {0: 5}
+        assert job.final_logical_to_physical(0) == {0: 5}
+        assert job.shots() == 0
+        assert job.target() == target
+        assert (
+            isinstance(job.jaqal_program(), str)
+            if target.startswith("qscout_")
+            else job.jaqal_program() is None
+        )
+
+        with pytest.raises(NotImplementedError, match=r"There are no result"):
+            _ = job.result().get_counts()
 
 
 @patch(
