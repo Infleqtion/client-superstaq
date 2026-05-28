@@ -302,7 +302,7 @@ def test_json_dict() -> None:
     expected_circuit = cirq.Circuit()
     for op in process.all_operations():
         expected_circuit += op.with_tags("no_compile")
-    experiment = CB(process, ["XX", "YY"], 1, [2, 4], False)
+    experiment = CB(process, ["XX", "YY"], 1, [2, 4], undressed_process=False)
 
     json = experiment._json_dict_()
 
