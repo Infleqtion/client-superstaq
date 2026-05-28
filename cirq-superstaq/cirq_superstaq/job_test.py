@@ -602,7 +602,7 @@ def test_job_status_refresh() -> None:
         job = new_job()
         with patched_requests(job_dict, completed_job_dict) as mocked_request:
             assert job.status() == status
-            assert job.status() == "Done"
+            assert job.status() == gss.models.CircuitStatus.COMPLETED
             assert mocked_request.call_count == 2
             assert mocked_request.call_args.kwargs["json"] == {"job_ids": ["new_job_id"]}
 
@@ -615,6 +615,17 @@ def test_job_status_refresh() -> None:
             assert job.status() == status
             mocked_request.assert_called_once()
             assert mocked_request.call_args.kwargs["json"] == {"job_ids": ["new_job_id"]}
+
+
+def test_job_status_normalization() -> None:
+    assert css.Job._to_circuit_status("Done") == gss.models.CircuitStatus.COMPLETED
+    assert css.Job._to_circuit_status("completed") == gss.models.CircuitStatus.COMPLETED
+    assert (
+        css.Job._to_circuit_status(gss.models.CircuitStatus.COMPLETED)
+        == gss.models.CircuitStatus.COMPLETED
+    )
+    assert css.Job._to_circuit_status("unexpected") == gss.models.CircuitStatus.UNRECOGNIZED
+    assert css.Job._to_circuit_status(None) == gss.models.CircuitStatus.UNRECOGNIZED
 
 
 def test_value_equality(job: css.Job) -> None:
@@ -664,7 +675,7 @@ def test_job_counts_failed(job: css.Job, job_dict: dict[str, object]) -> None:
     with patched_requests({"job_id": job_result}):
         with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match=r"too many qubits"):
             _ = job.counts()
-        assert job.status() == "Failed"
+        assert job.status() == gss.models.CircuitStatus.FAILED
 
 
 @mock.patch("requests.Session.get")
@@ -687,7 +698,7 @@ def test_job_counts_failedV3(mock_get: mock.MagicMock, job_dictV3: dict[str, obj
         gss.SuperstaqUnsuccessfulJobException, match=r"[Circuit 0 - too many qubits]"
     ):
         _ = job.counts(index=0)
-    assert job.status() == "failed"
+    assert job.status() == gss.models.CircuitStatus.FAILED
 
     job_result = modifiy_job_result(
         job_dictV3,
@@ -752,7 +763,7 @@ def test_job_counts_poll_timeout(
     }
     with (
         patched_requests(*[{"job_id": ready_job}] * 20),
-        pytest.raises(TimeoutError, match=r"Ready"),
+        pytest.raises(TimeoutError, match=r"awaiting_submission"),
     ):
         _ = job.counts(timeout_seconds=1, polling_seconds=0.1)
     assert mock_sleep.call_count == 11
@@ -813,10 +824,10 @@ def test_status_with_index(
 
     with patched_requests(job_info):
         # Overall status
-        assert multi_circuit_job.status() == "Running"
+        assert multi_circuit_job.status() == gss.models.CircuitStatus.RUNNING
 
         # Specific job status
-        assert multi_circuit_job.status(index=1) == "Done"
+        assert multi_circuit_job.status(index=1) == gss.models.CircuitStatus.COMPLETED
         assert multi_circuit_job.counts(index=1, timeout_seconds=1, polling_seconds=0.5) == {
             "11": 1
         }
@@ -837,14 +848,14 @@ def test_multijob_overall_status(multi_circuit_job: css.Job) -> None:
 
     # Test that overall status is running since 1/4 of the job is not queued
     with patched_requests(job_info):
-        assert multi_circuit_job.status() == "Running"
+        assert multi_circuit_job.status() == gss.models.CircuitStatus.RUNNING
 
 
 def test_job_getitem(multi_circuit_job: css.Job) -> None:
     job_1 = multi_circuit_job[0]
     assert isinstance(job_1, css.Job)
     assert job_1.job_id() == "job_id1"
-    assert job_1.status() == "Done"
+    assert job_1.status() == gss.models.CircuitStatus.COMPLETED
 
 
 def test_get_marginal_counts() -> None:
