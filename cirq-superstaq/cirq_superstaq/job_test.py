@@ -758,24 +758,30 @@ def test_job_counts_poll_timeout(
     assert mock_sleep.call_count == 11
 
 
-@mock.patch("time.sleep", return_value=None)
-def test_job_counts_poll_timeoutV3(
-    mock_sleep: mock.MagicMock, jobV3: css.JobV3, job_dictV3: dict[str, object]
-) -> None:
-    running_mock = mock.MagicMock()
-    running_response = {
-        str(uuid.UUID(int=42)): modifiy_job_result(job_dictV3, statuses=["running"])
-    }
-    running_mock.json.return_value = running_response
+def test_jobv3_status(jobV3: css.JobV3, job_dictV3: dict[str, object]) -> None:
+    # Update `_job_data` to a failed job
+    jobV3._job_data = gss.models.JobData(
+        **modifiy_job_result(job_dictV3, statuses=["failed", "failed"], counts=[None, None])
+    )
+    assert all(isinstance(jobV3.status(index=i), gss.models.CircuitStatus) for i in range(2))
+    assert all(jobV3.status(index=i) == "failed" for i in range(2))
 
-    with mock.patch("requests.Session.get", side_effect=[running_mock, running_mock]) as mock_get:
-        with pytest.raises(
-            TimeoutError, match=r"Timed out while waiting for results. Final status was 'running'"
-        ):
-            jobV3.counts(index=0, timeout_seconds=5, polling_seconds=10)
 
-        mock_sleep.assert_called_once()
-        assert mock_get.call_count == 2
+def test_job_counts_poll_timeoutV3(jobV3: css.JobV3, job_dictV3: dict[str, object]) -> None:
+    # Update `_job_data` to a still running job
+    jobV3._job_data = gss.models.JobData(
+        **modifiy_job_result(job_dictV3, statuses=["running"], counts=[None])
+    )
+
+    with (
+        mock.patch.object(
+            jobV3, "_refresh_job", autospec=True, return_value=None
+        ) as mock_job_refresh,
+        pytest.raises(TimeoutError, match=r"Final status was"),
+        mock.patch("time.sleep", return_value=None),
+    ):
+        jobV3.counts(index=0, timeout_seconds=1, polling_seconds=0.5)
+    assert mock_job_refresh.call_count == 4
 
 
 @mock.patch("time.sleep", return_value=None)
