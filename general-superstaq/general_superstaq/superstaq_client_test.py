@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import contextlib
 import datetime
+import http
 import io
 import json
 import os
@@ -330,7 +331,7 @@ def test_superstaq_client_needs_accept_terms_of_use(
 
     fake_get_response = mock.MagicMock()
     fake_get_response.ok = False
-    fake_get_response.status_code = requests.codes.unauthorized
+    fake_get_response.status_code = http.HTTPStatus.UNAUTHORIZED.value
     fake_get_response.json.return_value = (
         "You must accept the Terms of Use (superstaq.infleqtion.com/terms_of_use)."
     )
@@ -367,7 +368,7 @@ def test_superstaq_client_validate_email_error(
     client = request.getfixturevalue(client_name)
 
     mock_post.return_value.ok = False
-    mock_post.return_value.status_code = requests.codes.unauthorized
+    mock_post.return_value.status_code = http.HTTPStatus.UNAUTHORIZED.value
     mock_post.return_value.json.return_value = "You must validate your registered email."
 
     with pytest.raises(
@@ -416,7 +417,7 @@ def test_supertstaq_client_create_job(
     client = request.getfixturevalue(client_name)
     api_version = client.api_version
 
-    mock_post.return_value.status_code = requests.codes.ok
+    mock_post.return_value.status_code = http.HTTPStatus.OK.value
     mock_post.return_value.json.return_value = {"job_id": job_id, "num_circuits": 1}
 
     response = client.create_job(
@@ -486,7 +487,7 @@ def test_superstaq_client_create_job_unauthorized(
     client = request.getfixturevalue(client_name)
 
     mock_post.return_value.ok = False
-    mock_post.return_value.status_code = requests.codes.unauthorized
+    mock_post.return_value.status_code = http.HTTPStatus.UNAUTHORIZED.value
 
     with pytest.raises(gss.SuperstaqServerException, match=r"Not authorized"):
         _ = client.create_job({"cirq_circuits": "World"}, target="ss_example_qpu")
@@ -502,7 +503,7 @@ def test_superstaq_client_create_job_not_found(
     client = request.getfixturevalue(client_name)
 
     mock_post.return_value.ok = False
-    mock_post.return_value.status_code = requests.codes.not_found
+    mock_post.return_value.status_code = http.HTTPStatus.NOT_FOUND.value
 
     with pytest.raises(gss.SuperstaqServerException):
         _ = client.create_job({"qiskit_circuits": "World"}, target="ss_example_qpu")
@@ -518,7 +519,7 @@ def test_superstaq_client_create_job_not_retriable(
     client = request.getfixturevalue(client_name)
 
     mock_post.return_value.ok = False
-    mock_post.return_value.status_code = requests.codes.not_implemented
+    mock_post.return_value.status_code = http.HTTPStatus.NOT_IMPLEMENTED.value
 
     with pytest.raises(gss.SuperstaqServerException, match=r"Status code: 501"):
         _ = client.create_job({"cirq_circuits": "World"}, target="ss_example_qpu")
@@ -540,7 +541,7 @@ def test_superstaq_client_create_job_retry(
         verbose=True,
     )
 
-    response1 = mock.MagicMock(ok=False, status_code=requests.codes.service_unavailable)
+    response1 = mock.MagicMock(ok=False, status_code=http.HTTPStatus.SERVICE_UNAVAILABLE.value)
     response1.json.return_value = {"job_id": job_id, "num_circuits": 1}
     response2 = mock.MagicMock(ok=True)
     response2.json.return_value = {"job_id": job_id, "num_circuits": 1}
@@ -584,7 +585,7 @@ def test_superstaq_client_create_job_invalid_json(
     client = request.getfixturevalue(client_name)
 
     response = requests.Response()
-    response.status_code = requests.codes.not_implemented
+    response.status_code = http.HTTPStatus.NOT_IMPLEMENTED.value
     response._content = b"invalid/json"
     mock_post.return_value = response
 
@@ -605,7 +606,7 @@ def test_superstaq_client_create_job_dont_retry_on_timeout(
     client = request.getfixturevalue(client_name)
 
     response = requests.Response()
-    response.status_code = requests.codes.gateway_timeout
+    response.status_code = http.HTTPStatus.GATEWAY_TIMEOUT.value
     response._content = b"invalid/json"
     mock_post.return_value = response
 
@@ -629,7 +630,7 @@ def test_superstaq_client_create_job_timeout(mock_post: mock.MagicMock, api_vers
     )
 
     mock_post.return_value.ok = False
-    mock_post.return_value.status_code = requests.codes.service_unavailable
+    mock_post.return_value.status_code = http.HTTPStatus.SERVICE_UNAVAILABLE.value
 
     with pytest.raises(TimeoutError):
         _ = client.create_job({"qiskit_circuits": "World"}, target="ss_example_qpu")
@@ -648,7 +649,7 @@ def test_superstaq_client_create_job_json(
     client = request.getfixturevalue(client_name)
 
     mock_post.return_value.ok = False
-    mock_post.return_value.status_code = requests.codes.bad_request
+    mock_post.return_value.status_code = http.HTTPStatus.BAD_REQUEST.value
     mock_post.return_value.json.return_value = {
         "message": "foo bar",
         "job_id": job_id,
@@ -1036,7 +1037,7 @@ def test_superstaq_client_fetch_jobs_unauthorized(
 
     with mock.patch(call_type) as mock_call:
         mock_call.return_value.ok = False
-        mock_call.return_value.status_code = requests.codes.unauthorized
+        mock_call.return_value.status_code = http.HTTPStatus.UNAUTHORIZED.value
 
         with pytest.raises(gss.SuperstaqServerException, match=r"Not authorized"):
             _ = client.fetch_jobs([job_id])
@@ -1059,7 +1060,7 @@ def test_superstaq_client_fetch_jobs_not_found(
 
     with mock.patch(call_type) as mock_call:
         mock_call.return_value.ok = False
-        mock_call.return_value.status_code = requests.codes.not_found
+        mock_call.return_value.status_code = http.HTTPStatus.NOT_FOUND.value
 
         with pytest.raises(gss.SuperstaqServerException):
             _ = client.fetch_jobs([job_id])
@@ -1082,7 +1083,7 @@ def test_superstaq_client_fetch_jobs_not_retriable(
 
     with mock.patch(call_type) as mock_call:
         mock_call.return_value.ok = False
-        mock_call.return_value.status_code = requests.codes.bad_request
+        mock_call.return_value.status_code = http.HTTPStatus.BAD_REQUEST.value
 
         with pytest.raises(gss.SuperstaqServerException, match=r"Status code: 400"):
             _ = client.fetch_jobs([job_id])
@@ -1105,7 +1106,7 @@ def test_superstaq_client_fetch_jobs_retry(
 
     response1 = mock.MagicMock()
     response1.ok = False
-    response1.status_code = requests.codes.service_unavailable
+    response1.status_code = http.HTTPStatus.SERVICE_UNAVAILABLE.value
 
     response2 = mock.MagicMock()
     response2.ok = True
@@ -1134,7 +1135,7 @@ def test_superstaq_client_cancel_jobs_unauthorized(
 
     with mock.patch(call_type) as mock_call:
         mock_call.return_value.ok = False
-        mock_call.return_value.status_code = requests.codes.unauthorized
+        mock_call.return_value.status_code = http.HTTPStatus.UNAUTHORIZED.value
 
         with pytest.raises(gss.SuperstaqServerException, match=r"Not authorized"):
             _ = client.cancel_jobs([job_id])
@@ -1157,7 +1158,7 @@ def test_superstaq_client_cancel_jobs_not_found(
 
     with mock.patch(call_type) as mock_call:
         mock_call.return_value.ok = False
-        mock_call.return_value.status_code = requests.codes.not_found
+        mock_call.return_value.status_code = http.HTTPStatus.NOT_FOUND.value
 
         with pytest.raises(gss.SuperstaqServerException):
             _ = client.cancel_jobs([job_id])
@@ -1180,7 +1181,7 @@ def test_superstaq_client_get_cancel_jobs_retriable(
 
     with mock.patch(call_type) as mock_call:
         mock_call.return_value.ok = False
-        mock_call.return_value.status_code = requests.codes.bad_request
+        mock_call.return_value.status_code = http.HTTPStatus.BAD_REQUEST.value
 
         with pytest.raises(gss.SuperstaqServerException, match=r"Status code: 400"):
             _ = client.cancel_jobs([job_id], cq_token=1)
@@ -1201,7 +1202,7 @@ def test_superstaq_client_cancel_jobs_retry(
 ) -> None:
     client = request.getfixturevalue(client_name)
 
-    response1 = mock.MagicMock(ok=False, status_code=requests.codes.service_unavailable)
+    response1 = mock.MagicMock(ok=False, status_code=http.HTTPStatus.SERVICE_UNAVAILABLE.value)
     response2 = mock.MagicMock(ok=True)
     if client.api_version == "v0.3.0":
         response2.json.return_value = {
@@ -2234,7 +2235,7 @@ def test_new_worker(
 ) -> None:
     token = secrets.token_hex(nbytes=32)
     mock_post.return_value = requests.Response()
-    mock_post.return_value.status_code = requests.codes.ok
+    mock_post.return_value.status_code = http.HTTPStatus.OK.value
     mock_post.return_value._content = json.dumps({"worker_name": "worker", "token": token}).encode()
 
     target = "sqale_test_qpu"
@@ -2255,7 +2256,7 @@ def test_regenerate_worker_token(
     token = secrets.token_hex(nbytes=32)
 
     mock_post.return_value = requests.Response()
-    mock_post.return_value.status_code = requests.codes.ok
+    mock_post.return_value.status_code = http.HTTPStatus.OK.value
     mock_post.return_value._content = json.dumps(
         {"worker_name": "sqale_worker", "token": token}
     ).encode()
