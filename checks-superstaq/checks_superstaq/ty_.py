@@ -45,7 +45,6 @@ def run(
     parser.description = textwrap.dedent(
         """
         Runs ty on the repository (typing check).
-        Ignores files in the [repo_root]/examples directory.
         """
     )
 
