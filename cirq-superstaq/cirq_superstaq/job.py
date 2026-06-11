@@ -661,9 +661,10 @@ class JobV3(gss.job.Job):
             A single logical to physical map (if `index` is passed) or list of maps for all input
             circuits.
         """
-        self.wait_until_terminal_state(index, timeout_seconds, polling_seconds)
         if index is None:
             return [self.initial_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
+
+        self.wait_until_terminal_state(index, timeout_seconds, polling_seconds)
 
         # TODO: is it possible for a job failure to not populate this?
         lqs = cirq.read_json(json_text=self.job_data.logical_qubits[index])
@@ -702,9 +703,10 @@ class JobV3(gss.job.Job):
             A single logical to physical map (if `index` is passed) or list of maps for all input
             circuits.
         """
-        self.wait_until_terminal_state(index, timeout_seconds, polling_seconds)
         if index is None:
             return [self.final_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
+
+        self.wait_until_terminal_state(index, timeout_seconds, polling_seconds)
 
         # TODO: is it possible for a job failure to not populate this?
         lqs = cirq.read_json(json_text=self.job_data.logical_qubits[index])
