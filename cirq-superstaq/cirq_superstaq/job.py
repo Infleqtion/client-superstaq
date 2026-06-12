@@ -672,7 +672,6 @@ class JobV3(gss.job.Job):
             index, timeout_seconds, polling_seconds, treat_as_submit_job=False
         )
 
-        # TODO: is it possible for a job failure to not populate this?
         lqs = cirq.read_json(json_text=self.job_data.logical_qubits[index])
         pqs = cirq.read_json(json_text=self.job_data.physical_qubits[index])
 
@@ -716,7 +715,6 @@ class JobV3(gss.job.Job):
             index, timeout_seconds, polling_seconds, treat_as_submit_job=False
         )
 
-        # TODO: is it possible for a job failure to not populate this?
         lqs = cirq.read_json(json_text=self.job_data.logical_qubits[index])
         pqs = cirq.read_json(json_text=self.job_data.physical_qubits[index])
 
