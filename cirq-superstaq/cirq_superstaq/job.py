@@ -574,6 +574,7 @@ class JobV3(gss.job.Job):
             gss.SuperstaqException: If the circuit at the provided `index` has no compiled circuit
                 or, when `index` is not specified, if any of the circuits in the job are missing a
                 compiled circuit.
+            gss.SuperstaqUnsuccessfulJobException: If a failure status is found in the job.
         """
         self.wait_until_terminal_state(
             index, timeout_seconds, polling_seconds, treat_as_submit_job=False
@@ -607,6 +608,9 @@ class JobV3(gss.job.Job):
 
         Returns:
             A string containing the Jaqal program, if available. Otherwise, `None`.
+
+        Raises:
+            gss.SuperstaqUnsuccessfulJobException: If a failure status is found in the job.
         """
         # TODO: Support `index` arg to get a subcircuit program if a list
         self.wait_until_terminal_state(
@@ -614,6 +618,7 @@ class JobV3(gss.job.Job):
             polling_seconds=polling_seconds,
             treat_as_submit_job=False,
         )
+        self._check_if_unsuccessful()
         return self.job_data.metadata.get("jaqal_program")
 
     @overload
@@ -664,6 +669,9 @@ class JobV3(gss.job.Job):
         Returns:
             A single logical to physical map (if `index` is passed) or list of maps for all input
             circuits.
+
+        Raises:
+            gss.SuperstaqUnsuccessfulJobException: If a failure status is found in the job.
         """
         if index is None:
             return [self.initial_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
@@ -671,6 +679,7 @@ class JobV3(gss.job.Job):
         self.wait_until_terminal_state(
             index, timeout_seconds, polling_seconds, treat_as_submit_job=False
         )
+        self._check_if_unsuccessful(index)
 
         lqs = cirq.read_json(json_text=self.job_data.logical_qubits[index])
         pqs = cirq.read_json(json_text=self.job_data.physical_qubits[index])
@@ -707,6 +716,9 @@ class JobV3(gss.job.Job):
         Returns:
             A single logical to physical map (if `index` is passed) or list of maps for all input
             circuits.
+
+        Raises:
+            gss.SuperstaqUnsuccessfulJobException: If a failure status is found in the job.
         """
         if index is None:
             return [self.final_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
@@ -714,6 +726,7 @@ class JobV3(gss.job.Job):
         self.wait_until_terminal_state(
             index, timeout_seconds, polling_seconds, treat_as_submit_job=False
         )
+        self._check_if_unsuccessful(index)
 
         lqs = cirq.read_json(json_text=self.job_data.logical_qubits[index])
         pqs = cirq.read_json(json_text=self.job_data.physical_qubits[index])

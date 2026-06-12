@@ -520,6 +520,7 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
 
         Raises:
             NotImplementedError: The job does not admit retrieving result counts.
+            gss.SuperstaqUnsuccessfulJobException: If a failure status is found in the job.
         """
         if self.job_data.job_type in (gss.models.JobType.COMPILE, gss.models.JobType.CONVERT):
             raise NotImplementedError("There are no result data to be retrieved for this job type.")
@@ -649,6 +650,9 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
 
         Returns:
             A single compiled circuit or list of compiled circuits.
+
+        Raises:
+            gss.SuperstaqUnsuccessfulJobException: If a failure status is found in the job.
         """
         self.wait_until_terminal_state(index, timeout, wait, treat_as_submit_job=False)
         self._check_if_unsuccessful(index)
@@ -689,11 +693,15 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
 
         Returns:
             A string containing the Jaqal program, if available. Otherwise, `None`.
+
+        Raises:
+            gss.SuperstaqUnsuccessfulJobException: If a failure status is found in the job.
         """
         # TODO: Support `index` arg to get a subcircuit program if a list
         self.wait_until_terminal_state(
             timeout_seconds=timeout, polling_seconds=wait, treat_as_submit_job=False
         )
+        self._check_if_unsuccessful()
         return self.job_data.metadata.get("jaqal_program")
 
     @overload
@@ -746,8 +754,12 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         Returns:
             A single logical to physical map (if `index` is passed) or list of maps for all input
             circuits.
+
+        Raises:
+            gss.SuperstaqUnsuccessfulJobException: If a failure status is found in the job.
         """
         self.wait_until_terminal_state(index, timeout, wait, treat_as_submit_job=False)
+        self._check_if_unsuccessful(index)
         if index is None:
             return [self.initial_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
 
@@ -783,8 +795,12 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         Returns:
             A single logical to physical map (if `index` is passed) or list of maps for all input
             circuits.
+
+        Raises:
+            gss.SuperstaqUnsuccessfulJobException: If a failure status is found in the job.
         """
         self.wait_until_terminal_state(index, timeout, wait, treat_as_submit_job=False)
+        self._check_if_unsuccessful(index)
         if index is None:
             return [self.final_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
 
