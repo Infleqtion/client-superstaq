@@ -575,7 +575,9 @@ class JobV3(gss.job.Job):
                 or, when `index` is not specified, if any of the circuits in the job are missing a
                 compiled circuit.
         """
-        self.wait_until_terminal_state(index, timeout_seconds, polling_seconds)
+        self.wait_until_terminal_state(
+            index, timeout_seconds, polling_seconds, treat_as_submit_job=False
+        )
         self._check_if_unsuccessful(index)
 
         if index is None:
@@ -608,7 +610,9 @@ class JobV3(gss.job.Job):
         """
         # TODO: Support `index` arg to get a subcircuit program if a list
         self.wait_until_terminal_state(
-            timeout_seconds=timeout_seconds, polling_seconds=polling_seconds
+            timeout_seconds=timeout_seconds,
+            polling_seconds=polling_seconds,
+            treat_as_submit_job=False,
         )
         return self.job_data.metadata.get("jaqal_program")
 
@@ -664,7 +668,9 @@ class JobV3(gss.job.Job):
         if index is None:
             return [self.initial_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
 
-        self.wait_until_terminal_state(index, timeout_seconds, polling_seconds)
+        self.wait_until_terminal_state(
+            index, timeout_seconds, polling_seconds, treat_as_submit_job=False
+        )
 
         # TODO: is it possible for a job failure to not populate this?
         lqs = cirq.read_json(json_text=self.job_data.logical_qubits[index])
@@ -706,7 +712,9 @@ class JobV3(gss.job.Job):
         if index is None:
             return [self.final_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
 
-        self.wait_until_terminal_state(index, timeout_seconds, polling_seconds)
+        self.wait_until_terminal_state(
+            index, timeout_seconds, polling_seconds, treat_as_submit_job=False
+        )
 
         # TODO: is it possible for a job failure to not populate this?
         lqs = cirq.read_json(json_text=self.job_data.logical_qubits[index])
