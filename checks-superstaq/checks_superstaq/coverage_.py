@@ -140,7 +140,7 @@ def run(
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future_to_pair = {
             executor.submit(
-                _run_on_files_capturing,
+                _run_on_files_and_capture_output,
                 files_requiring_coverage,
                 test_files,
                 coverage_args,
@@ -182,7 +182,7 @@ def _run_on_files(
     return test_returncode
 
 
-def _run_on_files_capturing(
+def _run_on_files_and_capture_output(
     files_requiring_coverage: list[str],
     test_files: list[str],
     coverage_args: list[str],
