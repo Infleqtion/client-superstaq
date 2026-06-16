@@ -216,6 +216,9 @@ def _report(test_returncode: int) -> int:
         stdout=subprocess.DEVNULL,
     )
 
+    # Flush Python's stdout buffer before the subprocess writes directly to it, so captured
+    # test output appears before the coverage report.
+    sys.stdout.flush()
     coverage_returncode = subprocess.call(
         [sys.executable, "-m", "coverage", "report", "--precision=2"],
         cwd=check_utils.root_dir,
