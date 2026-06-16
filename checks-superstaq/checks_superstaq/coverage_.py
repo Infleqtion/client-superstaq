@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 import os
 import subprocess
 import sys
@@ -104,16 +105,17 @@ def run(
         return _report(test_returncode)
 
     # Run checks on individual files, skipping repeats
-    subprocess.check_call(["python", "-m", "coverage", "erase"])
+    subprocess.check_call([sys.executable, "-m", "coverage", "erase"], cwd=check_utils.root_dir)
 
     # Move test files to the end of the file list, so if both "x.py" and "x_test.py" are in `files`
     # both will be included in the coverage report
     files.sort(
         key=lambda file: file.endswith("_test.py") or os.path.basename(file).startswith("test_")
     )
-    coverage_args.append("--append")
-    test_returncode = 0
+    coverage_args.append("--parallel-mode")
 
+    # Build (files_requiring_coverage, test_files) pairs first, then run all concurrently.
+    pairs: list[tuple[list[str], list[str]]] = []
     while files:
         file = files.pop(0)
         test_files = check_utils.get_test_files([file], exclude=exclude, silent=True)
@@ -132,9 +134,24 @@ def run(
                 files_requiring_coverage.append(test_file)
                 files.remove(test_file)
 
-        test_returncode |= _run_on_files(
-            files_requiring_coverage, test_files, coverage_args, pytest_args
-        )
+        pairs.append((files_requiring_coverage, test_files))
+
+    test_returncode = 0
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future_to_pair = {
+            executor.submit(
+                _run_on_files_capturing,
+                files_requiring_coverage,
+                test_files,
+                coverage_args,
+                pytest_args,
+            ): test_files
+            for files_requiring_coverage, test_files in pairs
+        }
+        for future in concurrent.futures.as_completed(future_to_pair):
+            returncode, output = future.result()
+            print(output, end="")  # noqa: T201
+            test_returncode |= returncode
 
     return _report(test_returncode)
 
@@ -147,8 +164,7 @@ def _run_on_files(
 ) -> int:
     """Helper function to run coverage tests on the given files with the given pytest arguments."""
     coverage_args = ["--include=" + ",".join(files_requiring_coverage), *coverage_args]
-
-    test_returncode = subprocess.call(
+    return subprocess.call(
         [
             sys.executable,
             "-m",
@@ -162,7 +178,35 @@ def _run_on_files(
         ],
         cwd=check_utils.root_dir,
     )
-    return test_returncode
+
+
+def _run_on_files_capturing(
+    files_requiring_coverage: list[str],
+    test_files: list[str],
+    coverage_args: list[str],
+    pytest_args: list[str],
+) -> tuple[int, str]:
+    """Like _run_on_files, but captures combined stdout/stderr for safe concurrent printing."""
+    coverage_args = ["--include=" + ",".join(files_requiring_coverage), *coverage_args]
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "coverage",
+            "run",
+            *coverage_args,
+            "-m",
+            "pytest",
+            *test_files,
+            *pytest_args,
+        ],
+        check=False,
+        text=True,
+        cwd=check_utils.root_dir,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    return result.returncode, result.stdout
 
 
 def _report(test_returncode: int) -> int:
