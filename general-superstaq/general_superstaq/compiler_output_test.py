@@ -13,6 +13,7 @@
 # limitations under the License.
 from __future__ import annotations
 
+import json
 import textwrap
 
 import general_superstaq as gss
@@ -78,3 +79,24 @@ def test_compiler_output_eq() -> None:
     ) != gss.compiler_output.CompilerOutput(
         [jaqal_program, jaqal_program_alt], [{0: 0}, {}], [{0: 1}, {}]
     )
+
+
+def test_read_json_jaqal_deserializes_qubit_mappings() -> None:
+    jaqal_program = textwrap.dedent(
+        """\
+        register allqubits[1]
+
+        prepare_all
+        measure_all
+        """
+    )
+    compiler_output = gss.compiler_output.read_json_jaqal(
+        {
+            "jaqal_strs": json.dumps([jaqal_program]),
+            "initial_logical_to_physicals": json.dumps([[(0, 1)], [(2, 3)]]),
+            "final_logical_to_physicals": json.dumps([[(0, 4)], [(2, 5)]]),
+        }
+    )
+
+    assert compiler_output.initial_logical_to_physicals == [{0: 1}, {2: 3}]
+    assert compiler_output.final_logical_to_physicals == [{0: 4}, {2: 5}]

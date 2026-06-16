@@ -21,7 +21,7 @@ import itertools
 import uuid
 from collections.abc import Mapping, Sequence
 from enum import Enum
-from typing import Annotated, Any
+from typing import Annotated, Any, cast
 
 import pydantic.functional_validators
 
@@ -153,7 +153,8 @@ class ExternalProviderCredentials(DefaultPydanticModel):
         Previously CQ tokens were specified via a dict, e.g. `cq_token={"access_token": "token"}`.
         """
         if isinstance(cq_token, Mapping):
-            return cq_token.get("access_token")
+            cq_token_mapping = cast("Mapping[object, object]", cq_token)
+            return cq_token_mapping.get("access_token")
         return cq_token
 
 

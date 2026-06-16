@@ -51,7 +51,7 @@ def test_external_provider_credentials() -> None:
 
     # Old-style CQ credentials
     options_old = {"cq_token": {"access_token": "token"}, "project_id": "123", "org_id": "456"}
-    credentials = gss.models.ExternalProviderCredentials(**options_old)
+    credentials = gss.models.ExternalProviderCredentials.model_validate(options_old)
     assert credentials.cq_token == "token"
     assert credentials.cq_project_id == "123"
     assert credentials.cq_org_id == "456"
@@ -121,7 +121,7 @@ def test_worker_task_results_validation() -> None:
             circuit_ref="f76e84f7-0c65-4f0b-b2d7-14135db3900c",
             status=gss.models.CircuitStatus.COMPLETED,
             successful_shots=10,
-            measurements={"a": [0], "b": [1, 2]},
+            measurements={"a": {0}, "b": {1, 2}},
         )
 
     with pytest.raises(
@@ -132,7 +132,7 @@ def test_worker_task_results_validation() -> None:
             circuit_ref="f76e84f7-0c65-4f0b-b2d7-14135db3900c",
             status=gss.models.CircuitStatus.COMPLETED,
             successful_shots=10,
-            measurements={"101": [0], "01": [1, 2]},
+            measurements={"101": {0}, "01": {1, 2}},
         )
 
     with pytest.raises(
@@ -143,14 +143,14 @@ def test_worker_task_results_validation() -> None:
             circuit_ref="f76e84f7-0c65-4f0b-b2d7-14135db3900c",
             status=gss.models.CircuitStatus.COMPLETED,
             successful_shots=2,
-            measurements={"101": [0], "001": [1, 3]},
+            measurements={"101": {0}, "001": {1, 3}},
         )
 
     _ = gss.models.WorkerTaskResults(
         circuit_ref="f76e84f7-0c65-4f0b-b2d7-14135db3900c",
         status=gss.models.CircuitStatus.COMPLETED,
         successful_shots=4,
-        measurements={"000": [0, 1, 3], "101": [2]},
+        measurements={"000": {0, 1, 3}, "101": {2}},
     )
 
     _ = gss.models.WorkerTaskResults(

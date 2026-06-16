@@ -107,18 +107,18 @@ lint.ignore = [
   "TD003",   # Missing todo link
   "TRY003",  # Raise vanilla args
   # The following are excluded to not conflict with `ruff format`:
-  "COM812",  # Missing trailing comma
-  "COM819",  # Prohibited trailing comma
-  "D206",    # Docstring tab indentation
-  "D300",    # Triple single quotes
-  "E111",    # Indentation with invalid multiple
-  "E114",    # Indentation with invalid multiple comment
-  "E117",    # Over-indented
-  "Q000",    # Bad quotes inline string
-  "Q001",    # Bad quotes multiline string
-  "Q002",    # Bad quotes docstring
-  "Q003",    # Avoidable escaped quote
-  "W191",    # Tab indentation
+  "COM812", # Missing trailing comma
+  "COM819", # Prohibited trailing comma
+  "D206",   # Docstring tab indentation
+  "D300",   # Triple single quotes
+  "E111",   # Indentation with invalid multiple
+  "E114",   # Indentation with invalid multiple comment
+  "E117",   # Over-indented
+  "Q000",   # Bad quotes inline string
+  "Q001",   # Bad quotes multiline string
+  "Q002",   # Bad quotes docstring
+  "Q003",   # Avoidable escaped quote
+  "W191",   # Tab indentation
 ]
 
 # Allow autofix for all enabled rules (when `--fix` is passed)
@@ -194,3 +194,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 licensee = "Infleqtion"
+
+[tool.ty.environment]
+python-version = "3.9"
