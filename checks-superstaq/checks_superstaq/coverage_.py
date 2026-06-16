@@ -101,7 +101,7 @@ def run(
         return 0
 
     if not parsed_args.modular:
-        test_returncode = _run_on_files(files, test_files, coverage_args, pytest_args)
+        test_returncode, _ = _run_on_files(files, test_files, coverage_args, pytest_args)
         return _report(test_returncode)
 
     # Run checks on individual files, skipping repeats
@@ -140,7 +140,7 @@ def run(
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future_to_pair = {
             executor.submit(
-                _run_on_files_and_capture_output,
+                _run_on_files,
                 files_requiring_coverage,
                 test_files,
                 coverage_args,
@@ -161,34 +161,8 @@ def _run_on_files(
     test_files: list[str],
     coverage_args: list[str],
     pytest_args: list[str],
-) -> int:
-    """Helper function to run coverage tests on the given files with the given pytest arguments."""
-    coverage_args = ["--include=" + ",".join(files_requiring_coverage), *coverage_args]
-
-    test_returncode = subprocess.call(
-        [
-            sys.executable,
-            "-m",
-            "coverage",
-            "run",
-            *coverage_args,
-            "-m",
-            "pytest",
-            *test_files,
-            *pytest_args,
-        ],
-        cwd=check_utils.root_dir,
-    )
-    return test_returncode
-
-
-def _run_on_files_and_capture_output(
-    files_requiring_coverage: list[str],
-    test_files: list[str],
-    coverage_args: list[str],
-    pytest_args: list[str],
 ) -> tuple[int, str]:
-    """Like _run_on_files, but captures combined stdout/stderr for safe concurrent printing."""
+    """Helper function to run coverage tests on the given files with the given pytest arguments."""
     coverage_args = ["--include=" + ",".join(files_requiring_coverage), *coverage_args]
     result = subprocess.run(
         [
