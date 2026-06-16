@@ -164,7 +164,8 @@ def _run_on_files(
 ) -> int:
     """Helper function to run coverage tests on the given files with the given pytest arguments."""
     coverage_args = ["--include=" + ",".join(files_requiring_coverage), *coverage_args]
-    return subprocess.call(
+
+    test_returncode = subprocess.call(
         [
             sys.executable,
             "-m",
@@ -178,6 +179,7 @@ def _run_on_files(
         ],
         cwd=check_utils.root_dir,
     )
+    return test_returncode
 
 
 def _run_on_files_capturing(
