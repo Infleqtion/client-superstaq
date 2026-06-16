@@ -104,11 +104,20 @@ def run(
         test_returncode, _ = _run_on_files(files, test_files, coverage_args, pytest_args)
         return _report(test_returncode)
 
-    # Run checks on individual files, skipping repeats
+    return _report(_run_modular(files, coverage_args, pytest_args, exclude))
+
+
+def _run_modular(
+    files: list[str],
+    coverage_args: list[str],
+    pytest_args: list[str],
+    exclude: str | Iterable[str],
+) -> int:
+    """Run modular coverage checks concurrently, one (source, test) pair per subprocess."""
     subprocess.check_call([sys.executable, "-m", "coverage", "erase"], cwd=check_utils.root_dir)
 
-    # Move test files to the end of the file list, so if both "x.py" and "x_test.py" are in `files`
-    # both will be included in the coverage report
+    # Move test files to the end of the file list, so if both "x.py" and "x_test.py" are in
+    # `files` both will be included in the coverage report.
     files.sort(
         key=lambda file: file.endswith("_test.py") or os.path.basename(file).startswith("test_")
     )
@@ -138,22 +147,18 @@ def run(
 
     test_returncode = 0
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        future_to_pair = {
+        jobs = [
             executor.submit(
-                _run_on_files,
-                files_requiring_coverage,
-                test_files,
-                coverage_args,
-                pytest_args,
-            ): test_files
+                _run_on_files, files_requiring_coverage, test_files, coverage_args, pytest_args
+            )
             for files_requiring_coverage, test_files in pairs
-        }
-        for future in concurrent.futures.as_completed(future_to_pair):
+        ]
+        for future in concurrent.futures.as_completed(jobs):
             returncode, output = future.result()
             print(output, end="")  # noqa: T201
             test_returncode |= returncode
 
-    return _report(test_returncode)
+    return test_returncode
 
 
 def _run_on_files(
