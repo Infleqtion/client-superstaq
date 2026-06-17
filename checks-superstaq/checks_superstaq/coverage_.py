@@ -126,7 +126,7 @@ def _run_modular(
     exclude: str | Iterable[str],
     num_workers: int,
 ) -> int:
-    """Run modular coverage checks concurrently, one (source, test) pair per subprocess."""
+    """Run modular coverage checks.  If num_workers != 1, these checks are run concurrently."""
     subprocess.check_call([sys.executable, "-m", "coverage", "erase"], cwd=check_utils.root_dir)
 
     # Move test files to the end of the file list, so if both "x.py" and "x_test.py" are in
