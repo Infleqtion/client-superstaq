@@ -50,6 +50,16 @@ def run(
         help="Check that each file is covered by its own test file.",
     )
     parser.add_argument(
+        "-j",
+        "--num_workers",
+        type=int,
+        default=1,
+        help="Parallelize modular coverage test across this many concurrent threads. '0' is"
+        " interpreted as 'the default number used by concurrent.futures.ThreadPoolExecutor', which"
+        " is 'min(32, (os.cpu_count() or 1) + 4)' at the time of writing. Only relevant for modular"
+        " coverage.",
+    )
+    parser.add_argument(
         "--branch",
         action="store_true",
         help="Also require all branches to be covered (same as `coverage run --branch`).",
@@ -101,10 +111,12 @@ def run(
         return 0
 
     if not parsed_args.modular:
-        test_returncode, _ = _run_on_files(files, test_files, coverage_args, pytest_args)
-        return _report(test_returncode)
+        result = _run_on_files(files, test_files, coverage_args, pytest_args)
+        return result.returncode
 
-    return _report(_run_modular(files, coverage_args, pytest_args, exclude))
+    return _report(
+        _run_modular(files, coverage_args, pytest_args, exclude, parsed_args.num_workers)
+    )
 
 
 def _run_modular(
@@ -112,6 +124,7 @@ def _run_modular(
     coverage_args: list[str],
     pytest_args: list[str],
     exclude: str | Iterable[str],
+    num_workers: int,
 ) -> int:
     """Run modular coverage checks concurrently, one (source, test) pair per subprocess."""
     subprocess.check_call([sys.executable, "-m", "coverage", "erase"], cwd=check_utils.root_dir)
@@ -121,9 +134,9 @@ def _run_modular(
     files.sort(
         key=lambda file: file.endswith("_test.py") or os.path.basename(file).startswith("test_")
     )
-    coverage_args.append("--parallel-mode")
+    coverage_args.append("--append" if num_workers == 1 else "--parallel-mode")
 
-    # Build (files_requiring_coverage, test_files) pairs first, then run all concurrently.
+    # Build (files_requiring_coverage, test_files) pairs.
     pairs: list[tuple[list[str], list[str]]] = []
     while files:
         file = files.pop(0)
@@ -146,17 +159,27 @@ def _run_modular(
         pairs.append((files_requiring_coverage, test_files))
 
     test_returncode = 0
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        jobs = [
-            executor.submit(
-                _run_on_files, files_requiring_coverage, test_files, coverage_args, pytest_args
-            )
-            for files_requiring_coverage, test_files in pairs
-        ]
-        for future in concurrent.futures.as_completed(jobs):
-            returncode, output = future.result()
-            print(output, end="")  # noqa: T201
-            test_returncode |= returncode
+    if num_workers == 1:
+        for files_requiring_coverage, test_files in pairs:
+            result = _run_on_files(files_requiring_coverage, test_files, coverage_args, pytest_args)
+            test_returncode |= result.returncode
+    else:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers or None) as executor:
+            jobs = [
+                executor.submit(
+                    _run_on_files,
+                    files_requiring_coverage,
+                    test_files,
+                    coverage_args,
+                    pytest_args,
+                    capture_output=True,
+                )
+                for files_requiring_coverage, test_files in pairs
+            ]
+            for future in concurrent.futures.as_completed(jobs):
+                result = future.result()
+                print(result.stdout, end="")  # noqa: T201
+                test_returncode |= result.returncode
 
     return test_returncode
 
@@ -166,10 +189,12 @@ def _run_on_files(
     test_files: list[str],
     coverage_args: list[str],
     pytest_args: list[str],
-) -> tuple[int, str]:
+    *,
+    capture_output: bool = False,
+) -> subprocess.CompletedProcess:
     """Helper function to run coverage tests on the given files with the given pytest arguments."""
     coverage_args = ["--include=" + ",".join(files_requiring_coverage), *coverage_args]
-    result = subprocess.run(
+    return subprocess.run(
         [
             sys.executable,
             "-m",
@@ -183,11 +208,9 @@ def _run_on_files(
         ],
         check=False,
         text=True,
-        cwd=check_utils.root_dir,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        stdout=subprocess.PIPE if capture_output else None,
+        stderr=subprocess.STDOUT if capture_output else None,
     )
-    return result.returncode, result.stdout
 
 
 def _report(test_returncode: int) -> int:
