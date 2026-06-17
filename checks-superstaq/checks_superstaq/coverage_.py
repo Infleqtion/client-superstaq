@@ -160,10 +160,12 @@ def _run_modular(
 
     test_returncode = 0
     if num_workers == 1:
+        # Run modular checks one at a time.
         for files_requiring_coverage, test_files in pairs:
             result = _run_on_files(files_requiring_coverage, test_files, coverage_args, pytest_args)
             test_returncode |= result.returncode
     else:
+        # Run modular checks concurrently.
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers or None) as executor:
             jobs = [
                 executor.submit(
