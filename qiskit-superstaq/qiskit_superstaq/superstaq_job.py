@@ -651,7 +651,7 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
             A single compiled circuit or list of compiled circuits.
         """
         self.wait_until_terminal_state(index, timeout, wait, check_until_compile=True)
-        self._check_if_unsuccessful(index)
+
         if index is None:
             if all(c is None for c in self.job_data.compiled_circuits):
                 raise gss.SuperstaqException(f"The job {self._job_id} has no compiled circuits.")

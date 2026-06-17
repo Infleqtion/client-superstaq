@@ -578,7 +578,6 @@ class JobV3(gss.job.Job):
         self.wait_until_terminal_state(
             index, timeout_seconds, polling_seconds, check_until_compile=True
         )
-        self._check_if_unsuccessful(index)
 
         if index is None:
             if any(c is None for c in self.job_data.compiled_circuits):
