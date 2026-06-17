@@ -51,13 +51,13 @@ def run(
     )
     parser.add_argument(
         "-j",
-        "--num_workers",
+        "--jobs",
         type=int,
         default=1,
         help="Parallelize modular coverage test across this many concurrent threads. '0' is"
         " interpreted as 'the default number used by concurrent.futures.ThreadPoolExecutor', which"
-        " is 'min(32, (os.cpu_count() or 1) + 4)' at the time of writing. Only relevant for modular"
-        " coverage.",
+        " is 'min(32, (os.cpu_count() or 1) + 4)' at the time of writing. This argument is only"
+        " relevant for modular coverage.",
     )
     parser.add_argument(
         "--branch",
@@ -114,9 +114,7 @@ def run(
         result = _run_on_files(files, test_files, coverage_args, pytest_args)
         return result.returncode
 
-    return _report(
-        _run_modular(files, coverage_args, pytest_args, exclude, parsed_args.num_workers)
-    )
+    return _report(_run_modular(files, coverage_args, pytest_args, exclude, parsed_args.jobs))
 
 
 def _run_modular(
@@ -124,7 +122,7 @@ def _run_modular(
     coverage_args: list[str],
     pytest_args: list[str],
     exclude: str | Iterable[str],
-    num_workers: int,
+    num_jobs: int,
 ) -> int:
     """Run modular coverage checks.  If num_workers != 1, these checks are run concurrently."""
     subprocess.check_call([sys.executable, "-m", "coverage", "erase"], cwd=check_utils.root_dir)
@@ -158,7 +156,7 @@ def _run_modular(
         pairs.append((files_requiring_coverage, test_files))
 
     test_returncode = 0
-    if num_workers == 1:
+    if num_jobs == 1:
         # Run modular checks one at a time.
         coverage_args.append("--append")
         for files_requiring_coverage, test_files in pairs:
@@ -167,7 +165,7 @@ def _run_modular(
     else:
         # Run modular checks concurrently.
         coverage_args.append("--parallel-mode")
-        with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers or None) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=num_jobs or None) as executor:
             jobs = [
                 executor.submit(
                     _run_on_files,
