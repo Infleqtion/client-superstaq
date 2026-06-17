@@ -654,7 +654,7 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         Raises:
             gss.SuperstaqUnsuccessfulJobException: If a failure status is found in the job.
         """
-        self.wait_until_terminal_state(index, timeout, wait, treat_as_submit_job=False)
+        self.wait_until_terminal_state(index, timeout, wait, check_until_compile=True)
         self._check_if_unsuccessful(index)
         if index is None:
             if all(c is None for c in self.job_data.compiled_circuits):
@@ -699,7 +699,7 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         """
         # TODO: Support `index` arg to get a subcircuit program if a list
         self.wait_until_terminal_state(
-            timeout_seconds=timeout, polling_seconds=wait, treat_as_submit_job=False
+            timeout_seconds=timeout, polling_seconds=wait, check_until_compile=True
         )
         self._check_if_unsuccessful()
         return self.job_data.metadata.get("jaqal_program")
@@ -758,7 +758,7 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         Raises:
             gss.SuperstaqUnsuccessfulJobException: If a failure status is found in the job.
         """
-        self.wait_until_terminal_state(index, timeout, wait, treat_as_submit_job=False)
+        self.wait_until_terminal_state(index, timeout, wait, check_until_compile=True)
         self._check_if_unsuccessful(index)
         if index is None:
             return [self.initial_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
@@ -799,7 +799,7 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         Raises:
             gss.SuperstaqUnsuccessfulJobException: If a failure status is found in the job.
         """
-        self.wait_until_terminal_state(index, timeout, wait, treat_as_submit_job=False)
+        self.wait_until_terminal_state(index, timeout, wait, check_until_compile=True)
         self._check_if_unsuccessful(index)
         if index is None:
             return [self.final_logical_to_physical(i) for i in range(self.job_data.num_circuits)]

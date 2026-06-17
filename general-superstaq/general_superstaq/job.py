@@ -105,7 +105,7 @@ class Job:
         index: int | None = None,
         timeout_seconds: float | None = None,
         polling_seconds: float = 5,
-        treat_as_submit_job: bool = True,
+        check_until_compile: bool = False,
     ) -> None:
         """Waits until either the job is done or some error in the job occurs.
 
@@ -115,13 +115,13 @@ class Job:
             timeout_seconds: Optional total number of seconds to poll for. Otherwise, uses the
                 client instance's max retry seconds.
             polling_seconds: The time interval with which to poll. Defaults to 5.
-            treat_as_submit_job: Boolean flag to consider terminal states corresponding to SUBMIT or
-                SIMULATE jobs. Defaults to `True`
+            check_until_compile: Boolean flag to consider circuit states considered terminal after
+                compilation is complete. Defaults to `False`.
         """
         terminal_states = (
-            gss.models.TERMINAL_CIRCUIT_STATES
-            if treat_as_submit_job
-            else gss.models.TERMINAL_COMPILE_STATES
+            gss.models.TERMINAL_COMPILE_STATES
+            if check_until_compile
+            else gss.models.TERMINAL_CIRCUIT_STATES
         )
         time_waited: float = 0.0
         timeout_seconds = timeout_seconds or self._client.max_retry_seconds

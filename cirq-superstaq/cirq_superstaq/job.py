@@ -577,7 +577,7 @@ class JobV3(gss.job.Job):
             gss.SuperstaqUnsuccessfulJobException: If a failure status is found in the job.
         """
         self.wait_until_terminal_state(
-            index, timeout_seconds, polling_seconds, treat_as_submit_job=False
+            index, timeout_seconds, polling_seconds, check_until_compile=True
         )
         self._check_if_unsuccessful(index)
 
@@ -616,7 +616,7 @@ class JobV3(gss.job.Job):
         self.wait_until_terminal_state(
             timeout_seconds=timeout_seconds,
             polling_seconds=polling_seconds,
-            treat_as_submit_job=False,
+            check_until_compile=True,
         )
         self._check_if_unsuccessful()
         return self.job_data.metadata.get("jaqal_program")
@@ -677,7 +677,7 @@ class JobV3(gss.job.Job):
             return [self.initial_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
 
         self.wait_until_terminal_state(
-            index, timeout_seconds, polling_seconds, treat_as_submit_job=False
+            index, timeout_seconds, polling_seconds, check_until_compile=True
         )
         self._check_if_unsuccessful(index)
 
@@ -724,7 +724,7 @@ class JobV3(gss.job.Job):
             return [self.final_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
 
         self.wait_until_terminal_state(
-            index, timeout_seconds, polling_seconds, treat_as_submit_job=False
+            index, timeout_seconds, polling_seconds, check_until_compile=True
         )
         self._check_if_unsuccessful(index)
 
