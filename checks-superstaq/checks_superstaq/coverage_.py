@@ -162,26 +162,26 @@ def _run_modular(
         for files_requiring_coverage, test_files in pairs:
             result = _run_on_files(files_requiring_coverage, test_files, coverage_args, pytest_args)
             test_returncode |= result.returncode
-    else:
-        # Run modular checks concurrently
-        coverage_args.append("--parallel-mode")
-        with concurrent.futures.ThreadPoolExecutor(max_workers=num_jobs or None) as executor:
-            jobs = [
-                executor.submit(
-                    _run_on_files,
-                    files_requiring_coverage,
-                    test_files,
-                    coverage_args,
-                    pytest_args,
-                    capture_output=True,
-                )
-                for files_requiring_coverage, test_files in pairs
-            ]
-            for future in concurrent.futures.as_completed(jobs):
-                result = future.result()
-                print(result.stdout, end="")  # noqa: T201
-                test_returncode |= result.returncode
+        return test_returncode
 
+    # Run modular checks concurrently
+    coverage_args.append("--parallel-mode")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_jobs or None) as executor:
+        jobs = [
+            executor.submit(
+                _run_on_files,
+                files_requiring_coverage,
+                test_files,
+                coverage_args,
+                pytest_args,
+                capture_output=True,
+            )
+            for files_requiring_coverage, test_files in pairs
+        ]
+        for future in concurrent.futures.as_completed(jobs):
+            result = future.result()
+            print(result.stdout, end="")  # noqa: T201
+            test_returncode |= result.returncode
     return test_returncode
 
 
