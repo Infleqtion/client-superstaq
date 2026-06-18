@@ -54,10 +54,10 @@ def run(
         "--jobs",
         type=int,
         default=1,
-        help="Parallelize modular coverage test across this many concurrent threads. '0' is"
-        " interpreted as 'the default number used by concurrent.futures.ThreadPoolExecutor', which"
-        " is 'min(32, (os.cpu_count() or 1) + 4)' at the time of writing. This argument is only"
-        " relevant for modular coverage.",
+        help="Parallelize modular coverage test across this many concurrent threads. This argument"
+        " is ignored for non-modular coverage tests. '0' is interpreted as 'the default number used"
+        " by concurrent.futures.ThreadPoolExecutor', which is 'min(32, (os.cpu_count() or 1) + 4)'"
+        " at the time of writing.",
     )
     parser.add_argument(
         "--branch",
@@ -127,13 +127,13 @@ def _run_modular(
     """Run modular coverage checks.  If num_workers != 1, these checks are run concurrently."""
     subprocess.check_call([sys.executable, "-m", "coverage", "erase"], cwd=check_utils.root_dir)
 
-    # Move test files to the end of the file list, so if both "x.py" and "x_test.py" are in
-    # `files` both will be included in the coverage report.
+    # Move test files to the end of the file list, so if both "x.py" and "x_test.py" are in `files`
+    # both will be included in the coverage report
     files.sort(
         key=lambda file: file.endswith("_test.py") or os.path.basename(file).startswith("test_")
     )
 
-    # Build (files_requiring_coverage, test_files) pairs.
+    # Build (files_requiring_coverage, test_files) pairs
     pairs: list[tuple[list[str], list[str]]] = []
     while files:
         file = files.pop(0)
@@ -157,13 +157,13 @@ def _run_modular(
 
     test_returncode = 0
     if num_jobs == 1:
-        # Run modular checks one at a time.
+        # Run modular checks one at a time
         coverage_args.append("--append")
         for files_requiring_coverage, test_files in pairs:
             result = _run_on_files(files_requiring_coverage, test_files, coverage_args, pytest_args)
             test_returncode |= result.returncode
     else:
-        # Run modular checks concurrently.
+        # Run modular checks concurrently
         coverage_args.append("--parallel-mode")
         with concurrent.futures.ThreadPoolExecutor(max_workers=num_jobs or None) as executor:
             jobs = [
@@ -222,7 +222,7 @@ def _report(test_returncode: int) -> int:
     )
 
     # Flush Python's stdout buffer before the subprocess writes directly to it, so captured
-    # test output appears before the coverage report.
+    # test output appears before the coverage report
     sys.stdout.flush()
     coverage_returncode = subprocess.call(
         [sys.executable, "-m", "coverage", "report", "--precision=2"],
