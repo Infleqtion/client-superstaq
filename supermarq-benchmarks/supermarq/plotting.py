@@ -23,10 +23,16 @@ import numpy as np
 from matplotlib.patches import Circle
 from matplotlib.projections import register_projection
 from matplotlib.projections.polar import PolarAxes
+from matplotlib.ticker import StrMethodFormatter
 from sklearn.linear_model import LinearRegression
 
 if TYPE_CHECKING:
     import numpy.typing as npt
+    from matplotlib.axes import Axes
+    from matplotlib.image import AxesImage
+    from matplotlib.lines import Line2D
+    from matplotlib.patches import Polygon
+    from matplotlib.text import Text
 
 
 def plot_results(
@@ -252,13 +258,13 @@ def plot_benchmark(
 
 def heatmap(
     data: npt.NDArray[np.floating[Any]],
-    ax: mpl.axes.Axes,
+    ax: Axes,
     row_labels: list[str],
     col_labels: list[str],
     cbar_kw: dict[str, Any] | None = None,
     cbarlabel: str = "",
     **kwargs: Any,
-) -> tuple[mpl.image.AxesImage, Any]:
+) -> tuple[AxesImage, Any]:
     """Create a heatmap from a numpy array and two lists of labels.
 
     Args:
@@ -317,13 +323,13 @@ def heatmap(
 
 
 def annotate_heatmap(
-    im: mpl.image.AxesImage,
+    im: AxesImage,
     data: npt.NDArray[np.floating[Any]] | None = None,
     valfmt: Any = "{x:.2f}",
     textcolors: tuple[str, str] = ("black", "white"),
     threshold: float | None = None,
     **textkw: Any,
-) -> list[mpl.text.Text]:
+) -> list[Text]:
     """Annotate the given heatmap.
 
     Args:
@@ -342,10 +348,23 @@ def annotate_heatmap(
         List of the text annotations.
     """
     if data is None:
-        data = np.asarray(im.get_array())
+        data = np.asarray(im.get_array(), dtype=np.float64)
+    else:
+        data = np.asarray(data, dtype=np.float64)
+
+    normalized_data = np.asarray(im.norm(data), dtype=np.float64)
+
+    def _norm_scalar_val(value: float) -> float:
+        return float(
+            np.asarray(im.norm(np.asarray([value], dtype=np.float64)), dtype=np.float64).item()
+        )
 
     # Normalize the threshold to the images color range.
-    threshold = im.norm(threshold) if threshold is not None else im.norm(data.max()) / 2.0
+    normalized_threshold: float = (
+        _norm_scalar_val(threshold)
+        if threshold is not None
+        else _norm_scalar_val(float(np.max(data))) / 2.0
+    )
 
     # Set default alignment to center, but allow it to be
     # overwritten by textkw.
@@ -354,14 +373,14 @@ def annotate_heatmap(
 
     # Get the formatter in case a string is supplied
     if isinstance(valfmt, str):
-        valfmt = mpl.ticker.StrMethodFormatter(valfmt)
+        valfmt = StrMethodFormatter(valfmt)
 
     # Loop over the data and create a `Text` for each "pixel".
     # Change the text's color depending on the data.
     texts = []
     for i in range(data.shape[0]):
         for j in range(data.shape[1]):
-            kw.update(color=textcolors[int(im.norm(data[i, j]) > threshold)])
+            kw.update(color=textcolors[int(normalized_data[i, j] > normalized_threshold)])
             text = im.axes.text(j, i, valfmt(data[i, j], None), **kw)
             texts.append(text)
 
@@ -414,7 +433,7 @@ class RadarAxesMeta(PolarAxes):
         # rotate plot such that the first axis is at the top
         self.set_theta_zero_location("N")
 
-    def fill(self, *args: Any, closed: bool = True, **kwargs: Any) -> list[mpl.patches.Polygon]:
+    def fill(self, *args: Any, closed: bool = True, **kwargs: Any) -> list[Polygon]:
         """Method to override fill so that line is closed by default.
 
         Args:
@@ -427,7 +446,7 @@ class RadarAxesMeta(PolarAxes):
         """
         return super().fill(*args, closed=closed, **kwargs)
 
-    def plot(self, *args: Any, **kwargs: Any) -> list[mpl.lines.Line2D]:
+    def plot(self, *args: Any, **kwargs: Any) -> list[Line2D]:
         """Overrides plot so that line is closed by default.
 
         Args:
@@ -443,7 +462,7 @@ class RadarAxesMeta(PolarAxes):
 
         return lines
 
-    def _close_line(self, line: mpl.lines.Line2D) -> None:
+    def _close_line(self, line: Line2D) -> None:
         """A method to close the input line.
 
         Args:
@@ -465,7 +484,7 @@ class RadarAxesMeta(PolarAxes):
         """
         self.set_thetagrids(np.degrees(self.theta), labels, fontsize=14)
 
-    def _gen_axes_patch(self) -> mpl.patches.Circle:
+    def _gen_axes_patch(self) -> Circle:
         # The Axes patch must be centered at (0.5, 0.5) and of radius 0.5
         # in axes coordinates.
         return Circle((0.5, 0.5), 0.5)
