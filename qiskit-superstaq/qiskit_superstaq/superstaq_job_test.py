@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import datetime
+import http
 import json
 import textwrap
 import uuid
@@ -45,7 +46,7 @@ def mock_response(status_str: str) -> dict[str, str | int | dict[str, int] | Non
 
 def _mocked_request_response(content: object) -> requests.Response:
     response = requests.Response()
-    response.status_code = requests.codes.OK
+    response.status_code = http.HTTPStatus.OK.value
     response._content = json.dumps(content).encode()
     return response
 

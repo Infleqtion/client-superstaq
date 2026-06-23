@@ -13,6 +13,7 @@
 # limitations under the License.
 from __future__ import annotations
 
+import http
 import uuid
 from unittest import mock
 
@@ -31,11 +32,11 @@ def test_get_next_task(mock_get: mock.MagicMock) -> None:
     worker_task = gss.models.WorkerTask(circuit_ref=task_id, circuit='["circuit"]', shots=10)
 
     response1 = requests.Response()
-    response1.status_code = requests.codes.ok
+    response1.status_code = http.HTTPStatus.OK.value
     response1._content = worker_task.model_dump_json().encode()
 
     response2 = requests.Response()
-    response2.status_code = requests.codes.ok
+    response2.status_code = http.HTTPStatus.OK.value
     response2._content = b"null"
 
     mock_get.side_effect = [response1, response2, response2]
@@ -55,7 +56,7 @@ def test_unaccepted_terms_of_use(mock_get: mock.MagicMock) -> None:
     machine_api = MachineAPI("machine_api", api_key="token")
 
     mock_get.return_value = requests.Response()
-    mock_get.return_value.status_code = requests.codes.unauthorized
+    mock_get.return_value.status_code = http.HTTPStatus.UNAUTHORIZED.value
     mock_get.return_value._content = (
         b'"You must accept the Terms of Use (superstaq.infleqtion.com/terms_of_use)."'
     )
@@ -75,7 +76,7 @@ def test_get_task_status(mock_get: mock.MagicMock) -> None:
     )
 
     mock_get.return_value = requests.Response()
-    mock_get.return_value.status_code = requests.codes.ok
+    mock_get.return_value.status_code = http.HTTPStatus.OK.value
     mock_get.return_value._content = worker_task_status.model_dump_json().encode()
 
     status = machine_api.get_task_status(task_id)
