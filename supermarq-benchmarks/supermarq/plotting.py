@@ -21,8 +21,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Circle
-from matplotlib.projections import register_projection
-from matplotlib.projections.polar import PolarAxes
+from matplotlib.projections import polar, register_projection
 from matplotlib.ticker import StrMethodFormatter
 from sklearn.linear_model import LinearRegression
 
@@ -416,7 +415,7 @@ def radar_factory(num_vars: int) -> npt.NDArray[np.float64]:
     return theta
 
 
-class RadarAxesMeta(PolarAxes):
+class RadarAxesMeta(polar.PolarAxes):
     """A helper class to generate feature-vector plots."""
 
     name = "radar"
