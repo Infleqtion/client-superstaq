@@ -15,10 +15,9 @@
 from __future__ import annotations
 
 from collections.abc import Hashable
-from typing import TYPE_CHECKING, Any, Literal, TypedDict
+from typing import TYPE_CHECKING, Any, Literal, TypedDict, TypeVar
 
 import pydantic
-from typing_extensions import TypeVar
 
 from .superstaq_client import ApiVersion
 

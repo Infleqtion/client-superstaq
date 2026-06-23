@@ -759,14 +759,15 @@ def test_job_counts_poll_timeoutV3(jobV3: css.JobV3, job_dictV3: dict[str, objec
         **modifiy_job_result(job_dictV3, statuses=["running"], counts=[None])
     )
 
-    timeout_exc = TimeoutError("Timed out while waiting for results. Final status was 'running'.")
     with (
-        mock.patch.object(jobV3, "wait_until_terminal_state", side_effect=timeout_exc) as wait,
-        pytest.raises(TimeoutError, match=r"Final status was 'running'"),
+        mock.patch.object(
+            jobV3, "_refresh_job", autospec=True, return_value=None
+        ) as mock_job_refresh,
+        pytest.raises(TimeoutError, match=r"Final status was"),
+        mock.patch("time.sleep", return_value=None),
     ):
-        jobV3.counts(index=0, timeout_seconds=5, polling_seconds=10)
-
-    wait.assert_called_once_with(0, 5, 10)
+        jobV3.counts(index=0, timeout_seconds=1, polling_seconds=0.5)
+    assert mock_job_refresh.call_count == 4
 
 
 @mock.patch("time.sleep", return_value=None)

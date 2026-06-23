@@ -650,8 +650,8 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         Returns:
             A single compiled circuit or list of compiled circuits.
         """
-        self.wait_until_terminal_state(index, timeout, wait)
-        self._check_if_unsuccessful(index)
+        self.wait_until_terminal_state(index, timeout, wait, check_until_compile=True)
+
         if index is None:
             if all(c is None for c in self.job_data.compiled_circuits):
                 raise gss.SuperstaqException(f"The job {self._job_id} has no compiled circuits.")
@@ -691,7 +691,9 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
             A string containing the Jaqal program, if available. Otherwise, `None`.
         """
         # TODO: Support `index` arg to get a subcircuit program if a list
-        self.wait_until_terminal_state(timeout_seconds=timeout, polling_seconds=wait)
+        self.wait_until_terminal_state(
+            timeout_seconds=timeout, polling_seconds=wait, check_until_compile=True
+        )
         return self.job_data.metadata.get("jaqal_program")
 
     @overload
@@ -745,7 +747,7 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
             A single logical to physical map (if `index` is passed) or list of maps for all input
             circuits.
         """
-        self.wait_until_terminal_state(index, timeout, wait)
+        self.wait_until_terminal_state(index, timeout, wait, check_until_compile=True)
         if index is None:
             return [self.initial_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
 
@@ -782,7 +784,7 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
             A single logical to physical map (if `index` is passed) or list of maps for all input
             circuits.
         """
-        self.wait_until_terminal_state(index, timeout, wait)
+        self.wait_until_terminal_state(index, timeout, wait, check_until_compile=True)
         if index is None:
             return [self.final_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
 

@@ -106,6 +106,15 @@ TERMINAL_CIRCUIT_STATES = [
     CircuitStatus.DELETED,
 ]
 
+TERMINAL_COMPILE_STATES = [
+    CircuitStatus.AWAITING_SIMULATION,
+    CircuitStatus.AWAITING_SUBMISSION,
+    CircuitStatus.RUNNING,
+    CircuitStatus.SIMULATING,
+    CircuitStatus.PENDING,
+    *TERMINAL_CIRCUIT_STATES,
+]
+
 UNSUCCESSFUL_CIRCUIT_STATES = [
     CircuitStatus.CANCELLED,
     CircuitStatus.FAILED,
