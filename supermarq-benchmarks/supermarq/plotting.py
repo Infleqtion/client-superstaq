@@ -347,11 +347,11 @@ def annotate_heatmap(
     Returns:
         List of the text annotations.
     """
-    if data is None:
-        data = np.asarray(im.get_array(), dtype=np.float64)
-    else:
-        data = np.asarray(data, dtype=np.float64)
-
+    data = (
+        np.asarray(im.get_array(), dtype=np.float64)
+        if data is None
+        else np.asarray(data, dtype=np.float64)
+    )
     normalized_data = np.asarray(im.norm(data), dtype=np.float64)
 
     def _norm_scalar_val(value: float) -> float:
