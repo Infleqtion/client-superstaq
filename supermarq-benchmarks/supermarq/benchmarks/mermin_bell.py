@@ -148,7 +148,7 @@ class MerminBell(Benchmark):
             # current Pauli to determine the correct measurement qubits and coefficient.
             measure_pauli = [p for p in mermin_pauli]
             parity = 1
-            for op in measurement_circuit.all_operations():  # pragma: no cover
+            for op in measurement_circuit.all_operations():
                 if isinstance(op.gate, cirq.ops.MeasurementGate):
                     break
 
