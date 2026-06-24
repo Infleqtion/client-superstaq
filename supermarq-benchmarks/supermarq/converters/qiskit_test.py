@@ -1375,6 +1375,30 @@ def test_cirq_to_qiskit_classical_control() -> None:
     assert sm.converters.cirq_to_qiskit(cirq_circuit, sorted(cirq_circuit.all_qubits())) == qc
 
 
+    qubits = cirq.LineQubit.range(3)
+    cirq_circuit = cirq.Circuit(cirq.H(qubits[0]), cirq.CX(*qubits[:2]))
+    cirq_circuit += cirq.measure(qubits[0], key="q0")
+    cirq_circuit += cirq.measure(qubits[1], key="q1")
+    cirq_circuit += (
+        cirq.Z(qubits[0])
+        .with_classical_controls(sympy_cond3)
+        
+    )
+
+    qc = qiskit.QuantumCircuit(2)
+    qc.h(0)
+    qc.cx(0, 1)
+    cr = qiskit.ClassicalRegister(2, "c")
+    qc.add_register(cr)
+    qc.measure(0, 0)
+    qc.measure(1, 1)
+
+    condition = (cr[1], 1)
+    with qc.if_test(condition):
+        qc.z(0)
+    assert sm.converters.cirq_to_qiskit(cirq_circuit, sorted(cirq_circuit.all_qubits())) == qc
+
+
 def test_cirq_qubits_to_qiskit() -> None:
     qubits = [cirq.NamedQubit("0+"), cirq.NamedQubit("0-")]
     cirq_circuit = cirq.Circuit(cirq.H(qubits[0]), cirq.CX(*qubits))
