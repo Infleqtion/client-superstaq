@@ -18,7 +18,12 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
 
 import matplotlib as mpl
+import matplotlib.axes
+import matplotlib.image
+import matplotlib.lines
+import matplotlib.patches
 import matplotlib.pyplot as plt
+import matplotlib.text
 import numpy as np
 from matplotlib.patches import Circle
 from matplotlib.projections import polar, register_projection
@@ -27,11 +32,6 @@ from sklearn.linear_model import LinearRegression
 
 if TYPE_CHECKING:
     import numpy.typing as npt
-    from matplotlib.axes import Axes
-    from matplotlib.image import AxesImage
-    from matplotlib.lines import Line2D
-    from matplotlib.patches import Polygon
-    from matplotlib.text import Text
 
 
 def plot_results(
@@ -257,13 +257,13 @@ def plot_benchmark(
 
 def heatmap(
     data: npt.NDArray[np.floating[Any]],
-    ax: Axes,
+    ax: mpl.axes.Axes,
     row_labels: list[str],
     col_labels: list[str],
     cbar_kw: dict[str, Any] | None = None,
     cbarlabel: str = "",
     **kwargs: Any,
-) -> tuple[AxesImage, Any]:
+) -> tuple[mpl.image.AxesImage, Any]:
     """Create a heatmap from a numpy array and two lists of labels.
 
     Args:
@@ -322,13 +322,13 @@ def heatmap(
 
 
 def annotate_heatmap(
-    im: AxesImage,
+    im: mpl.image.AxesImage,
     data: npt.NDArray[np.floating[Any]] | None = None,
     valfmt: Any = "{x:.2f}",
     textcolors: tuple[str, str] = ("black", "white"),
     threshold: float | None = None,
     **textkw: Any,
-) -> list[Text]:
+) -> list[mpl.text.Text]:
     """Annotate the given heatmap.
 
     Args:
@@ -374,7 +374,7 @@ def annotate_heatmap(
     if isinstance(valfmt, str):
         valfmt = StrMethodFormatter(valfmt)
 
-    # Loop over the data and create a `Text` for each "pixel".
+    # Loop over the data and create a `mpl.text.Text` for each "pixel".
     # Change the text's color depending on the data.
     texts = []
     for i in range(data.shape[0]):
@@ -432,7 +432,7 @@ class RadarAxesMeta(polar.PolarAxes):
         # rotate plot such that the first axis is at the top
         self.set_theta_zero_location("N")
 
-    def fill(self, *args: Any, closed: bool = True, **kwargs: Any) -> list[Polygon]:
+    def fill(self, *args: Any, closed: bool = True, **kwargs: Any) -> list[mpl.patches.Polygon]:
         """Method to override fill so that line is closed by default.
 
         Args:
@@ -445,7 +445,7 @@ class RadarAxesMeta(polar.PolarAxes):
         """
         return super().fill(*args, closed=closed, **kwargs)
 
-    def plot(self, *args: Any, **kwargs: Any) -> list[Line2D]:
+    def plot(self, *args: Any, **kwargs: Any) -> list[mpl.lines.Line2D]:
         """Overrides plot so that line is closed by default.
 
         Args:
@@ -461,7 +461,7 @@ class RadarAxesMeta(polar.PolarAxes):
 
         return lines
 
-    def _close_line(self, line: Line2D) -> None:
+    def _close_line(self, line: mpl.lines.Line2D) -> None:
         """A method to close the input line.
 
         Args:
