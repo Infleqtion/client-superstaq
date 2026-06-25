@@ -22,13 +22,12 @@ import matplotlib.axes
 import matplotlib.image
 import matplotlib.lines
 import matplotlib.patches
+import matplotlib.projections
 import matplotlib.pyplot as plt
 import matplotlib.text
+import matplotlib.ticker
 import numpy as np
-from matplotlib.patches import Circle
-from matplotlib.projections import polar, register_projection
-from matplotlib.ticker import StrMethodFormatter
-from sklearn.linear_model import LinearRegression
+import sklearn.linear_model
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -165,7 +164,7 @@ def plot_correlations(
 
             proper_x = np.array(x)[:, np.newaxis]
             proper_y = np.array(y)
-            model = LinearRegression().fit(proper_x, proper_y)
+            model = sklearn.linear_model.LinearRegression().fit(proper_x, proper_y)
             correlation = model.score(proper_x, proper_y)
             device_correlations.append(correlation)
         temp_correlations.append(device_correlations)
@@ -372,7 +371,7 @@ def annotate_heatmap(
 
     # Get the formatter in case a string is supplied
     if isinstance(valfmt, str):
-        valfmt = StrMethodFormatter(valfmt)
+        valfmt = mpl.ticker.StrMethodFormatter(valfmt)
 
     # Loop over the data and create a `mpl.text.Text` for each "pixel".
     # Change the text's color depending on the data.
@@ -411,11 +410,11 @@ def radar_factory(num_vars: int) -> npt.NDArray[np.float64]:
             self.num_vars = num_vars
             super().__init__(*args, **kwargs)
 
-    register_projection(RadarAxes)
+    mpl.projections.register_projection(RadarAxes)
     return theta
 
 
-class RadarAxesMeta(polar.PolarAxes):
+class RadarAxesMeta(mpl.projections.polar.PolarAxes):
     """A helper class to generate feature-vector plots."""
 
     name = "radar"
@@ -483,7 +482,7 @@ class RadarAxesMeta(polar.PolarAxes):
         """
         self.set_thetagrids(np.degrees(self.theta), labels, fontsize=14)
 
-    def _gen_axes_patch(self) -> Circle:
+    def _gen_axes_patch(self) -> mpl.patches.Circle:
         # The Axes patch must be centered at (0.5, 0.5) and of radius 0.5
         # in axes coordinates.
-        return Circle((0.5, 0.5), 0.5)
+        return mpl.patches.Circle((0.5, 0.5), 0.5)
