@@ -387,7 +387,6 @@ class SuperstaqBackend(qiskit.providers.BackendV2, Generic[QssCompileResultT_co]
         return self._provider._map_compile_request_to_client_result(
             json_dict,
             circuits_is_list=circuits_is_list,
-            parser="aqt",
             num_eca_circuits=num_eca_circuits,
         )
 
@@ -557,7 +556,6 @@ class SuperstaqBackend(qiskit.providers.BackendV2, Generic[QssCompileResultT_co]
         return self._provider._map_compile_request_to_client_result(
             json_dict,
             circuits_is_list=circuits_is_list,
-            parser="qscout",
             num_eca_circuits=num_eca_circuits,
         )
 

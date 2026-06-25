@@ -141,22 +141,14 @@ class CompilerOutput(gss.BaseCompilerOutput[qiskit.QuantumCircuit, int]):
 
     @staticmethod
     def _get_deserialized_content(
-        json_dict: dict[str, Any], _circuits_is_list: bool, api_version: str = gss.API_VERSION
+        json_dict: dict[str, Any], _circuits_is_list: bool
     ) -> tuple[
         list[qiskit.QuantumCircuit],
         list[qiskit.QuantumCircuit] | None,
         list[dict[int, int]],
         list[dict[int, int]],
     ]:
-        if api_version == "v0.2.0":
-            compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
-        else:
-            serialized_circuits = json.loads(json_dict["qiskit_circuits"])
-            compiled_circuits = [
-                qss.serialization.deserialize_circuits(circuit)[0]
-                for circuit in serialized_circuits
-            ]
-
+        compiled_circuits = qss.serialization.deserialize_circuits(json_dict["qiskit_circuits"])
         initial_logical_to_physicals_list: list[dict[int, int]] = list(
             map(dict, json.loads(json_dict["initial_logical_to_physicals"]))
         )

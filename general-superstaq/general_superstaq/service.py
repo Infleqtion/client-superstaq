@@ -620,7 +620,7 @@ class QasmService(Service):
             "options": json.dumps(options),  # TODO: need broader serialization support
         }
         json_dict = self._client.compile(request_json)
-        return gss.compiler_output.CompilerOutput._generate_compiler_output(
+        return gss.compiler_output.CompilerOutput.read_json(
             json_dict, circuits_is_list=circuits_is_list
         )
 
@@ -702,9 +702,8 @@ class QasmService(Service):
                 "target": target,
             }
         )
-        return gss.compiler_output.CompilerOutput._generate_compiler_output(
+        return gss.compiler_output.CompilerOutput.read_json(
             json_dict,
-            parser="aqt",
             circuits_is_list=circuits_is_list,
             num_eca_circuits=num_eca_circuits,
         )
@@ -806,9 +805,8 @@ class QasmService(Service):
                 "target": target,
             }
         )
-        return gss.compiler_output.CompilerOutput._generate_compiler_output(
+        return gss.compiler_output.CompilerOutput.read_json(
             json_dict,
-            parser="qscout",
             circuits_is_list=circuits_is_list,
             num_eca_circuits=num_eca_circuits,
         )
@@ -918,6 +916,6 @@ class JaqalService(BaseService):
                 "target": target,
             }
         )
-        return gss.compiler_output.CompilerOutput._read_json_jaqal(
+        return gss.compiler_output.CompilerOutput.read_json_jaqal(
             json_dict, num_eca_circuits=num_eca_circuits
         )

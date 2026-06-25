@@ -270,16 +270,17 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         json_dict: dict[str, Any],
         *,
         circuits_is_list: bool,
-        parser: str = "std",
         num_eca_circuits: int | None = None,
     ) -> CssCompileResultT_co:
         """Maps a compile endpoint's JSON response to the output type expected by the API version.
 
         Args:
             json_dict: The JSON output from a compile endpoint.
-            circuits_is_list: blah
-            parser: blah
-            num_eca_circuits: blah
+            circuits_is_list: A boolean flag that controls whether the returned object has a
+                `.circuits` attribute (if `True`) or a `.circuit` attribute (`False`). Note:
+                relevant only for the v0.2.0 API.
+            num_eca_circuits: Optional number of logically equivalent random circuits to generate
+                for each input circuit. Note: relevant only for the v0.2.0 API.
 
         Returns:
             For v0.3.0, compile-like endpoints will return a `css.JobV3`. For v0.2.0, legacy
@@ -295,9 +296,8 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             return cast("CssCompileResultT_co", css.JobV3(client=self._client, job_id=job_id))
         return cast(
             "CssCompileResultT_co",
-            css.compiler_output.CompilerOutput._generate_compiler_output(
+            css.compiler_output.CompilerOutput.read_json(
                 json_dict=json_dict,
-                parser=parser,
                 circuits_is_list=circuits_is_list,
                 num_eca_circuits=num_eca_circuits,
             ),
@@ -701,7 +701,6 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         return self._map_compile_request_to_client_result(
             json_dict,
             circuits_is_list=circuits_is_list,
-            parser="aqt",
             num_eca_circuits=num_eca_circuits,
         )
 
@@ -825,7 +824,6 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         return self._map_compile_request_to_client_result(
             json_dict,
             circuits_is_list=circuits_is_list,
-            parser="qscout",
             num_eca_circuits=num_eca_circuits,
         )
 

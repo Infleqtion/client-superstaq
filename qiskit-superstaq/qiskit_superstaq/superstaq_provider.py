@@ -184,16 +184,17 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         json_dict: dict[str, Any],
         *,
         circuits_is_list: bool,
-        parser: str = "std",
         num_eca_circuits: int | None = None,
     ) -> QssCompileResultT_co:
         """Maps a compile endpoint's JSON response to the output type expected by the API version.
 
         Args:
              json_dict: The JSON output from a compile endpoint.
-             circuits_is_list: blah
-             parser: blah
-             num_eca_circuits: blah
+             circuits_is_list: A boolean flag that controls whether the returned object has a
+                 `.circuits` attribute (if `True`) or a `.circuit` attribute (`False`). Note:
+                 relevant only for the v0.2.0 API.
+             num_eca_circuits: Optional number of logically equivalent random circuits to generate
+                 for each input circuit. Note: relevant only for the v0.2.0 API.
 
         Returns:
              For v0.3.0, compile-like endpoints will return a `qss.SuperstaqJobV3`. For v0.2.0,
@@ -211,12 +212,10 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
             )
         return cast(
             "QssCompileResultT_co",
-            qss.compiler_output.CompilerOutput._generate_compiler_output(
+            qss.compiler_output.CompilerOutput.read_json(
                 json_dict=json_dict,
                 circuits_is_list=circuits_is_list,
-                parser=parser,
                 num_eca_circuits=num_eca_circuits,
-                api_version=self._client.api_version,
             ),
         )
 

@@ -134,7 +134,6 @@ class CompilerOutput(gss.compiler_output.BaseCompilerOutput[cirq.Circuit, cirq.Q
     def _get_deserialized_content(
         json_dict: dict[str, Any],
         circuits_is_list: bool,
-        _api_version: str = gss.API_VERSION,
     ) -> tuple[
         list[cirq.Circuit],
         list[object] | None,
