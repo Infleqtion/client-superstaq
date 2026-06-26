@@ -602,7 +602,7 @@ def test_qasm_service_compile(
     assert qasm_compiler_output.initial_logical_to_physical == {0: 1}
     assert qasm_compiler_output.final_logical_to_physical == {0: 13}
 
-    json_dict: dict[str, str | list[str]] = {
+    json_dict = {
         "qasm_strs": json.dumps([compiled_circuit, compiled_circuit]),
         "initial_logical_to_physicals": json.dumps([[(0, 1)], [(0, 1)]]),
         "final_logical_to_physicals": json.dumps([[(0, 13)], [(0, 13)]]),
