@@ -150,7 +150,7 @@ class CompilerOutput(gss.compiler_output.BaseCompilerOutput[cirq.Circuit, cirq.Q
 
         pulse_gate_circuits = None
         if "pulse_gate_circuits" in json_dict:
-            pulse_gate_circuits = css.serialization.deserialize_qiskit_circuits(
+            pulse_gate_circuits = gss.serialization.deserialize_qiskit_circuits(
                 json_dict["pulse_gate_circuits"],
                 circuits_is_list,
                 pulse_start_times=json_dict.get("pulse_start_times"),
