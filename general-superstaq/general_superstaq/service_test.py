@@ -18,6 +18,7 @@ import os
 import secrets
 import tempfile
 import textwrap
+from collections.abc import Callable, Sequence
 from unittest import mock
 
 import pytest
@@ -529,3 +530,189 @@ def test_aces(
 
     mock_post.return_value.json = lambda: [1] * 51
     assert service.process_aces("id1") == [1] * 51
+
+
+@pytest.mark.parametrize(
+    ("compile_call", "target"),
+    [
+        pytest.param(
+            lambda s, c, t: s.compile(c, target=t),
+            "ss_unconstrained_simulator",
+            id="compile",
+        ),
+        pytest.param(lambda s, c, t: s.compile(c, target=t), "aqt_keysight_qpu", id="aqt_compile"),
+        pytest.param(
+            lambda s, c, t: s.compile(c, target=t),
+            "qscout_peregrine_qpu",
+            id="qscout_compile",
+        ),
+        pytest.param(
+            lambda s, c, t: s.cq_compile(c, target=t), "cq_sqale_simulator", id="cq_compile"
+        ),
+        pytest.param(
+            lambda s, c, t: s.ibmq_compile(c, target=t),
+            "ibmq_fez_qpu",
+            id="ibmq_compile",
+        ),
+    ],
+)
+def test_qasm_service_compile(
+    compile_call: Callable[
+        [gss.Service, str | Sequence[str], str], gss.compiler_output.CompilerOutput
+    ],
+    target: str,
+) -> None:
+    qasm_service = gss.QasmService(api_key="key", remote_host="http://example.com")
+
+    mock_client = mock.MagicMock(spec=gss.superstaq_client._SuperstaqClient)
+    mock_client.api_version = "v0.2.0"
+    mock_client.client_kwargs = {}
+    qasm_service._client = mock_client
+
+    input_circuit = textwrap.dedent(
+        """\
+        OPENQASM 2.0;
+        include "qelib1.inc";
+        qreg q[1];
+        h q[0];
+        t q[0];
+        """
+    )
+    compiled_circuit = input_circuit
+    json_dict: dict[str, str | list[str]] = {
+        "qasm_strs": json.dumps([compiled_circuit]),
+        "initial_logical_to_physicals": json.dumps([[(0, 1)]]),
+        "final_logical_to_physicals": json.dumps([[(0, 13)]]),
+    }
+
+    if target.startswith("qscout_"):
+        mock_client.qscout_compile.return_value = json_dict
+    elif target.startswith("aqt_"):
+        mock_client.aqt_compile.return_value = json_dict
+    else:
+        mock_client.compile.return_value = json_dict
+
+    qasm_compiler_output = compile_call(qasm_service, input_circuit, target)
+    assert isinstance(qasm_compiler_output, gss.compiler_output.CompilerOutput)
+
+    assert not qasm_compiler_output.has_multiple_circuits()
+    assert qasm_compiler_output.circuit == compiled_circuit
+    assert not qasm_compiler_output.jaqal_program
+    assert not qasm_compiler_output.jaqal_programs
+    assert qasm_compiler_output.initial_logical_to_physical == {0: 1}
+    assert qasm_compiler_output.final_logical_to_physical == {0: 13}
+
+    json_dict: dict[str, str | list[str]] = {
+        "qasm_strs": json.dumps([compiled_circuit, compiled_circuit]),
+        "initial_logical_to_physicals": json.dumps([[(0, 1)], [(0, 1)]]),
+        "final_logical_to_physicals": json.dumps([[(0, 13)], [(0, 13)]]),
+    }
+
+    if target.startswith("qscout_"):
+        mock_client.qscout_compile.return_value = json_dict
+    elif target.startswith("aqt_"):
+        mock_client.aqt_compile.return_value = json_dict
+    else:
+        mock_client.compile.return_value = json_dict
+
+    qasm_compiler_output = compile_call(qasm_service, [input_circuit] * 2, target)
+    assert isinstance(qasm_compiler_output, gss.compiler_output.CompilerOutput)
+
+    assert qasm_compiler_output.has_multiple_circuits()
+    assert qasm_compiler_output.circuits == [compiled_circuit] * 2
+    assert not qasm_compiler_output.jaqal_program
+    assert not qasm_compiler_output.jaqal_programs
+    assert qasm_compiler_output.initial_logical_to_physicals == [{0: 1}] * 2
+    assert qasm_compiler_output.final_logical_to_physicals == [{0: 13}] * 2
+
+
+def test_qasm_service_exceptions() -> None:
+    qasm_service = gss.QasmService(api_key="key")
+    with pytest.raises(ValueError, match=r"a valid AQT target"):
+        qasm_service.aqt_compile(qasm_strs="", target="ss_unconstrained_simulator")
+    with pytest.raises(ValueError, match=r"a valid IBMQ target"):
+        qasm_service.ibmq_compile(qasm_strs="", target="ss_unconstrained_simulator")
+    with pytest.raises(ValueError, match=r"a valid CQ target"):
+        qasm_service.cq_compile(qasm_strs="", target="ss_unconstrained_simulator")
+    with pytest.raises(ValueError, match=r"a valid QSCOUT target"):
+        qasm_service.qscout_compile(qasm_strs="", target="ss_unconstrained_simulator")
+
+
+@mock.patch(
+    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
+    return_value={
+        "qasm_strs": json.dumps(["OPENQASM 2.0;"]),
+        "initial_logical_to_physicals": json.dumps([[]]),
+        "final_logical_to_physicals": json.dumps([[]]),
+    },
+)
+def test_qasm_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
+    service = gss.QasmService(api_key="key", remote_host="http://example.com")
+    out = service.aqt_compile("OPENQASM 2.0;", test_options="yes")
+    mock_post_request.assert_called_once_with(
+        "/aqt_compile",
+        {
+            "qasm_strs": '["OPENQASM 2.0;"]',
+            "options": '{"test_options": "yes"}',
+            "target": "aqt_keysight_qpu",
+        },
+    )
+
+    alt_out = service.compile("OPENQASM 2.0;", target="aqt_keysight_qpu", test_options="yes")
+
+    for output in [out, alt_out]:
+        assert output.circuit == "OPENQASM 2.0;"
+        assert output.initial_logical_to_physical == {}
+        assert output.final_logical_to_physical == {}
+        assert not hasattr(output, "circuits")
+        assert not hasattr(output, "initial_logical_to_physicals")
+        assert not hasattr(output, "final_logical_to_physicals")
+
+    with pytest.raises(ValueError, match=r"Unable to serialize configuration"):
+        _ = service.aqt_compile("OPENQASM 2.0;", atol=1e-2, pulses=123, variables=456)
+
+    out = service.aqt_compile(
+        "OPENQASM 2.0;",
+        atol=1e-3,
+        aqt_configs={},
+        gate_defs={},
+        gateset={"X90": [[0], [1]]},
+    )
+    expected_options = (
+        '{"aqt_configs": {}, "atol": 0.001, "gateset": {"X90": [[0], [1]]}, "gate_defs": {}}'
+    )
+    mock_post_request.assert_called_with(
+        "/aqt_compile",
+        {
+            "qasm_strs": '["OPENQASM 2.0;"]',
+            "options": expected_options,
+            "target": "aqt_keysight_qpu",
+        },
+    )
+    assert out.circuit == "OPENQASM 2.0;"
+    assert not hasattr(out, "circuits")
+
+
+@mock.patch(
+    "general_superstaq.superstaq_client._SuperstaqClient.post_request",
+    return_value={
+        "qasm_strs": json.dumps(["OPENQASM 2.0;"]),
+        "initial_logical_to_physicals": json.dumps([[]]),
+        "final_logical_to_physicals": json.dumps([[]]),
+    },
+)
+def test_service_aqt_compile_eca(mock_post_request: mock.MagicMock) -> None:
+    service = gss.QasmService(api_key="key", remote_host="http://example.com")
+    out = service.aqt_compile("OPENQASM 2.0;", num_eca_circuits=1, random_seed=1234, atol=1e-2)
+    mock_post_request.assert_called_once()
+    assert out.circuits == ["OPENQASM 2.0;"]
+    assert out.initial_logical_to_physicals == [{}]
+    assert out.final_logical_to_physicals == [{}]
+    assert not hasattr(out, "circuit")
+    assert not hasattr(out, "initial_logical_to_physical")
+    assert not hasattr(out, "final_logical_to_physical")
+
+    out = service.aqt_compile(["OPENQASM 2.0;"], num_eca_circuits=1, random_seed=1234, atol=1e-2)
+    assert out.circuits == [["OPENQASM 2.0;"]]
+    assert out.initial_logical_to_physicals == [[{}]]
+    assert out.final_logical_to_physicals == [[{}]]
