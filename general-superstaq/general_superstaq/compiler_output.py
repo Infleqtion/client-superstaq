@@ -190,16 +190,22 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
     @staticmethod
     def _get_deserialized_content(
         json_dict: dict[str, Any],
-        _circuits_is_list: bool,
+        circuits_is_list: bool,
     ) -> tuple[list[C], list[object] | None, list[dict[Q, Q]], list[dict[Q, Q]]]:
         compiled_circuits: list[C] = json.loads(json_dict["qasm_strs"])
-        pulse_gate_circuits = None
         initial_logical_to_physicals_list: list[dict[Q, Q]] = list(
             map(dict, json.loads(json_dict["initial_logical_to_physicals"]))
         )
         final_logical_to_physicals_list: list[dict[Q, Q]] = list(
             map(dict, json.loads(json_dict["final_logical_to_physicals"]))
         )
+        pulse_gate_circuits = None
+        if "pulse_gate_circuits" in json_dict:
+            pulse_gate_circuits = gss.serialization.deserialize_qiskit_circuits(
+                json_dict["pulse_gate_circuits"],
+                circuits_is_list,
+                pulse_start_times=json_dict.get("pulse_start_times"),
+            )
         return (
             compiled_circuits,
             pulse_gate_circuits,
@@ -318,12 +324,6 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
                 jaqal_programs = [
                     _jaqal_programs_to_subcircuits(jaqal_programs[i : i + num_eca_circuits])
                     for i in range(0, len(jaqal_programs), num_eca_circuits)
-                ]
-
-            if pulse_gate_circuits:
-                pulse_gate_circuits = [
-                    pulse_gate_circuits[i : i + num_eca_circuits]
-                    for i in range(0, len(pulse_gate_circuits), num_eca_circuits)
                 ]
 
         if circuits_is_list:
