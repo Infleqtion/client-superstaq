@@ -27,6 +27,7 @@ import general_superstaq as gss
 import numpy as np
 import pytest
 import qiskit
+import qiskit.providers
 from general_superstaq import ResourceEstimate, testing
 
 import qiskit_superstaq as qss
@@ -49,7 +50,7 @@ def test_provider(fake_superstaq_provider: MockSuperstaqProvider) -> None:
 
 def test_provider_args() -> None:
     with pytest.raises(ValueError, match=r"must be either 'ibm_cloud' or 'ibm_quantum_platform'"):
-        ss_provider = qss.SuperstaqProvider(api_key="MY_TOKEN", ibmq_channel="foo")
+        _ = qss.SuperstaqProvider(api_key="MY_TOKEN", ibmq_channel="foo")
 
     ss_provider = qss.SuperstaqProvider(
         api_key="MY_TOKEN",
