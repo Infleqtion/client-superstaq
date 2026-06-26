@@ -97,7 +97,7 @@ def test_compiler_output_eq() -> None:
         measure q[1] -> meas[1];
         """
     )
-    qasm_co = gss.compiler_output.CompilerOutput(qasm_program, {0: 0, 0: 0}, {1: 1, 1: 1})
+    qasm_co = gss.compiler_output.CompilerOutput(qasm_program, {0: 0}, {1: 1})
     assert qasm_co != co
     assert not qasm_co.jaqal_programs
     assert not qasm_co.jaqal_program

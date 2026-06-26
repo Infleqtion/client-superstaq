@@ -45,6 +45,7 @@ __all__ = [
     "BaseCompilerOutput",
     "JaqalService",
     "Job",
+    "QasmService",
     "ResourceEstimate",
     "Service",
     "SuperstaqException",
@@ -60,7 +61,6 @@ __all__ = [
     "service",
     "superstaq_client",
     "superstaq_exceptions",
-    "QasmService",
     "typing",
     "validation",
 ]
