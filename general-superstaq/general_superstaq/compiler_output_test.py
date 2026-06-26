@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import importlib
+import importlib.util
 import json
 import pickle
 import textwrap
@@ -103,6 +104,10 @@ def test_compiler_output_eq() -> None:
     assert not qasm_co.jaqal_program
 
 
+@pytest.mark.skipif(
+    not importlib.util.find_spec("qiskit_superstaq"),
+    reason="Skipping test as `qiskit_superstaq` is not installed.",
+)
 def test_read_json_pulse_gate_circuits() -> None:
     qss = pytest.importorskip("qiskit_superstaq", reason="qiskit-superstaq is not installed")
     import qiskit  # noqa: PLC0415

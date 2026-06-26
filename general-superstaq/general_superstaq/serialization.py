@@ -72,7 +72,7 @@ def deserialize(serialized_obj: str) -> Any:
     return pickle.loads(str_to_bytes(serialized_obj))  # noqa: S301
 
 
-def deserialize_qiskit_circuits(
+def deserialize_qiskit_circuits(  # pragma: no cover (requires `qiskit_superstaq` install)
     serialized_qiskit_circuits: str,
     circuits_is_list: bool,
     pulse_start_times: Sequence[Sequence[int]] | None = None,

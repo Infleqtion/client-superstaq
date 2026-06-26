@@ -200,7 +200,7 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
             map(dict, json.loads(json_dict["final_logical_to_physicals"]))
         )
         pulse_gate_circuits = None
-        if "pulse_gate_circuits" in json_dict:
+        if "pulse_gate_circuits" in json_dict:  # pragma: no cover (requires `qiskit_superstaq`)
             pulse_gate_circuits = gss.serialization.deserialize_qiskit_circuits(
                 json_dict["pulse_gate_circuits"],
                 circuits_is_list,
