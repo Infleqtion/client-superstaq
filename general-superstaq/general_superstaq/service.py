@@ -594,7 +594,7 @@ class QasmService(Service):
         target: str,
         **kwargs: Any,
     ) -> gss.compiler_output.CompilerOutput:
-        """Compiles the given circuit(s) to the target device's native gateset.
+        """Compiles the given `qasm_strs` to the target device's native gateset.
 
         Args:
             qasm_strs: The OpenQasm string(s) to compile.
@@ -622,6 +622,100 @@ class QasmService(Service):
         json_dict = self._client.compile(request_json)
         return gss.compiler_output.CompilerOutput.read_json(
             json_dict, circuits_is_list=circuits_is_list
+        )
+
+    def ibmq_compile(
+        self,
+        qasm_strs: str | Sequence[str],
+        target: str,
+        *,
+        dynamical_decoupling: bool = True,
+        dd_strategy: str = "adaptive",
+        **kwargs: Any,
+    ) -> gss.compiler_output.CompilerOutput:
+        """Compiles and optimizes the given `qasm_strs` to the target IBMQ device.
+
+        Qiskit Terra must be installed to correctly deserialize pulse schedules for pulse-enabled
+        targets.
+
+        Superstaq currently supports the following dynamical decoupling strategies:
+
+        * "standard": Places a single DD sequence in each idle window.
+
+        * "syncopated": Places DD pulses at fixed time intervals, alternating between pulses on
+            neighboring qubits in order to mitigate parasitic ZZ coupling errors.
+
+        * "adaptive" (default): Dynamically spaces DD pulses across idle windows with awareness of
+            neighboring qubits to achieve the parasitic ZZ coupling mitigation of the "syncopated"
+            strategy with fewer pulses and less discretization error.
+
+        See https://superstaq.readthedocs.io/en/latest/optimizations/ibm/ibmq_dd_strategies_qss.html
+        for an example of each strategy.
+
+        Args:
+            qasm_strs: The OpenQasm string(s) to compile.
+            target: String of target IBMQ device.
+            dynamical_decoupling: Applies dynamical decoupling optimization to circuit(s).
+            dd_strategy: Method to use for placing dynamical decoupling operations; should be either
+                "standard", "syncopated", or "adaptive" (default). See above.
+            kwargs: Other desired compile options.
+
+        Returns:
+            A `CompilerOutput` object whose .circuit(s) attribute contains optimized compiled
+            circuit(s).
+
+        Raises:
+            ValueError: If `target` is not a valid IBMQ target.
+        """
+        target = gss.validation.validate_target(target)
+        if not target.startswith("ibmq_"):
+            raise ValueError(f"{target!r} is not a valid IBMQ target.")
+
+        options = {"dynamical_decoupling": dynamical_decoupling, "dd_strategy": dd_strategy}
+        kwargs.update(options)
+
+        return self.compile(qasm_strs, target=target, **kwargs)
+
+    def cq_compile(
+        self,
+        qasm_strs: str | Sequence[str],
+        target: str = "cq_sqale_qpu",
+        *,
+        grid_shape: tuple[int, int] | None = None,
+        control_radius: float = 1.0,
+        stripped_cz_rads: float = 0.0,
+        **kwargs: Any,
+    ) -> gss.compiler_output.CompilerOutput:
+        """Compiles and optimizes the given `qasm_strs` to the target CQ device.
+
+        Args:
+            qasm_strs: The OpenQasm string(s) to compile.
+            target: String of target CQ device.
+            grid_shape: Optional fixed dimensions for the rectangular qubit grid (by default the
+                actual qubit layout will be pulled from the hardware provider).
+            control_radius: The radius with which qubits remain connected
+                (ie 1.0 indicates nearest neighbor connectivity).
+            stripped_cz_rads: The angle in radians of the stripped cz gate.
+            kwargs: Other desired `cq_compile()` options.
+
+        Returns:
+            A `CompilerOutput` object whose .circuit(s) attribute contains optimized compiled
+            circuit(s).
+
+        Raises:
+            ValueError: If `target` is not a valid CQ target.
+        """
+        target = gss.validation.validate_target(target)
+        if not target.startswith("cq_"):
+            raise ValueError(f"{target!r} is not a valid CQ target.")
+
+        return self.compile(
+            qasm_strs,
+            grid_shape=grid_shape,
+            control_radius=control_radius,
+            stripped_cz_rads=stripped_cz_rads,
+            target=target,
+            **kwargs,
         )
 
     def aqt_compile(
