@@ -33,7 +33,7 @@ import uuid
 import warnings
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Literal, Generic, Union, cast, overload
+from typing import TYPE_CHECKING, Any, Generic, Literal, Union, cast, overload
 
 import cirq
 import general_superstaq as gss

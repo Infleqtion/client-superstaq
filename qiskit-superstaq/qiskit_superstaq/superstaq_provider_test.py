@@ -248,12 +248,11 @@ def test_ibmq_compile(mock_post: MagicMock, fake_superstaq_provider: MockSuperst
 
     out = fake_superstaq_provider.ibmq_compile(
         qiskit.QuantumCircuit(), test_options="yes", target="ibmq_fake_qpu"
+    )
     assert out == qss.compiler_output.CompilerOutput(
         qc, initial_logical_to_physical, final_logical_to_physical, pulse_gate_circuits=qc
     )
-    out = fake_superstaq_provider.ibmq_compile(
-        [qiskit.QuantumCircuit()], target="ibmq_fake_qpu"
-    )
+    out = fake_superstaq_provider.ibmq_compile([qiskit.QuantumCircuit()], target="ibmq_fake_qpu")
     assert out == qss.compiler_output.CompilerOutput(
         [qc],
         [initial_logical_to_physical],
@@ -269,11 +268,11 @@ def test_ibmq_compile(mock_post: MagicMock, fake_superstaq_provider: MockSuperst
 
     out = fake_superstaq_provider.ibmq_compile(
         qiskit.QuantumCircuit(), test_options="yes", target="ibmq_fake_qpu"
+    )
     assert out == qss.compiler_output.CompilerOutput(
         qc, initial_logical_to_physical, final_logical_to_physical
     )
-    out = fake_superstaq_provider.ibmq_compile(
-        [qiskit.QuantumCircuit()], target="ibmq_fake_qpu"
+    out = fake_superstaq_provider.ibmq_compile([qiskit.QuantumCircuit()], target="ibmq_fake_qpu")
     assert out == qss.compiler_output.CompilerOutput(
         [qc], [initial_logical_to_physical], [final_logical_to_physical]
     )
@@ -284,6 +283,7 @@ def test_ibmq_compile(mock_post: MagicMock, fake_superstaq_provider: MockSuperst
 
     out = fake_superstaq_provider.ibmq_compile(
         qiskit.QuantumCircuit(), dd_strategy="standard", test_options="yes", target="ibmq_fake_qpu"
+    )
     assert out == qss.compiler_output.CompilerOutput(
         qc, initial_logical_to_physical, final_logical_to_physical
     )
