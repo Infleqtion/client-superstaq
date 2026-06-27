@@ -63,7 +63,7 @@ class QAOAVanillaProxy(Benchmark):
 
     def _gen_sk_hamiltonian(self) -> list[tuple[int, int, float]]:
         """Randomly pick +1 or -1 for each edge weight."""
-        hamiltonian = []
+        hamiltonian: list[tuple[int, int, float]] = []
         rng = np.random.default_rng(random.getrandbits(128))
         for i in range(self.num_qubits):
             for j in range(i + 1, self.num_qubits):
