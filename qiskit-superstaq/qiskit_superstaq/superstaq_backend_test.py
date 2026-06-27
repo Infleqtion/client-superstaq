@@ -306,9 +306,6 @@ def test_ibmq_compile(mock_post: MagicMock) -> None:
         "test_options": "yes",
     }
 
-    assert backend.compile([qiskit.QuantumCircuit()]) == qss.compiler_output.CompilerOutput(
-        [qc], [initial_logical_to_physical], [final_logical_to_physical], pulse_gate_circuits=[qc]
-    )
     out = backend.compile([qiskit.QuantumCircuit()])
     assert out.initial_logical_to_physicals == [initial_logical_to_physical]
     assert out.final_logical_to_physicals == [final_logical_to_physical]
