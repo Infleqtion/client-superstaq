@@ -471,6 +471,19 @@ def test_aces(mock_post: MagicMock) -> None:
         == "id1"
     )
 
+    # test to  include `Noise:==False` branch for `submit_aces` func in superstaq_backend.py
+    assert (
+        backend.submit_aces(
+            qubits=[0, 1],
+            shots=100,
+            num_circuits=10,
+            mirror_depth=5,
+            extra_depth=5,
+            noise=None,
+            error_prob=0.05,
+        )
+        == "id1"
+    )
     assert (
         backend.submit_aces(
             qubits=[0, 1],
