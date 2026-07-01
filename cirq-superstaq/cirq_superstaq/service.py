@@ -33,7 +33,7 @@ import uuid
 import warnings
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, overload
+from typing import TYPE_CHECKING, Any, Literal, overload
 
 import cirq
 import general_superstaq as gss
@@ -1262,7 +1262,7 @@ class Service(gss.service.Service):
                 else legend_labels
             )
             for t, c in zip(truncated_legend_labels, legend_colors):
-                linestyle = "" if t == "..." else "-"
+                linestyle: Literal["", "-"] = "" if t == "..." else "-"
                 custom_handles.append(plt.Line2D([], [], linestyle=linestyle, label=t, color=c))
         else:
             for t, c in zip(legend_labels, legend_colors):
