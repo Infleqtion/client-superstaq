@@ -452,7 +452,7 @@ class RadarAxesMeta(PolarAxes):
         x, y = map(np.asarray, line.get_data())
         # TODO: markers at x[0], y[0] get doubled-up.
         # See issue https://github.com/Infleqtion/client-superstaq/issues/27
-        if x[0] != x[-1]:
+        if x[0] != x[-1]:      # pragma: no branch
             x = np.append(x, x[0])
             y = np.append(y, y[0])
             line.set_data(x, y)
