@@ -51,9 +51,8 @@ def test_mermin_bell_score() -> None:
     mb = MerminBell(5)
     assert mb.score(supermarq.simulation.get_ideal_counts(mb.circuit())) == 1
 
-    mermin_op = MerminBell._mermin_operator(mb,num_qubits=3)
-    stabilizers.construct_stabilizer(num_qubits =3, clique= [(0.25,mermin_op)])
+    mermin_op = MerminBell._mermin_operator(mb, num_qubits=3)
+    stabilizers.construct_stabilizer(num_qubits=3, clique=[(0.25, mermin_op)])
     stabilizers.prepare_x_matrix(MerminBell._get_measurement_circuit(mb))
-
 
     stabilizers.patch_z_matrix(MerminBell._get_measurement_circuit(mb))
