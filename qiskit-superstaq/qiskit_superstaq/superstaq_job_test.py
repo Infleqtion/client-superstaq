@@ -537,6 +537,12 @@ def test_check_if_stopped(backend: qss.SuperstaqBackend) -> None:
         with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match=status):
             job._check_if_stopped()
 
+# test to  include `_check_if_stopped"!=("Cancelled", "Failed")` branch for ` in superstaq
+        job = qss.SuperstaqJob(backend=backend, job_id="123abc")
+        job._overall_status = "Running"
+        with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="Running"):
+            job._check_if_stopped()
+
 
 def test_refresh_job(backend: qss.SuperstaqBackend) -> None:
     job = qss.SuperstaqJob(backend=backend, job_id="123abc,456abc,789abc")
@@ -698,6 +704,12 @@ def test_update_status_queue_info(backend: qss.SuperstaqBackend) -> None:
     job._update_status_queue_info()
     assert job._overall_status == "Failed"
 
+    # tests the other branches for temp_status as "Not Queued" for test_update_status_queue_info in superstaq_job.py
+    mock_statuses = [mock_response(""), mock_response(""), mock_response("")]
+    for index, job_id in enumerate(job._job_id.split(",")):
+        job._job_info[job_id] = mock_statuses[index]
+    job._update_status_queue_info()
+    assert job._overall_status == "Not Queued"
 
 def test_get_circuit(backend: qss.SuperstaqBackend) -> None:
     test_job = qss.SuperstaqJob(backend=backend, job_id="123abc")
@@ -1034,6 +1046,14 @@ def test_eqV3(
 
 def test_to_dict(backend: qss.SuperstaqBackend) -> None:
     job = qss.SuperstaqJob(backend=backend, job_id="12345")
+    with patched_requests({"12345": mock_response("Running")}):
+        assert job.to_dict() == {
+            "12345": {
+                "status": "Running",
+                "samples": {"11": 50, "10": 50},
+                "shots": 100,
+            }
+        }
     with patched_requests({"12345": mock_response("Done")}):
         assert job.to_dict() == {
             "12345": {
