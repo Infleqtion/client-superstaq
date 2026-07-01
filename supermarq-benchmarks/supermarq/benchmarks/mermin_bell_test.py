@@ -19,6 +19,7 @@ import qiskit
 
 import supermarq
 from supermarq.benchmarks.mermin_bell import MerminBell
+from supermarq import stabilizers
 
 
 def test_mermin_bell_circuit() -> None:
@@ -31,8 +32,8 @@ def test_mermin_bell_circuit() -> None:
     mb = MerminBell(5)
     assert len(mb.circuit().all_qubits()) == 5
     qiskit_circuit = mb.qiskit_circuit()
-    if isinstance(qiskit_circuit, qiskit.QuantumCircuit):
-        assert qiskit_circuit.num_qubits == 5
+    # if isinstance(qiskit_circuit, qiskit.QuantumCircuit):
+    assert qiskit_circuit.num_qubits == 5
     with patch(
         "supermarq.benchmarks.mermin_bell.MerminBell.circuit",
         return_value=[mb.circuit()],
@@ -49,3 +50,10 @@ def test_mermin_bell_score() -> None:
 
     mb = MerminBell(5)
     assert mb.score(supermarq.simulation.get_ideal_counts(mb.circuit())) == 1
+
+    mermin_op = MerminBell._mermin_operator(mb,num_qubits=3)
+    stabilizers.construct_stabilizer(num_qubits =3, clique= [(0.25,mermin_op)])
+    stabilizers.prepare_x_matrix(MerminBell._get_measurement_circuit(mb))
+
+
+    stabilizers.patch_z_matrix(MerminBell._get_measurement_circuit(mb))
