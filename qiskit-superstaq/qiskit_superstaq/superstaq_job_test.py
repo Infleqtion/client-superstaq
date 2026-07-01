@@ -537,7 +537,7 @@ def test_check_if_stopped(backend: qss.SuperstaqBackend) -> None:
         with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match=status):
             job._check_if_stopped()
 
-# test to  include `_check_if_stopped"!=("Cancelled", "Failed")` branch for ` in superstaq
+        # test to  include `_check_if_stopped"!=("Cancelled", "Failed")` branch for ` in superstaq
         job = qss.SuperstaqJob(backend=backend, job_id="123abc")
         job._overall_status = "Running"
         with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="Running"):
@@ -710,6 +710,7 @@ def test_update_status_queue_info(backend: qss.SuperstaqBackend) -> None:
         job._job_info[job_id] = mock_statuses[index]
     job._update_status_queue_info()
     assert job._overall_status == "Not Queued"
+
 
 def test_get_circuit(backend: qss.SuperstaqBackend) -> None:
     test_job = qss.SuperstaqJob(backend=backend, job_id="123abc")

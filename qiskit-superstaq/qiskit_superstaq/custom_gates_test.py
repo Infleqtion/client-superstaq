@@ -62,7 +62,7 @@ def test_acecr() -> None:
     assert repr(gate) == "qss.AceCR(rads=3.141592653589793)"
     assert str(gate) == "AceCR(1.0π)"
 
-    # test to  include `np.close() = False` branch  for `__str__` in `custom_gates.py`  
+    # test to  include `np.close() = False` branch  for `__str__` in `custom_gates.py`
     gate = qss.AceCR(0.38779245)
     assert repr(gate) == "qss.AceCR(rads=0.38779245)"
     assert str(gate) == "AceCR(0.38779245)"

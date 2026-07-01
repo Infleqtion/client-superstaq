@@ -95,7 +95,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             return None
 
         coupling_map = qiskit.transpiler.CouplingMap()
-        if target_info.get("num_qubits") is not None:     # pragma: no cover
+        if target_info.get("num_qubits") is not None:  # pragma: no cover
             for qubit in range(target_info["num_qubits"]):
                 coupling_map.add_physical_qubit(qubit)
 
@@ -260,7 +260,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         Raises:
             ValueError: If this backend does not support compilation.
         """
-        if self._provider._client.api_version == "v0.2.0": # pragma: no cover
+        if self._provider._client.api_version == "v0.2.0":  # pragma: no cover
             if self.name.startswith("ibmq_"):
                 return self.ibmq_compile(circuits, **kwargs)
 

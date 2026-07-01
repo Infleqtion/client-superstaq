@@ -154,7 +154,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         results_list = []
         for i, result in enumerate(results):
             counts = result["samples"]
-            if counts:     # pragma: no cover
+            if counts:  # pragma: no cover
                 num_clbits = self._get_num_clbits(i)
                 circ_meas_bit_indices = self._get_clbit_indices(i)
                 if len(circ_meas_bit_indices) != num_clbits:
@@ -200,8 +200,8 @@ class SuperstaqJob(qiskit.providers.JobV1):
             )
         else:
             raise gss.superstaq_exceptions.SuperstaqUnsuccessfulJobException(
-                self._job_id, "Running")
-
+                self._job_id, "Running"
+            )
 
     def cancel(self, index: int | None = None, **kwargs: object) -> None:
         """Cancel the current job if it is not in a terminal state.
@@ -593,7 +593,7 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         result = self.result(timeout=timeout, wait=wait, qubit_indices=qubit_indices)
         counts = result.get_counts()
 
-        if not isinstance(counts, Mapping): #pragma: no cover
+        if not isinstance(counts, Mapping):  # pragma: no cover
             counts = dict(sum(map(collections.Counter, counts), collections.Counter()))
 
         key_lens = {len(key) for key in counts.keys()}
