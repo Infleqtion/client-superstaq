@@ -308,6 +308,12 @@ def test_update_status_queue_info(mock_client: gss.superstaq_client._SuperstaqCl
     job._update_status_queue_info()
     assert job._overall_status == "failed"
 
+    # tests the 'failed' status branch option for test_update_status_queue_info in job.py
+    job_dict["statuses"] = []
+    job._job_data = gss.models.JobData(**job_dict)
+    job._update_status_queue_info()
+    assert job._overall_status == "failed"
+
 
 @mock.patch("requests.Session.get")
 def test_check_if_unsuccessful(
