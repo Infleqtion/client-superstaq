@@ -1658,7 +1658,7 @@ def test_superstaq_client_aces(
             json=expected_json,
             verify=False,
         )
-    # test to  include `Noise:"type"==False` branch for `submit_aces` func in superstaq_client.py
+        # test to  include `Noise:"type"==False` branch for `submit_aces` func in superstaq_client.py
         client.submit_aces(
             target="ss_unconstrained_simulator",
             qubits=[0, 1],
@@ -1768,7 +1768,7 @@ def test_superstaq_client_cb(
             n_channels=6,
             n_sequences=30,
             depths=[2, 4, 6],
-            )
+        )
 
         expected_json = {
             "target": "ss_unconstrained_simulator",
@@ -1866,11 +1866,11 @@ def test_superstaq_client_dfe(
             shots=100,
         )
 
-        expected_json= {
+        expected_json = {
             "state_1": state,
             "state_2": state,
             "shots": 100,
-            "n_bases": 5,    
+            "n_bases": 5,
         }
         mock_post.assert_called_with(
             f"http://example.com/{api_version}/dfe_post",
@@ -1878,7 +1878,6 @@ def test_superstaq_client_dfe(
             json=expected_json,
             verify=False,
         )
-
 
         client.process_dfe(["id1", "id2"])
         expected_json = {"job_id_1": "id1", "job_id_2": "id2"}
