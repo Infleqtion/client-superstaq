@@ -1581,7 +1581,7 @@ class _SuperstaqClientV3(_AbstractUserClient):
                 "final_logical_to_physicals": json.dumps(qiskit_final_log_to_phys),
             }
 
-        elif circuit_type == gss.models.CircuitType.CIRQ:
+        if circuit_type == gss.models.CircuitType.CIRQ:
             cirq_initial_log_to_phys = []
             cirq_final_log_to_phys = []
             for i in range(len(initial_logical_to_physicals)):
