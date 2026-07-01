@@ -352,17 +352,8 @@ def annotate_heatmap(
     )
     normalized_data = np.asarray(im.norm(data), dtype=np.float64)
 
-    def _norm_scalar_val(value: float) -> float:
-        return float(
-            np.asarray(im.norm(np.asarray([value], dtype=np.float64)), dtype=np.float64).item()
-        )
-
     # Normalize the threshold to the images color range.
-    normalized_threshold: float = (
-        _norm_scalar_val(threshold)
-        if threshold is not None
-        else _norm_scalar_val(float(np.max(data))) / 2.0
-    )
+    normalized_threshold = im.norm(np.max(data) / 2 if threshold is None else np.asarray(threshold))
 
     # Set default alignment to center, but allow it to be
     # overwritten by textkw.
