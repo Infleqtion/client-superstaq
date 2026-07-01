@@ -1376,14 +1376,20 @@ def test_cirq_to_qiskit_classical_control() -> None:
 
     q0, q1 = sympy.symbols("q0 q1")
     cr = qiskit.ClassicalRegister(2, "c")
-    with pytest.raises(gss.SuperstaqException, match=re.escape("We don't currently support q0 + q1 in our qiskit classical control flow.")):
-        sm.converters.qiskit.cirq_classical_control_to_qiskit(cirq.Z(qubits[0]).with_classical_controls(sympy.Add(q0,q1))
-            , {sympy_cond2:'q1'}, cr)
-        
+    with pytest.raises(
+        gss.SuperstaqException,
+        match=re.escape("We don't currently support q0 + q1 in our qiskit classical control flow."),
+    ):
+        sm.converters.qiskit.cirq_classical_control_to_qiskit(
+            cirq.Z(qubits[0]).with_classical_controls(sympy.Add(q0, q1)), {sympy_cond2: "q1"}, cr
+        )
+
     cr = qiskit.ClassicalRegister(2, "cr")
     condition = (cr[1], 1)
-    sm.converters.qiskit.cirq_classical_control_to_qiskit(cirq.Z(qubits[0]).with_classical_controls(cr[1])
-    , {condition:1}, cr)
+    sm.converters.qiskit.cirq_classical_control_to_qiskit(
+        cirq.Z(qubits[0]).with_classical_controls(cr[1]), {condition: 1}, cr
+    )
+
 
 def test_cirq_qubits_to_qiskit() -> None:
     qubits = [cirq.NamedQubit("0+"), cirq.NamedQubit("0-")]
