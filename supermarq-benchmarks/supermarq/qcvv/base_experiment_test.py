@@ -369,6 +369,7 @@ def test_results_analyze(mock_print: MagicMock, abc_experiment: ExampleExperimen
         results.analyze(plot_results=False, print_results=False, plot_filename="test_name")
         assert results.example_final_result == 3.142
 
+
 def test_results_ready(abc_experiment: ExampleExperiment) -> None:
     results = ExampleResults(target="target", experiment=abc_experiment, data=pd.DataFrame())
     assert results.data_ready
