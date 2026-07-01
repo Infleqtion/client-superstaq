@@ -365,6 +365,9 @@ def test_results_analyze(mock_print: MagicMock, abc_experiment: ExampleExperimen
         mock_plot.assert_called_once_with(filename="test_name")
         mock_print.assert_called_once_with("This is a test: 3.142")
 
+    with patch("supermarq.qcvv.base_experiment_test.ExampleResults.plot_results") as mock_plot:
+        results.analyze(plot_results=False, print_results=False, plot_filename="test_name")
+        assert results.example_final_result == 3.142
 
 def test_results_ready(abc_experiment: ExampleExperiment) -> None:
     results = ExampleResults(target="target", experiment=abc_experiment, data=pd.DataFrame())
