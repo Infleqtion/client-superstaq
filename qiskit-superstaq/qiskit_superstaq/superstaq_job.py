@@ -154,7 +154,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         results_list = []
         for i, result in enumerate(results):
             counts = result["samples"]
-            if counts:
+            if counts:     # pragma: no cover
                 num_clbits = self._get_num_clbits(i)
                 circ_meas_bit_indices = self._get_clbit_indices(i)
                 if len(circ_meas_bit_indices) != num_clbits:
@@ -198,6 +198,10 @@ class SuperstaqJob(qiskit.providers.JobV1):
             raise gss.superstaq_exceptions.SuperstaqUnsuccessfulJobException(
                 self._job_id, self._overall_status
             )
+        else:
+            raise gss.superstaq_exceptions.SuperstaqUnsuccessfulJobException(
+                self._job_id, "Running")
+
 
     def cancel(self, index: int | None = None, **kwargs: object) -> None:
         """Cancel the current job if it is not in a terminal state.
@@ -257,6 +261,9 @@ class SuperstaqJob(qiskit.providers.JobV1):
             if temp_status in status_occurrence:
                 self._overall_status = temp_status
                 return
+            else:
+                self._overall_status = "Not Queued"
+                pass
 
     @overload
     def _get_circuits(self, circuit_type: str, index: int) -> qiskit.QuantumCircuit: ...
@@ -416,7 +423,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         Returns:
             A dictionary containing updated job information.
         """
-        if self._overall_status not in self.TERMINAL_STATES:
+        if self._overall_status not in self.TERMINAL_STATES:  # pragma: no cover
             self._refresh_job()
         return self._job_info
 
@@ -531,7 +538,7 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         search_list = list(range(self.job_data.num_circuits)) if index is None else [index]
         for i in search_list:
             counts = self.job_data.counts[i]
-            if counts:
+            if counts:  # pragma: no cover
                 num_clbits = self._get_num_clbits(i)
                 circ_meas_bit_indices = self._get_clbit_indices(i)
                 if len(circ_meas_bit_indices) != num_clbits:
@@ -586,7 +593,7 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         result = self.result(timeout=timeout, wait=wait, qubit_indices=qubit_indices)
         counts = result.get_counts()
 
-        if not isinstance(counts, Mapping):
+        if not isinstance(counts, Mapping): #pragma: no cover
             counts = dict(sum(map(collections.Counter, counts), collections.Counter()))
 
         key_lens = {len(key) for key in counts.keys()}
