@@ -86,23 +86,27 @@ def test_plot_correlations() -> None:
         show=False,
     )
 
+
 def test_annotate_heatmap():
-    data =  np.array([[0, 5], [10, 20]])
+    data = np.array([[0, 5], [10, 20]])
     fig, ax = plt.subplots()
-    im = ax.imshow(data, norm=Normalize(vmin=0, vmax=20),cmap='viridis')
-    supermarq.plotting.annotate_heatmap(im,
-        data = data,
+    im = ax.imshow(data, norm=Normalize(vmin=0, vmax=20), cmap="viridis")
+    supermarq.plotting.annotate_heatmap(
+        im,
+        data=data,
         valfmt="{x:.2f}",
-        textcolors= ("black", "white"),
-        threshold= 0.5,
+        textcolors=("black", "white"),
+        threshold=0.5,
     )
 
-    supermarq.plotting.annotate_heatmap(im,
-        data = data,
+    supermarq.plotting.annotate_heatmap(
+        im,
+        data=data,
         valfmt=mpl.ticker.StrMethodFormatter("${x:.2f}"),
-        textcolors= ("black", "white"),
-        threshold= 0.5,
+        textcolors=("black", "white"),
+        threshold=0.5,
     )
+
 
 # def test_close_line():
 #     theta = np.linspace(0, 2*np.pi, 500)
