@@ -229,7 +229,7 @@ It is important to never share your Superstaq access key. They should never be c
 
 To prevent accidental sharing to GitHub, you can try the following methods:
 
-- Save your token to ``~/.local/share/super.tech/superstaq-api-key`` (or in any other directory listed `here <https://github.com/SupertechLabs/client-superstaq/blob/b22c911f292ba75e081449d75b937094d53ff13d/general-superstaq/general_superstaq/superstaq_client.py#L463-L470>`__), for example with
+- Save your token to ``~/.local/share/super.tech/superstaq-api-key`` (or in any other directory listed `here <https://github.com/Infleqtion/client-superstaq/blob/fc1a69e4672a046dc4ed5f007b609462e15d958c/general-superstaq/general_superstaq/superstaq_client.py#L1780-L1787>`__), for example with
 
 .. code-block:: bash
 
