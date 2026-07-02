@@ -77,6 +77,8 @@ A high-level description of key Superstaq tests are as follows:
     checks/lint_.py --fix # Automatically apply safe fixes to the linting issues raised (e.g., package import ordering).
     checks/lint_.py --fix --unsafe-fixes # Automatically apply potentially unsafe fixes that should be further reviewed.
     checks/mypy_.py  # Runs a static type check using `mypy`.
+    checks/licenses.py # Enforces that all python files have a license header.
+    checks/licenses.py --fix # Automatically applies the preset license header in the `pyproject.toml` at the top of a python file, if missing.
     checks/pytest_.py  # Runs local python tests (from `*_test.py` files, not including `*_integration_test.py`).
     checks/pytest_.py --integration  # Runs integration tests (`*_integration_test.py`).
     checks/pytest_.py --notebook  # Executes example notebooks to make they're working.
