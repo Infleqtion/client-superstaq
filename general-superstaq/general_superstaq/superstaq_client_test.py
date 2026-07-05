@@ -1,4 +1,4 @@
-# Copyright 2026 Infleqtion
+# Copyright 2026 Infleqtion, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -2014,6 +2014,18 @@ def test_find_api_key() -> None:
         mock.patch.dict(os.environ, SUPERSTAQ_API_KEY=""),
         mock.patch("pathlib.Path.is_file", return_value=True),
         mock.patch("builtins.open", mock.mock_open(read_data="tomyheart")),
+    ):
+        assert gss.superstaq_client.find_api_key() == "tomyheart"
+
+    # find key in the legacy hyphenated config filename
+    with (
+        mock.patch.dict(os.environ, SUPERSTAQ_API_KEY=""),
+        mock.patch(
+            "pathlib.Path.is_file",
+            autospec=True,
+            side_effect=lambda path: str(path).endswith("superstaq-api-key"),
+        ),
+        mock.patch("builtins.open", mock.mock_open(read_data="tomyheart\n")),
     ):
         assert gss.superstaq_client.find_api_key() == "tomyheart"
 
