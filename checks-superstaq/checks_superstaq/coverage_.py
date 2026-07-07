@@ -135,7 +135,7 @@ def _run_modular(
     )
 
     # Build (files_requiring_coverage, test_files) pairs
-    pairs: list[tuple[list[str], list[str]]] = []
+    test_pairs: list[tuple[list[str], list[str]]] = []
     while files:
         file = files.pop(0)
         test_files = check_utils.get_test_files([file], exclude=exclude, silent=True)
@@ -154,18 +154,18 @@ def _run_modular(
                 files_requiring_coverage.append(test_file)
                 files.remove(test_file)
 
-        pairs.append((files_requiring_coverage, test_files))
+        test_pairs.append((files_requiring_coverage, test_files))
 
     test_returncode = 0
     if num_jobs == 0:
         # Run modular checks one at a time
-        for files_requiring_coverage, test_files in pairs:
+        for files_requiring_coverage, test_files in test_pairs:
             result = _run_on_files(files_requiring_coverage, test_files, coverage_args, pytest_args)
             test_returncode |= result.returncode
         return test_returncode
 
     # Run modular checks concurrently
-    max_workers = num_jobs or min((os.cpu_count() or 2) // 2, len(test_files))
+    max_workers = num_jobs or min((os.cpu_count() or 2) // 2, len(test_pairs))
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         jobs = [
             executor.submit(
@@ -176,7 +176,7 @@ def _run_modular(
                 pytest_args,
                 capture_output=True,
             )
-            for files_requiring_coverage, test_files in pairs
+            for files_requiring_coverage, test_files in test_pairs
         ]
         for future in concurrent.futures.as_completed(jobs):
             result = future.result()
