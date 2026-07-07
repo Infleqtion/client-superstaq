@@ -85,7 +85,9 @@ def run(
 
     # Enable threading setting before other args so -n can be overwritten
     default_threads = (
-        "auto"
+        parsed_args.jobs
+        if not parsed_args.modular and parsed_args.jobs is not None
+        else "auto"
         if not parsed_args.files
         and not parsed_args.modular
         and parsed_args.revisions is None
