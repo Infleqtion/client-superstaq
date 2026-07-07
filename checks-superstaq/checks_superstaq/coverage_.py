@@ -56,7 +56,7 @@ def run(
         default=None,
         help="Parallelize modular coverage test across this many concurrent threads. This argument"
         " is ignored for non-modular coverage tests."
-        " Default: min((os.cpu_count() or 2) // 2, len(files))",
+        " Default: min((os.cpu_count() or 2) // 2, len(files_being_tested))",
     )
     parser.add_argument(
         "--branch",
