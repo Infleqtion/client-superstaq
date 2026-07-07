@@ -519,14 +519,14 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
             A qiskit result object containing job information.
 
         Raises:
-            NotImplementedError: The job does not admit retrieving result counts.
+            ValueError: The job does not have any counts.
         """
-        if self.job_data.job_type in (gss.models.JobType.COMPILE, gss.models.JobType.CONVERT):
-            raise NotImplementedError("There are no result data to be retrieved for this job type.")
-
         self.wait_until_terminal_state(index, timeout, wait)
         # Check to see if unsuccessful
         self._check_if_unsuccessful(index)
+
+        if all(result is None for result in self.job_data.counts):
+            raise ValueError("There are no counts to be retrieved for this job.")
 
         # create list of result dictionaries
         results_list = []

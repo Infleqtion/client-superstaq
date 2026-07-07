@@ -766,14 +766,14 @@ class JobV3(gss.job.Job):
             ~gss.SuperstaqServerException: If unable to get the results from the API.
             TimeoutError: If no results are available in the provided timeout interval.
             gss.SuperstaqException: If the job counts are missing.
-            NotImplementedError: The job does not admit retrieving result counts.
+            ValueError: The job does not have any result counts.
         """
-        if self.job_data.job_type in (gss.models.JobType.COMPILE, gss.models.JobType.CONVERT):
-            raise NotImplementedError("There are no counts to be retrieved for this job type.")
-
         self.wait_until_terminal_state(index, timeout_seconds, polling_seconds)
         # Check to see if unsuccessful
         self._check_if_unsuccessful(index)
+
+        if all(result is None for result in self.job_data.counts):
+            raise ValueError("There are no counts to be retrieved for this job.")
 
         if index is None:
             return [

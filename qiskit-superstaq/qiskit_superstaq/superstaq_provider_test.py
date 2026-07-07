@@ -27,6 +27,7 @@ import general_superstaq as gss
 import numpy as np
 import pytest
 import qiskit
+import qiskit.providers
 from general_superstaq import ResourceEstimate, testing
 
 import qiskit_superstaq as qss
@@ -410,7 +411,7 @@ def test_provider_compile_jobV3(
             else job.jaqal_program() is None
         )
 
-        with pytest.raises(NotImplementedError, match=r"There are no result"):
+        with pytest.raises(ValueError, match=r"There are no counts"):
             _ = job.result().get_counts()
 
 

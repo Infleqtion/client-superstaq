@@ -1145,7 +1145,7 @@ def test_service_compile_jobV3(
             else job.jaqal_program() is None
         )
 
-        with pytest.raises(NotImplementedError, match=r"There are no counts"):
+        with pytest.raises(ValueError, match=r"There are no counts"):
             _ = job.counts()
 
 
