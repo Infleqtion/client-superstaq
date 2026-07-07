@@ -158,7 +158,6 @@ def _run_modular(
     test_returncode = 0
     if num_jobs == 1:
         # Run modular checks one at a time
-        coverage_args.append("--append")
         for files_requiring_coverage, test_files in pairs:
             result = _run_on_files(files_requiring_coverage, test_files, coverage_args, pytest_args)
             test_returncode |= result.returncode
