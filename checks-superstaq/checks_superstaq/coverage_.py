@@ -112,7 +112,7 @@ def run(
 
     if not parsed_args.modular:
         result = _run_on_files(files, test_files, coverage_args, pytest_args)
-        return result.returncode
+        return _report(result.returncode)
 
     return _report(_run_modular(files, coverage_args, pytest_args, exclude, parsed_args.jobs))
 
