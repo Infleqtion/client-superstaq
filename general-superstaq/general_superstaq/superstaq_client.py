@@ -1,4 +1,4 @@
-# Copyright 2026 Infleqtion
+# Copyright 2026 Infleqtion, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1709,10 +1709,11 @@ def find_api_key() -> str:
         home_dir.joinpath(".super.tech"),
         home_dir.joinpath(".coldquanta"),
     ]:
-        path = directory.joinpath("superstaq_api_key")
-        if path.is_file():
-            with open(path) as file:
-                return file.readline()
+        for filename in ["superstaq_api_key", "superstaq-api-key"]:
+            path = directory.joinpath(filename)
+            if path.is_file():
+                with open(path) as file:
+                    return file.readline().strip()
 
     raise OSError(
         "Superstaq API key not specified and not found.\n"

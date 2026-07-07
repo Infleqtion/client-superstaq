@@ -1,4 +1,4 @@
-# Copyright 2026 Infleqtion
+# Copyright 2026 Infleqtion, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import uuid
 import warnings
 from collections import defaultdict
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Generic, Union, cast, overload
+from typing import TYPE_CHECKING, Any, Literal, Generic, Union, cast, overload
 
 import cirq
 import general_superstaq as gss
@@ -1361,7 +1361,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
                 else legend_labels
             )
             for t, c in zip(truncated_legend_labels, legend_colors):
-                linestyle = "" if t == "..." else "-"
+                linestyle: Literal["", "-"] = "" if t == "..." else "-"
                 custom_handles.append(plt.Line2D([], [], linestyle=linestyle, label=t, color=c))
         else:
             for t, c in zip(legend_labels, legend_colors):
