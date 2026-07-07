@@ -163,7 +163,8 @@ def _run_modular(
         return test_returncode
 
     # Run modular checks concurrently
-    with concurrent.futures.ThreadPoolExecutor(max_workers=num_jobs or None) as executor:
+    max_workers = num_jobs or min((os.cpu_count() or 2) // 2, len(test_files))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         jobs = [
             executor.submit(
                 _run_on_files,
