@@ -165,7 +165,6 @@ def _run_modular(
         return test_returncode
 
     # Run modular checks concurrently
-    coverage_args.append("--parallel-mode")
     with concurrent.futures.ThreadPoolExecutor(max_workers=num_jobs or None) as executor:
         jobs = [
             executor.submit(
