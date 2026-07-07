@@ -576,7 +576,7 @@ class JobV3(gss.job.Job):
                 compiled circuit.
         """
         self.wait_until_terminal_state(
-            index, timeout_seconds, polling_seconds, check_until_compile=True
+            index, timeout_seconds, polling_seconds, check_until_compiled=True
         )
 
         if index is None:
@@ -611,7 +611,7 @@ class JobV3(gss.job.Job):
         self.wait_until_terminal_state(
             timeout_seconds=timeout_seconds,
             polling_seconds=polling_seconds,
-            check_until_compile=True,
+            check_until_compiled=True,
         )
         return self.job_data.metadata.get("jaqal_program")
 
@@ -668,7 +668,7 @@ class JobV3(gss.job.Job):
             return [self.initial_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
 
         self.wait_until_terminal_state(
-            index, timeout_seconds, polling_seconds, check_until_compile=True
+            index, timeout_seconds, polling_seconds, check_until_compiled=True
         )
 
         lqs = cirq.read_json(json_text=self.job_data.logical_qubits[index])
@@ -711,7 +711,7 @@ class JobV3(gss.job.Job):
             return [self.final_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
 
         self.wait_until_terminal_state(
-            index, timeout_seconds, polling_seconds, check_until_compile=True
+            index, timeout_seconds, polling_seconds, check_until_compiled=True
         )
 
         lqs = cirq.read_json(json_text=self.job_data.logical_qubits[index])
