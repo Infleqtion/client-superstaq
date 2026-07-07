@@ -53,11 +53,10 @@ def run(
         "-j",
         "--jobs",
         type=int,
-        default=1,
+        default=None,
         help="Parallelize modular coverage test across this many concurrent threads. This argument"
-        " is ignored for non-modular coverage tests. '0' is interpreted as 'the default number used"
-        " by concurrent.futures.ThreadPoolExecutor', which is 'min(32, (os.cpu_count() or 1) + 4)'"
-        " at the time of writing.",
+        " is ignored for non-modular coverage tests."
+        " Default: min((os.cpu_count() or 2) // 2, len(files))",
     )
     parser.add_argument(
         "--branch",
@@ -122,7 +121,7 @@ def _run_modular(
     coverage_args: list[str],
     pytest_args: list[str],
     exclude: str | Iterable[str],
-    num_jobs: int,
+    num_jobs: int | None,
 ) -> int:
     """Run modular coverage checks.  If num_workers != 1, these checks are run concurrently."""
     subprocess.check_call([sys.executable, "-m", "coverage", "erase"], cwd=check_utils.root_dir)
@@ -156,7 +155,7 @@ def _run_modular(
         pairs.append((files_requiring_coverage, test_files))
 
     test_returncode = 0
-    if num_jobs == 1:
+    if num_jobs == 0:
         # Run modular checks one at a time
         for files_requiring_coverage, test_files in pairs:
             result = _run_on_files(files_requiring_coverage, test_files, coverage_args, pytest_args)
