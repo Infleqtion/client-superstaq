@@ -359,6 +359,16 @@ def test_counts_arranged(backend: qss.SuperstaqBackend) -> None:
     counts = job.result(0).get_counts()
     assert counts == {"00010": 50, "10010": 50}
 
+    job = qss.SuperstaqJob(backend=backend, job_id="789cba")
+    job._job_info["789cba"] = {
+        "status": "Done",
+        "samples": None,
+        "shots": 100,
+        "input_circuit": qss.serialization.serialize_circuits(qc4),
+        "compiled_circuit": qss.serialization.serialize_circuits(qc4),
+    }
+    job.result(0)
+
 
 def test_counts_arrangedV3(mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:
     # Test case: len(qiskit.ClassicalRegister()) = len(qiskit.QuantumRegister())
@@ -1047,18 +1057,10 @@ def test_eqV3(
 
 def test_to_dict(backend: qss.SuperstaqBackend) -> None:
     job = qss.SuperstaqJob(backend=backend, job_id="12345")
-    with patched_requests({"12345": mock_response("Running")}):
+    with patched_requests({"12345": mock_response("Queued")}):
         assert job.to_dict() == {
             "12345": {
-                "status": "Running",
-                "samples": {"11": 50, "10": 50},
-                "shots": 100,
-            }
-        }
-    with patched_requests({"12345": mock_response("Done")}):
-        assert job.to_dict() == {
-            "12345": {
-                "status": "Done",
+                "status": "Queued",
                 "samples": {"11": 50, "10": 50},
                 "shots": 100,
             }

@@ -154,7 +154,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         results_list = []
         for i, result in enumerate(results):
             counts = result["samples"]
-            if counts:  # pragma: no cover
+            if counts:
                 num_clbits = self._get_num_clbits(i)
                 circ_meas_bit_indices = self._get_clbit_indices(i)
                 if len(circ_meas_bit_indices) != num_clbits:
@@ -423,7 +423,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         Returns:
             A dictionary containing updated job information.
         """
-        if self._overall_status not in self.TERMINAL_STATES:  # pragma: no cover
+        if self._overall_status not in self.TERMINAL_STATES:  # pragma: no branch
             self._refresh_job()
         return self._job_info
 
