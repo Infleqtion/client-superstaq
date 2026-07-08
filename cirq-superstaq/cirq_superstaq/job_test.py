@@ -32,6 +32,9 @@ import http
 import json
 import textwrap
 import uuid
+import re
+from collections.abc import Mapping, Sequence
+from typing import TYPE_CHECKING
 from unittest import mock
 
 import cirq
@@ -40,6 +43,133 @@ import pytest
 import requests
 
 import cirq_superstaq as css
+
+if TYPE_CHECKING:
+    from qiskit_superstaq.conftest import MockSuperstaqProvider
+
+# def mock_response(status_str: str) -> dict[str, str | int | dict[str, int] | None]:
+#     """Mock response for requests.
+
+#     Args:
+#         status_str: the value for the status key.
+
+#     Returns:
+#         A mock response.
+#     """
+#     return {"status": status_str, "samples": {"11": 50, "10": 50}, "shots": 100}
+
+
+# def _mocked_request_response(content: object) -> requests.Response:
+#     response = requests.Response()
+#     response.status_code = http.HTTPStatus.OK.value
+#     response._content = json.dumps(content).encode()
+#     return response
+
+
+# def patched_requests(*contents: object) -> mock._patch[mock.Mock]:
+#     """Mocks all server responses with the given sequence of content objects.
+
+#     Args:
+#         contents: The JSON contents to return for each request.
+
+#     Returns:
+#         A mock patch that returns the provided content.
+#     """
+#     responses = [_mocked_request_response(val) for val in contents]
+#     return mock.patch("requests.Session.request", side_effect=responses)
+
+
+# @pytest.fixture
+# def backend(fake_superstaq_provider: MockSuperstaqProvider) -> qss.SuperstaqBackend:
+#     """Fixture for qiskit_superstaq backend.
+
+#     Args:
+#         fake_superstaq_provider: the mocked SuperstaqProvider.
+
+#     Returns:
+#         A mocked SuperstaqBackend.
+#     """
+#     return fake_superstaq_provider.get_backend("ss_example_qpu")
+
+
+# @pytest.fixture
+# def mock_client() -> gss.superstaq_client._SuperstaqClientV3:
+#     """Fixture for general-superstaq client."""
+#     return gss.superstaq_client._SuperstaqClientV3(
+#         client_name="circ-superstaq",
+#         remote_host="http://example.com",
+#         api_key="to_my_heart",
+#         api_version="v0.3.0",
+#     )
+
+# @mock.patch("requests.Session.get")
+# def test_check_if_unsuccessful(
+#     mock_get: mock.MagicMock, mock_client: css.superstaq_client._SuperstaqClientV3
+# ) -> None:
+#     job_dict = _job_dict()
+#     job_dict["num_circuits"] = 2
+#     job_dict["statuses"] = ["completed", "failed"]
+#     job_dict["status_messages"] = [None, "failure"]
+
+#     mock_get.return_value = _mocked_response({str(uuid.UUID(int=123)): job_dict})
+
+#     job = css.job.Job(mock_client,  "job_id1,job_id2,job_id3")
+#     job._job = {
+#         "job_id1": {"status": "Canceled"},
+#         "job_id2": {"status": "Running"},
+#         "job_id3": {"status": "Queued"},
+#     }
+
+#     with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="Job job_id1 terminated with status Canceled."):
+#         job._check_if_unsuccessful(0)
+
+#     # job = css.job.Job(mock_client, "")
+#     # job._check_if_unsuccessful(index=None)
+#     # with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="failure"):
+#     #     job._check_if_unsuccessful(1)
+
+#     job._job = {
+#         "job_id2": {"status": "Running"},
+#         "job_id3": {"status": "Queued"},}
+#     job.__getitem__(0)
+
+# def _job_dict() -> dict[str, object]:
+#     """Fixture for a standard, completed single v0.3.0 job result.
+
+#     Returns:
+#         A dictionary containing commonly expected job data.
+#     """
+#     return {
+#         "job_type": "simulate",
+#         "statuses": ["completed"],
+#         "status_messages": [None],
+#         "user_email": "test@email.com",
+#         "target": "ss_unconstrained_simulator",
+#         "provider_id": ["provider_id"],
+#         "num_circuits": 1,
+#         "compiled_circuits": [None],
+#         "input_circuits": [""],
+#         "circuit_type": "qasm",
+#         "counts": [{"11": 1}],
+#         "results_dicts": [],
+#         "shots": [1],
+#         "dry_run": True,
+#         "submission_timestamp": str(datetime.datetime.now(tz=datetime.timezone.utc)),
+#         "last_updated_timestamp": [str(datetime.datetime.now(tz=datetime.timezone.utc))],
+#         "initial_logical_to_physicals": [{0: 0, 1: 1}],
+#         "final_logical_to_physicals": [{0: 0, 1: 1}],
+#         "logical_qubits": ["0", "1"],
+#         "physical_qubits": ["0", "1"],
+#         "tags": ["some", "tags"],
+#         "metadata": {"foo": "bar"},
+#     }
+
+
+# def _mocked_response(content: object) -> requests.Response:
+#     response = requests.Response()
+#     response.status_code = http.HTTPStatus.OK.value
+#     response._content = json.dumps(content).encode()
+#     return response
 
 
 @pytest.fixture
@@ -845,6 +975,8 @@ def test_job_getitem(multi_circuit_job: css.Job) -> None:
     assert isinstance(job_1, css.Job)
     assert job_1.job_id() == "job_id1"
     assert job_1.status() == "Done"
+    # job_1.job_id() == "job_id2"
+    # job_1.__getitem__(job_1)
 
 
 def test_get_marginal_counts() -> None:
@@ -905,3 +1037,64 @@ def test_set_counts_jaqal(
     )
     jobV3.set_counts(result)
     assert jobV3.counts(0) == {"10": 1000}
+
+
+def test_update_status_queue_info() -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="cirq-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    job = css.Job(client, "job_id1,job_id2,job_id3")
+    job._job = {
+        "job_id1": {"status": "Done"},
+        "job_id2": {"status": "Running"},
+        "job_id3": {"status": "Queued"},
+    }
+    job._update_status_queue_info()
+    assert job._overall_status == "Running"
+
+    job = css.Job(client, "job_id1,job_id2,job_id3")
+    job._job = {
+        "job_id1": {"status": " "},
+        "job_id2": {"status": " "},
+        "job_id3": {"status": " "},
+    }
+    job._update_status_queue_info()
+    assert job._overall_status == "Submitted"
+
+
+def test_check_if_unsuccessful() -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="cirq-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    job = css.Job(client, "job_id1, job_id2, job_id3")
+    job._job = {
+        "job_id1, job_id2, job_id3": {"status": "Done"},
+        "job_id2": {"status": "Running"},
+        "job_id3": {"status": "Canceled"},
+    }
+
+    # with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match=r"Job job_id3 terminated with status Canceled"):
+    #     css.job.Job._check_if_unsuccessful(job,2)
+
+    job = css.Job(client, "job_id1,job_id2,job_id3")
+    job._job = {
+        "job_id1": {"status": "Failed", "failure": {"error": "error"}},
+        "job_id2": {"status": "Failed", "failure": {None: 1}},
+    }
+
+    with pytest.raises(
+        gss.SuperstaqUnsuccessfulJobException,
+        match=re.escape("Job job_id1 terminated with status Failed (error)."),
+    ):
+        css.job.Job._check_if_unsuccessful(job, 0)
+
+    with pytest.raises(
+        gss.SuperstaqUnsuccessfulJobException, match=r"Job job_id2 terminated with status Failed"
+    ):
+        css.job.Job._check_if_unsuccessful(job, 1)
+
+    css.job.Job.__getitem__(job, 2)
