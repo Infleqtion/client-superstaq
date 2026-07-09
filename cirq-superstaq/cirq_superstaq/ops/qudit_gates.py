@@ -115,7 +115,6 @@ class QuditSwapGate(cirq.Gate, cirq.InterchangeableQubitsGate):
         return f"css.QuditSwapGate(dimension={self._dimension!r})"
 
 
-@cirq.value_equality(manual_cls=True)
 class QuditPermutationGate(cirq.QubitPermutationGate):
     """Extension of `cirq.QubitPermutationGate` to support qudits of arbitrary dimension."""
 
