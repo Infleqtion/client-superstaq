@@ -75,6 +75,7 @@ __all__ = [
     "ParallelGates",
     "ParallelRGate",
     "QubitSubspaceGate",
+    "QuditPermutationGate",
     "QuditSwapGate",
     "QutritCZPowGate",
     "QutritZ0",
