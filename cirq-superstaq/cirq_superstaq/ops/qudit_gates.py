@@ -123,6 +123,10 @@ class QuditPermutationGate(cirq.QubitPermutationGate):
         self._qid_shape = (dimension,) * len(permutation)
         super().__init__(permutation)
 
+    @property
+    def dimension(self) -> int:
+        return self._dimension
+
     def _qid_shape_(self) -> tuple[int, ...]:
         return self._qid_shape
 
@@ -138,6 +142,23 @@ class QuditPermutationGate(cirq.QubitPermutationGate):
         if self._dimension == 2:
             return permutation_val
         return permutation_val, self._dimension
+
+    def _equal_up_to_global_phase_(self, other: object, atol: float = 1e-8) -> bool:
+        return self == other
+
+    def _trace_distance_bound_(self) -> float:
+        if all(i == j for i, j in enumerate(self._permutation)):
+            return 0.0
+        return 1.0
+
+    def _json_dict_(self) -> dict[str, object]:
+        return cirq.obj_to_dict_helper(self, ["permutation", "dimension"])
+
+    @classmethod
+    def _from_json_dict_(
+        cls, permutation: Sequence[int], dimension: int = 2, **_: object
+    ) -> QuditPermutationGate:
+        return cls(permutation, dimension=dimension)
 
     def __repr__(self) -> str:
         return f"css.QuditPermutationGate({self.permutation!r}, dimension={self._dimension})"
@@ -841,5 +862,7 @@ def custom_resolver(
         return QutritZ2PowGate
     if cirq_type == "QubitSubspaceGate":
         return QubitSubspaceGate
+    if cirq_type == "QuditPermutationGate":
+        return QuditPermutationGate
 
     return None
