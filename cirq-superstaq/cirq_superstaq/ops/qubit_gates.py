@@ -1020,6 +1020,95 @@ class StrippedCZGate(cirq.Gate):
         return cirq.obj_to_dict_helper(self, ["rz_rads"])
 
 
+@cirq.value_equality(manual_cls=True)
+class MotionGate(cirq.QubitPermutationGate):
+
+    def __init__(self, moves: Mapping[int, int], dimension: int = 2) -> None:
+        all_indices = set(moves.keys()) | set(moves.values())
+        num_qubits = max(all_indices) + 1
+
+        if invalid_indices := all_indices.difference(range(num_qubits)):
+            raise ValueError(f"Invalid indices: {invalid_indices}.")
+
+        if invalid_indices := all_indices.symmetric_difference(range(num_qubits)):
+            raise ValueError(f"Missing indices: {invalid_indices}.")
+
+        if len(set(moves.values())) < len(moves):
+            raise ValueError("Multiple qubits are mapped to the same site.")
+
+        depopulated = all_indices.difference(moves.values())
+        repopulated = all_indices.difference(moves.keys())
+        remainder = dict(zip(sorted(repopulated), sorted(depopulated)))
+        complete_map = {**moves, **remainder}
+        permutation = [complete_map[i] for i in range(num_qubits)]
+
+        super().__init__(permutation)
+
+        self._moves = dict(moves)
+        self._dimension = dimension
+        self._qid_shape = (dimension,) * num_qubits
+
+    @property
+    def moves(self) -> dict[int, int]:
+        return self._moves
+
+    def _qid_shape_(self) -> tuple[int]:
+        return self._qid_shape
+
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:
+        if not args.known_qubits:
+            return super()._circuit_diagram_info_(args)
+
+        qubits = args.known_qubits
+        qubit_symbols = [cirq.circuit_diagram_info(q).wire_symbols[0] for q in qubits]
+        wire_symbols = []
+        source = {j: qubits[i] for i, j in enumerate(self._permutation)}
+        barrier = "─" if args.transpose else "│"
+        spaces = max(len(str(q)) for q in qubits) * 2
+
+        qubits_l = [
+            str(qubits[qi])
+            for qi, qf in enumerate(self._permutation[:self._num_populated])
+            if qi != qf
+        ]
+        qubits_r = [
+            str(qubits[qf])
+            for qi, qf in enumerate(self._permutation[:self._num_populated])
+            if qi != qf
+        ]
+        width_l = max(map(len, qubits_l))
+        width_r = max(map(len, qubits_r))
+        qubits_l = [q.ljust(width_l) for q in qubits_l]
+        qubits_r = [q.rjust(width_r) for q in qubits_r]
+
+
+        for i, j in enumerate(self._permutation):
+            if i >= self._num_populated:
+                symbol = f"{barrier} {space}{qubits[j]} >"
+
+            if i == j:
+                symbol = ""
+            elif 1 or qubits[i] < qubits[j]:
+                space = " " * (spaces - len(str(qubits[j])) - len(str(source[j])))
+                print(spaces, len(space))
+                symbol = f"🡪 {qubits[j]} {space}{source[j]}🡪 "
+            else:
+                # symbol = f" (⭧ {qubit_symbols[j]}) "
+                symbol = f"🡪 {qubits[j]} {barrier} {qubit_symbols[j]}: "
+                symbol = f"[{qubits[i]} 🡪 {qubits[j]}]"
+                # symbol = f"⯈ {qubits[j]} "
+            wire_symbols.append(symbol)
+
+        # symbols = [f'->{qubit_symbols[j]}' if i != j else "" for i, j in enumerate(self._permutation)]
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols, connected=False)
+
+
+def motion_op(qubit_map: Mapping[cirq.Qid, cirq.Qid]) -> cirq.Operation:
+    all_qubits = sorted(qubit_map.keys() | qubit_map.values())
+    moves = {all_qubits.index(qi): all_qubits.index(qf) for qi, qf in motion_op.items()}
+    return MotionGate(moves).on(*all_qubits)
+
+
 class DDPowGate(cirq.EigenGate):
     r"""The Dipole-Dipole gate for EeroQ hardware."""
 

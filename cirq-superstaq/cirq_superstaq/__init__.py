@@ -56,6 +56,7 @@ from cirq_superstaq.ops import (
     ParallelRGate,
     QubitSubspaceGate,
     QuditSwapGate,
+    QuditPermutationGate,
     QutritCZPowGate,
     QutritZ0,
     QutritZ0PowGate,

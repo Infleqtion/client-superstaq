@@ -41,6 +41,7 @@ from .qudit_gates import (
     SWAP3,
     BSwapPowGate,
     QubitSubspaceGate,
+    QuditPermutationGate,
     QuditSwapGate,
     QutritCZPowGate,
     QutritZ0,

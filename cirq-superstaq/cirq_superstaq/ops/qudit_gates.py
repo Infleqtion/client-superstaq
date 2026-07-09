@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 import abc
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from collections.abc import Set as AbstractSet
 from typing import TYPE_CHECKING, Any
 
@@ -113,6 +113,35 @@ class QuditSwapGate(cirq.Gate, cirq.InterchangeableQubitsGate):
             return f"css.SWAP{self._dimension}"
 
         return f"css.QuditSwapGate(dimension={self._dimension!r})"
+
+
+@cirq.value_equality(manual_cls=True)
+class QuditPermutationGate(cirq.QubitPermutationGate):
+    """Extension of `cirq.QubitPermutationGate` to support qudits of arbitrary dimension."""
+
+    def __init__(self, permutation: Sequence[int], dimension: int = 2) -> None:
+        self._dimension = dimension
+        self._qid_shape = (dimension,) * len(permutation)
+        super().__init__(permutation)
+
+    def _qid_shape_(self) -> tuple[int, ...]:
+        return self._qid_shape
+
+    def _decompose_(self, qubits: Sequence[cirq.Qid]) -> Iterator[cirq.Operation]:
+        qs = [q.with_dimension(2) for q in qubits]
+
+        for op in cirq.decompose_once(cirq.QubitPermutationGate(self._permutation).on(*qs)):
+            qudits = [qubits[qs.index(q)] for q in op.qubits]
+            yield css.qudit_swap_op(*qudits)
+
+    def _value_equality_values_(self) -> tuple[int, ...] | tuple[tuple[int, ...], int]:
+        permutation_val = super()._value_equality_values_()
+        if self._dimension == 2:
+            return permutation_val
+        return permutation_val, self._dimension
+
+    def __repr__(self) -> str:
+        return f"css.QuditPermutationGate({self.permutation!r}, dimension={self._dimension})"
 
 
 class BSwapPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
