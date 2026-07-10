@@ -111,22 +111,43 @@ def test_qudit_permutation_gate() -> None:
     np.testing.assert_array_equal(cirq.Circuit(op).unitary(), cirq.unitary(css.QuditSwapGate(5)))
     assert cirq.decompose_once(op) == [css.QuditSwapGate(5).on(*qudits)]
 
-    permutation = [1, 3, 2, 4, 0]
+    permutation = (1, 3, 2, 4, 0)
     qubits = cirq.LineQubit.range(5)
     gate = css.QuditPermutationGate(permutation, dimension=2)
     base = cirq.QubitPermutationGate(permutation)
+    assert gate.permutation == permutation
+    assert gate.dimension == 2
     assert gate == base
     assert cirq.approx_eq(gate, base)
+    assert cirq.equal_up_to_global_phase(gate, base)
     assert cirq.decompose(gate(*qubits)) == cirq.decompose(base(*qubits))
     cirq.testing.assert_implements_consistent_protocols(gate, local_vals={"css": css})
+    cirq.testing.assert_json_roundtrip_works(
+        gate, resolvers=[*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]
+    )
 
     gate = css.QuditPermutationGate(permutation, dimension=3)
-    cirq.testing.assert_implements_consistent_protocols(
-        gate, ignore_decompose_to_default_gateset=True, local_vals={"css": css}
-    )
+    assert gate.permutation == permutation
+    assert gate.dimension == 3
+    assert cirq.qid_shape(gate) == (3, 3, 3, 3, 3)
+    assert cirq.trace_distance_bound(gate) == 1.0
     assert gate == css.QuditPermutationGate(permutation, dimension=3)
     assert gate != css.QuditPermutationGate(permutation, dimension=4)
     assert gate != cirq.QubitPermutationGate(permutation)
+    assert cirq.approx_eq(gate, css.QuditPermutationGate(permutation, dimension=3))
+    assert not cirq.approx_eq(gate, css.QuditPermutationGate(permutation, dimension=4))
+    assert not cirq.approx_eq(gate, cirq.QubitPermutationGate(permutation))
+    assert cirq.equal_up_to_global_phase(gate, css.QuditPermutationGate(permutation, 3))
+    assert not cirq.equal_up_to_global_phase(gate, css.QuditPermutationGate(permutation, 4))
+    assert not cirq.equal_up_to_global_phase(gate, cirq.QubitPermutationGate(permutation))
+    cirq.testing.assert_implements_consistent_protocols(
+        gate, ignore_decompose_to_default_gateset=True, local_vals={"css": css}
+    )
+    cirq.testing.assert_json_roundtrip_works(
+        gate, resolvers=[*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]
+    )
+
+    assert cirq.trace_distance_bound(css.QuditPermutationGate([0, 1, 2], dimension=3)) == 0.0
 
 
 def test_movement_gate() -> None:
@@ -158,6 +179,25 @@ def test_movement_gate() -> None:
         gate, ignore_decompose_to_default_gateset=True, local_vals={"css": css}
     )
 
+    moves = {2: 4, 3: 3, 1: 0, 4: 5}
+    gate = css.MovementGate(moves)
+    assert gate.moves == moves
+    assert gate.complete_map == {**moves, 0: 1, 5: 2}
+    assert gate.dimension == 2
+    assert cirq.num_qubits(gate) == 6
+    assert cirq.qid_shape(gate) == (2, 2, 2, 2, 2, 2)
+
+    qubits = cirq.LineQubit.range(6)
+    cirq.testing.assert_circuits_have_same_unitary_given_final_permutation(
+        cirq.Circuit(gate(*qubits)),
+        cirq.Circuit(css.barrier(*qubits)),
+        {qubits[i]: qubits[j] for i, j in gate.complete_map.items()},
+    )
+    cirq.testing.assert_json_roundtrip_works(
+        gate, resolvers=[*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]
+    )
+    cirq.testing.assert_implements_consistent_protocols(gate, local_vals={"css": css})
+
     with pytest.raises(ValueError, match=r"Invalid indices: {-1}"):
         _ = css.MovementGate({0: -1})
 
@@ -172,7 +212,7 @@ def test_movement_gate() -> None:
 
 
 def test_movement_op() -> None:
-    q0, q1, q2, q3, q4 = qubits = cirq.LineQubit.range(5)
+    q2, q3, q4 = cirq.LineQubit.range(2, 5)
     op = css.movement_op({q2: q3, q3: q4})
     assert op.gate == css.MovementGate({0: 1, 1: 2})
     assert op == css.MovementGate({0: 1, 1: 2}).on(q2, q3, q4)
@@ -221,19 +261,6 @@ def test_movement_op() -> None:
             7 (d=3): ───┤2   ├───
             """
         ),
-    )
-
-    op = css.movement_op({q2: q4, q3: q3, q1: q0, q0: q2, q4: q1})
-    cirq.testing.assert_circuits_have_same_unitary_given_final_permutation(
-        cirq.Circuit(op),
-        cirq.Circuit(css.barrier(*qubits)),
-        {qubits[i]: qubits[j] for i, j in op.gate.complete_map.items()},
-    )
-    cirq.testing.assert_json_roundtrip_works(
-        op, resolvers=[*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]
-    )
-    cirq.testing.assert_implements_consistent_protocols(
-        op, ignore_decompose_to_default_gateset=True, local_vals={"css": css}
     )
 
     with pytest.raises(ValueError, match=r"same dimension"):

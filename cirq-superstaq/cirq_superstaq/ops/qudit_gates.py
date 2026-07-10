@@ -143,6 +143,23 @@ class QuditPermutationGate(cirq.QubitPermutationGate):
             return permutation_val
         return permutation_val, self._dimension
 
+    def _equal_up_to_global_phase_(self, other: object, atol: float = 1e-8) -> bool:
+        return self == other
+
+    def _trace_distance_bound_(self) -> float:
+        if all(i == j for i, j in enumerate(self._permutation)):
+            return 0.0
+        return 1.0
+
+    def _json_dict_(self) -> dict[str, object]:
+        return cirq.obj_to_dict_helper(self, ["permutation", "dimension"])
+
+    @classmethod
+    def _from_json_dict_(
+        cls, permutation: Sequence[int], dimension: int = 2, **_: Any
+    ) -> QuditPermutationGate:
+        return cls(permutation, dimension=dimension)
+
     def __repr__(self) -> str:
         return f"css.QuditPermutationGate({self.permutation!r}, dimension={self._dimension})"
 
@@ -206,17 +223,17 @@ class MovementGate(QuditPermutationGate):
         return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols, connected=False)
 
     def _json_dict_(self) -> dict[str, object]:
-        return {
-            "initial": list(self._moves.keys()),
-            "final": list(self._moves.values()),
-            "dimension": self._dimension,
-        }
+        return super()._json_dict_() | {"initial": list(self._moves.keys())}
 
     @classmethod
     def _from_json_dict_(
-        cls, initial: list[int], final: list[int], dimension: int = 2, **_: object
+        cls,
+        permutation: Sequence[int],
+        dimension: int = 2,
+        initial: Sequence[int] = (),
+        **_: object,
     ) -> MovementGate:
-        moves = dict(zip(initial, final))
+        moves = {i: permutation[i] for i in initial}
         return cls(moves, dimension=dimension)
 
     def __repr__(self) -> str:
@@ -923,23 +940,16 @@ def custom_resolver(
     Returns:
         The resolved Cirq Gate matching the input, or None if no match.
     """
-    if cirq_type == "QuditSwapGate":
-        return QuditSwapGate
-    if cirq_type == "BSwapPowGate":
-        return BSwapPowGate
-    if cirq_type == "QutritCZPowGate":
-        return QutritCZPowGate
-    if cirq_type == "VirtualZPowGate":
-        return VirtualZPowGate
-    if cirq_type == "QutritZ0PowGate":
-        return QutritZ0PowGate
-    if cirq_type == "QutritZ1PowGate":
-        return QutritZ1PowGate
-    if cirq_type == "QutritZ2PowGate":
-        return QutritZ2PowGate
-    if cirq_type == "QubitSubspaceGate":
-        return QubitSubspaceGate
-    if cirq_type == "MovementGate":
-        return MovementGate
-
-    return None
+    cirq_type_to_type: dict[str, type[cirq.Gate]] = {
+        "QuditSwapGate": QuditSwapGate,
+        "BSwapPowGate": BSwapPowGate,
+        "QutritCZPowGate": QutritCZPowGate,
+        "VirtualZPowGate": VirtualZPowGate,
+        "QutritZ0PowGate": QutritZ0PowGate,
+        "QutritZ1PowGate": QutritZ1PowGate,
+        "QutritZ2PowGate": QutritZ2PowGate,
+        "QubitSubspaceGate": QubitSubspaceGate,
+        "QuditPermutationGate": QuditPermutationGate,
+        "MovementGate": MovementGate,
+    }
+    return cirq_type_to_type.get(cirq_type)
