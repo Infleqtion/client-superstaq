@@ -120,7 +120,6 @@ class PermutationGate(cirq.QubitPermutationGate):
 
     def __init__(self, permutation: Sequence[int], dimension: int = 2) -> None:
         self._dimension = dimension
-        self._qid_shape = (dimension,) * len(permutation)
         super().__init__(permutation)
 
     @property
@@ -128,7 +127,7 @@ class PermutationGate(cirq.QubitPermutationGate):
         return self._dimension
 
     def _qid_shape_(self) -> tuple[int, ...]:
-        return self._qid_shape
+        return (self._dimension,) * len(self._permutation)
 
     def _decompose_(self, qubits: Sequence[cirq.Qid]) -> Iterator[cirq.Operation]:
         qs = [q.with_dimension(2) for q in qubits]
