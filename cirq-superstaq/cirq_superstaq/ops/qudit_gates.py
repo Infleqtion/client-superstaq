@@ -115,12 +115,11 @@ class QuditSwapGate(cirq.Gate, cirq.InterchangeableQubitsGate):
         return f"css.QuditSwapGate(dimension={self._dimension!r})"
 
 
-class QuditPermutationGate(cirq.QubitPermutationGate):
+class PermutationGate(cirq.QubitPermutationGate):
     """Extension of `cirq.QubitPermutationGate` to support qudits of arbitrary dimension."""
 
     def __init__(self, permutation: Sequence[int], dimension: int = 2) -> None:
         self._dimension = dimension
-        self._qid_shape = (dimension,) * len(permutation)
         super().__init__(permutation)
 
     @property
@@ -128,7 +127,7 @@ class QuditPermutationGate(cirq.QubitPermutationGate):
         return self._dimension
 
     def _qid_shape_(self) -> tuple[int, ...]:
-        return self._qid_shape
+        return (self._dimension,) * len(self._permutation)
 
     def _decompose_(self, qubits: Sequence[cirq.Qid]) -> Iterator[cirq.Operation]:
         qs = [q.with_dimension(2) for q in qubits]
@@ -157,14 +156,14 @@ class QuditPermutationGate(cirq.QubitPermutationGate):
     @classmethod
     def _from_json_dict_(
         cls, permutation: Sequence[int], dimension: int = 2, **_: Any
-    ) -> QuditPermutationGate:
+    ) -> PermutationGate:
         return cls(permutation, dimension=dimension)
 
     def __repr__(self) -> str:
-        return f"css.QuditPermutationGate({self.permutation!r}, dimension={self._dimension})"
+        return f"css.PermutationGate({self.permutation!r}, dimension={self._dimension})"
 
 
-class MovementGate(QuditPermutationGate):
+class MovementGate(PermutationGate):
     """A gate to represent qubit shuttling."""
 
     def __init__(self, moves: Mapping[int, int], dimension: int = 2) -> None:
@@ -954,7 +953,7 @@ def custom_resolver(
         "QutritZ1PowGate": QutritZ1PowGate,
         "QutritZ2PowGate": QutritZ2PowGate,
         "QubitSubspaceGate": QubitSubspaceGate,
-        "QuditPermutationGate": QuditPermutationGate,
+        "PermutationGate": PermutationGate,
         "MovementGate": MovementGate,
     }
     return cirq_type_to_type.get(cirq_type)
