@@ -168,6 +168,8 @@ class MovementGate(QuditPermutationGate):
     """A gate to represent qubit shuttling."""
 
     def __init__(self, moves: Mapping[int, int], dimension: int = 2) -> None:
+        moves = {int(i): int(j) for i, j in moves.items()}
+
         all_indices = set(moves.keys()) | set(moves.values())
         num_qubits = max(all_indices) + 1
 
@@ -180,15 +182,18 @@ class MovementGate(QuditPermutationGate):
         if len(set(moves.values())) < len(moves):
             raise ValueError("Multiple qubits are mapped to the same site.")
 
-        depopulated = all_indices.difference(moves.values())
-        repopulated = all_indices.difference(moves.keys())
-        remainder = dict(zip(sorted(repopulated), sorted(depopulated)))
-        complete_map = {**moves, **remainder}
-        permutation = [complete_map[i] for i in range(num_qubits)]
+        # Fill out permutation with "empty" moves
+        depopulated = sorted(all_indices.difference(moves.values()))
+        permutation = []
+        for i in range(num_qubits):
+            if i in moves:
+                permutation.append(moves[i])
+            else:
+                permutation.append(depopulated.pop(0))
+        assert not depopulated
 
         super().__init__(permutation, dimension=dimension)
-        self._moves = dict(moves)
-        self._complete_map = complete_map
+        self._moves = moves
 
     @property
     def moves(self) -> dict[int, int]:
@@ -200,7 +205,7 @@ class MovementGate(QuditPermutationGate):
 
         Note this is not always unique.
         """
-        return self._complete_map
+        return dict(enumerate(self._permutation))
 
     # Type check override necessary because `cirq.QubitPermutationGate` uses legacy `tuple` output
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:  # type: ignore[override]
