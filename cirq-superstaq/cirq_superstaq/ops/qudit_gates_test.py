@@ -102,9 +102,9 @@ def test_qudit_swap_op() -> None:
         _ = css.qudit_swap_op(qubit0, qudit1)
 
 
-def test_qudit_permutation_gate() -> None:
+def test_permutation_gate() -> None:
     qudits = cirq.LineQid(0, 5), cirq.LineQid(3, 5)
-    gate = css.QuditPermutationGate([1, 0], dimension=5)
+    gate = css.PermutationGate([1, 0], dimension=5)
     np.testing.assert_array_equal(cirq.unitary(gate), cirq.unitary(css.QuditSwapGate(5)))
 
     op = gate(*qudits)
@@ -113,7 +113,7 @@ def test_qudit_permutation_gate() -> None:
 
     permutation = (1, 3, 2, 4, 0)
     qubits = cirq.LineQubit.range(5)
-    gate = css.QuditPermutationGate(permutation, dimension=2)
+    gate = css.PermutationGate(permutation, dimension=2)
     base = cirq.QubitPermutationGate(permutation)
     assert gate.permutation == permutation
     assert gate.dimension == 2
@@ -126,19 +126,19 @@ def test_qudit_permutation_gate() -> None:
         gate, resolvers=[*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]
     )
 
-    gate = css.QuditPermutationGate(permutation, dimension=3)
+    gate = css.PermutationGate(permutation, dimension=3)
     assert gate.permutation == permutation
     assert gate.dimension == 3
     assert cirq.qid_shape(gate) == (3, 3, 3, 3, 3)
     assert cirq.trace_distance_bound(gate) == 1.0
-    assert gate == css.QuditPermutationGate(permutation, dimension=3)
-    assert gate != css.QuditPermutationGate(permutation, dimension=4)
+    assert gate == css.PermutationGate(permutation, dimension=3)
+    assert gate != css.PermutationGate(permutation, dimension=4)
     assert gate != cirq.QubitPermutationGate(permutation)
-    assert cirq.approx_eq(gate, css.QuditPermutationGate(permutation, dimension=3))
-    assert not cirq.approx_eq(gate, css.QuditPermutationGate(permutation, dimension=4))
+    assert cirq.approx_eq(gate, css.PermutationGate(permutation, dimension=3))
+    assert not cirq.approx_eq(gate, css.PermutationGate(permutation, dimension=4))
     assert not cirq.approx_eq(gate, cirq.QubitPermutationGate(permutation))
-    assert cirq.equal_up_to_global_phase(gate, css.QuditPermutationGate(permutation, 3))
-    assert not cirq.equal_up_to_global_phase(gate, css.QuditPermutationGate(permutation, 4))
+    assert cirq.equal_up_to_global_phase(gate, css.PermutationGate(permutation, dimension=3))
+    assert not cirq.equal_up_to_global_phase(gate, css.PermutationGate(permutation, dimension=4))
     assert not cirq.equal_up_to_global_phase(gate, cirq.QubitPermutationGate(permutation))
     cirq.testing.assert_implements_consistent_protocols(
         gate, ignore_decompose_to_default_gateset=True, local_vals={"css": css}
@@ -147,7 +147,7 @@ def test_qudit_permutation_gate() -> None:
         gate, resolvers=[*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]
     )
 
-    assert cirq.trace_distance_bound(css.QuditPermutationGate([0, 1, 2], dimension=3)) == 0.0
+    assert cirq.trace_distance_bound(css.PermutationGate([0, 1, 2], dimension=3)) == 0.0
 
 
 def test_bswap_pow_gate() -> None:

@@ -115,7 +115,7 @@ class QuditSwapGate(cirq.Gate, cirq.InterchangeableQubitsGate):
         return f"css.QuditSwapGate(dimension={self._dimension!r})"
 
 
-class QuditPermutationGate(cirq.QubitPermutationGate):
+class PermutationGate(cirq.QubitPermutationGate):
     """Extension of `cirq.QubitPermutationGate` to support qudits of arbitrary dimension."""
 
     def __init__(self, permutation: Sequence[int], dimension: int = 2) -> None:
@@ -157,11 +157,11 @@ class QuditPermutationGate(cirq.QubitPermutationGate):
     @classmethod
     def _from_json_dict_(
         cls, permutation: Sequence[int], dimension: int = 2, **_: object
-    ) -> QuditPermutationGate:
+    ) -> PermutationGate:
         return cls(permutation, dimension=dimension)
 
     def __repr__(self) -> str:
-        return f"css.QuditPermutationGate({self.permutation!r}, dimension={self._dimension})"
+        return f"css.PermutationGate({self.permutation!r}, dimension={self._dimension})"
 
 
 class BSwapPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
@@ -862,7 +862,7 @@ def custom_resolver(
         return QutritZ2PowGate
     if cirq_type == "QubitSubspaceGate":
         return QubitSubspaceGate
-    if cirq_type == "QuditPermutationGate":
-        return QuditPermutationGate
+    if cirq_type == "PermutationGate":
+        return PermutationGate
 
     return None
