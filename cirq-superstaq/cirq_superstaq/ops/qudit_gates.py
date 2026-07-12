@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 import abc
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from collections.abc import Set as AbstractSet
 from typing import TYPE_CHECKING, Any
 
@@ -113,6 +113,54 @@ class QuditSwapGate(cirq.Gate, cirq.InterchangeableQubitsGate):
             return f"css.SWAP{self._dimension}"
 
         return f"css.QuditSwapGate(dimension={self._dimension!r})"
+
+
+class PermutationGate(cirq.QubitPermutationGate):
+    """Extension of `cirq.QubitPermutationGate` to support qudits of arbitrary dimension."""
+
+    def __init__(self, permutation: Sequence[int], dimension: int = 2) -> None:
+        self._dimension = dimension
+        super().__init__(permutation)
+
+    @property
+    def dimension(self) -> int:
+        return self._dimension
+
+    def _qid_shape_(self) -> tuple[int, ...]:
+        return (self._dimension,) * len(self._permutation)
+
+    def _decompose_(self, qubits: Sequence[cirq.Qid]) -> Iterator[cirq.Operation]:
+        qs = [q.with_dimension(2) for q in qubits]
+
+        for op in cirq.decompose_once(cirq.QubitPermutationGate(self._permutation).on(*qs)):
+            qudits = [qubits[qs.index(q)] for q in op.qubits]
+            yield css.qudit_swap_op(*qudits)
+
+    def _value_equality_values_(self) -> tuple[int, ...] | tuple[tuple[int, ...], int]:
+        permutation_val = super()._value_equality_values_()
+        if self._dimension == 2:
+            return permutation_val
+        return permutation_val, self._dimension
+
+    def _equal_up_to_global_phase_(self, other: object, atol: float = 1e-8) -> bool:
+        return self == other
+
+    def _trace_distance_bound_(self) -> float:
+        if all(i == j for i, j in enumerate(self._permutation)):
+            return 0.0
+        return 1.0
+
+    def _json_dict_(self) -> dict[str, object]:
+        return cirq.obj_to_dict_helper(self, ["permutation", "dimension"])
+
+    @classmethod
+    def _from_json_dict_(
+        cls, permutation: Sequence[int], dimension: int = 2, **_: object
+    ) -> PermutationGate:
+        return cls(permutation, dimension=dimension)
+
+    def __repr__(self) -> str:
+        return f"css.PermutationGate({self.permutation!r}, dimension={self._dimension})"
 
 
 class BSwapPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
@@ -813,5 +861,7 @@ def custom_resolver(
         return QutritZ2PowGate
     if cirq_type == "QubitSubspaceGate":
         return QubitSubspaceGate
+    if cirq_type == "PermutationGate":
+        return PermutationGate
 
     return None
