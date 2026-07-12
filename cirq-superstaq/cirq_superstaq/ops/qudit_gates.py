@@ -164,7 +164,10 @@ class PermutationGate(cirq.QubitPermutationGate):
 
 
 class MovementGate(PermutationGate):
-    """A gate to represent qubit shuttling."""
+    """A gate to represent qubit shuttling.
+
+    Mostly just a wrapper for a permutation gate, but doesn't require destinations for empty sites.
+    """
 
     def __init__(self, moves: Mapping[int, int], dimension: int = 2) -> None:
         moves = {int(i): int(j) for i, j in moves.items()}
@@ -880,7 +883,18 @@ def qudit_swap_op(qudit0: cirq.Qid, qudit1: cirq.Qid) -> cirq.Operation:
 
 
 def movement_op(moves: Mapping[cirq.Qid, cirq.Qid]) -> cirq.Operation:
-    """Construct a `MovementGate` operation implementing the given moves."""
+    """Construct a `MovementGate` operation implementing the given moves.
+
+    Args:
+        moves: A dictionary mapping initial qubit positions to their destinations. For example,
+        `{q0: q1, q1: q2}` indicates a shift of two qubits (initially `q0` and `q1`) by one step (to
+        positions `q1` and `q2`). In this case `q2` (absent from `moves.keys()`) is assumed to be an
+        empty site at the start of the operation, and `q0` (absent from `moves.values()`) will be
+        empty after the move.
+
+    Returns:
+        A `MovementGate` operation implementing the indicated move.
+    """
     all_qubits = sorted(moves.keys() | moves.values())
     dimension = max((q.dimension for q in all_qubits), default=2)
     if dimension != min((q.dimension for q in all_qubits), default=2):
