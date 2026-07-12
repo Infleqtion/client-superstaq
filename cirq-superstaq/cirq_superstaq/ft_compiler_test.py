@@ -259,6 +259,160 @@ def test_verified_steane_bell_pair_composes_verified_states() -> None:
     np.testing.assert_array_equal(logical_a, logical_b)
 
 
+def test_trusted_magic_source_and_t_gate_injection_are_composable() -> None:
+    data, magic = (
+        np.asarray(cirq.LineQubit.range(start, start + 7)) for start in (0, 7)
+    )
+    source: ft_compiler.EncodedMagicStateSource = (
+        ft_compiler.TrustedSteaneMagicStateSource()
+    )
+    preparation = source.preparation_bloq()
+    injection = ft_compiler.TGateInjection(measurement_key="inject_magic")
+    circuit = ft_compiler.lower_ft_circuit(
+        cirq.Circuit(
+            ft_compiler.encode(data),
+            ft_compiler.transversal_h(data),
+            preparation.on_registers(magic=magic),
+            injection.on_registers(data=data, magic=magic),
+        )
+    )
+    expected = ft_compiler._steane_magic_state_vector()
+
+    for seed in range(6):
+        result = cirq.Simulator(seed=seed).simulate(
+            circuit,
+            qubit_order=tuple(data) + tuple(magic),
+        )
+        measured_magic = cirq.big_endian_bits_to_int(result.measurements["inject_magic"])
+        data_state = result.final_state_vector.reshape(128, 128)[:, measured_magic]
+        data_state /= np.linalg.norm(data_state)
+
+        assert abs(np.vdot(expected, data_state)) ** 2 == pytest.approx(1.0, abs=1e-6)
+
+
+def test_reed_muller_15_distillation_checks_detect_one_and_two_input_errors() -> None:
+    code = ft_compiler.ReedMuller15Code()
+
+    assert code.accepts_phase_errors(np.zeros(15, dtype=np.int8))
+    for first_error in range(15):
+        single_error = np.zeros(15, dtype=np.int8)
+        single_error[first_error] = 1
+        assert not code.accepts_phase_errors(single_error)
+
+        for second_error in range(first_error + 1, 15):
+            double_error = single_error.copy()
+            double_error[second_error] = 1
+            assert not code.accepts_phase_errors(double_error)
+
+
+def test_reed_muller_15_distillation_checks_validate_block_size() -> None:
+    with pytest.raises(ValueError, match="requires 15"):
+        ft_compiler.ReedMuller15Code().phase_error_syndrome(np.zeros(14, dtype=np.int8))
+
+
+def test_reed_muller_15_first_undetected_errors_have_weight_three() -> None:
+    code = ft_compiler.ReedMuller15Code()
+    undetected = []
+    for first in range(15):
+        for second in range(first + 1, 15):
+            for third in range(second + 1, 15):
+                errors = np.zeros(15, dtype=np.int8)
+                errors[[first, second, third]] = 1
+                if code.accepts_phase_errors(errors):
+                    undetected.append(errors)
+
+    assert len(undetected) == 35
+    assert all(code.output_has_phase_error(errors) for errors in undetected)
+
+
+def test_distilled_magic_source_composes_fifteen_inputs_and_projection() -> None:
+    output = np.asarray(cirq.LineQubit.range(7))
+    source = ft_compiler.DistilledSteaneMagicStateSource()
+    bloq = source.preparation_bloq("distill")
+    operation = bloq.on_registers(magic=output)
+    children = list(
+        cirq.flatten_op_tree(cirq.decompose_once(bloq, qubits=operation.qubits))
+    )
+
+    assert sum(
+        isinstance(child.gate, ft_compiler.KnillCorrectedMagicState)
+        for child in children
+    ) == 15
+    assert isinstance(children[-1].gate, ft_compiler.FifteenToOneMagicStateDistillation)
+
+    corrected_candidate = children[0]
+    corrected_children = list(
+        cirq.flatten_op_tree(
+            cirq.decompose_once(
+                corrected_candidate.gate,
+                qubits=corrected_candidate.qubits,
+            )
+        )
+    )
+    assert isinstance(corrected_children[0].gate, ft_compiler.TrustedSteaneMagicState)
+    assert isinstance(corrected_children[1].gate, ft_compiler.VerifiedSteaneBellPair)
+    assert isinstance(corrected_children[2].gate, ft_compiler.KnillTeleportation)
+
+    accepted = {
+        f"distill_verify_{index}": np.zeros(7, dtype=np.int8)
+        for index in range(14)
+    }
+    accepted.update(
+        {
+            f"distill_syndrome_{index}": np.zeros(7, dtype=np.int8)
+            for index in range(14)
+        }
+    )
+    accepted.update(
+        {
+            f"distill_raw_{input_index}_ec_{state}_verification": np.zeros(
+                7, dtype=np.int8
+            )
+            for input_index in range(15)
+            for state in ("plus", "zero")
+        }
+    )
+    assert source.accepts(accepted, "distill")
+
+    rejected = dict(accepted)
+    rejected["distill_syndrome_3"] = np.asarray([1, 0, 0, 0, 0, 0, 0])
+    assert not source.accepts(rejected, "distill")
+
+
+def test_fifteen_to_one_distillation_contains_all_outer_syndrome_checks() -> None:
+    magic = np.asarray(cirq.LineQubit.range(105))
+    ancilla = np.asarray(cirq.LineQubit.range(105, 112))
+    verifier = np.asarray(cirq.LineQubit.range(112, 119))
+    bloq = ft_compiler.FifteenToOneMagicStateDistillation("outer")
+    operation = bloq.on_registers(
+        magic=magic,
+        ancilla=ancilla,
+        verifier=verifier,
+    )
+    children = list(
+        cirq.flatten_op_tree(cirq.decompose_once(bloq, qubits=operation.qubits))
+    )
+
+    assert sum(
+        isinstance(child.gate, ft_compiler.VerifiedSteanePlus)
+        for child in children
+    ) == 4
+    assert sum(
+        isinstance(child.gate, ft_compiler.VerifiedSteaneZero)
+        for child in children
+    ) == 10
+    syndrome_measurements = [
+        child
+        for child in children
+        if isinstance(child.gate, cirq.MeasurementGate)
+        and cirq.measurement_key_name(child).startswith("outer_syndrome_")
+    ]
+    assert len(syndrome_measurements) == 14
+    assert {cirq.measurement_key_name(child) for child in syndrome_measurements} == {
+        f"outer_syndrome_{index}" for index in range(14)
+    }
+
+
 @pytest.mark.parametrize("logical_value", (0, 1))
 def test_knill_teleportation_consumes_accepted_bell_pair(logical_value: int) -> None:
     data, bell_a, bell_b = (
@@ -1010,6 +1164,38 @@ def test_local_verified_ft_simulator_reuses_same_pool_across_depth() -> None:
     assert simulator.executed_reset_count == 2 * 6 * 4 * 7
 
 
+def test_local_logical_clifford_t_simulator_uses_distilled_source() -> None:
+    qubit = cirq.LineQubit(0)
+    architecture = ft_compiler.LocalFTArchitecture(
+        modules=(ft_compiler.LocalFTModule("module", magic_state_slots=1),),
+        links=frozenset(),
+    )
+    simulator = ft_compiler.LocalLogicalCliffordTSimulator(
+        architecture,
+        {qubit: "module"},
+        seed=1234,
+    )
+    circuit = cirq.Circuit(
+        cirq.H(qubit),
+        cirq.T(qubit),
+        cirq.H(qubit),
+        cirq.measure(qubit, key="result"),
+    )
+
+    result = simulator.run(circuit, repetitions=4000)
+
+    expected_probability = np.sin(np.pi / 8) ** 2
+    assert np.mean(result.measurements["result"]) == pytest.approx(
+        expected_probability, abs=0.03
+    )
+    assert simulator.last_plan is not None
+    assert simulator.last_plan.physical_qubit_bound == 42
+    assert any(
+        isinstance(operation.gate, ft_compiler.DistilledSteaneMagicState)
+        for operation in simulator.last_plan.verified_plan.resource_preparation_circuit.all_operations()
+    )
+
+
 def test_logical_cnot_extended_rectangle_single_fault_contract() -> None:
     control = tuple(cirq.LineQubit.range(0, 7))
     target = tuple(cirq.LineQubit.range(7, 14))
@@ -1042,6 +1228,62 @@ def test_compile_verified_validates_mvp_scope() -> None:
         ft_compiler.compile_verified(
             cirq.Circuit(cirq.measure(qubits[0], key="result"))
         )
+
+
+def test_compile_verified_accepts_replaceable_magic_state_source() -> None:
+    qubit = cirq.LineQubit(0)
+    circuit = cirq.Circuit(cirq.T(qubit), cirq.measure(qubit, key="result"))
+
+    with pytest.raises(ValueError, match="magic-state source"):
+        ft_compiler.compile_verified(circuit)
+
+    plan = ft_compiler.compile_verified(
+        circuit,
+        preparation_attempts=1,
+        magic_state_source=ft_compiler.TrustedSteaneMagicStateSource(),
+    )
+    preparation_gates = [
+        operation.gate for operation in plan.resource_preparation_circuit.all_operations()
+    ]
+    assert any(
+        isinstance(gate, ft_compiler.TrustedSteaneMagicState)
+        for gate in preparation_gates
+    )
+
+    accepted = np.zeros(7, dtype=np.int8)
+    continuation = plan.build_continuation(
+        {
+            "verified_compile_round_0_logical_0_0_plus_verification": accepted,
+            "verified_compile_round_0_logical_0_0_zero_verification": accepted,
+        }
+    )
+    assert any(
+        isinstance(operation.gate, ft_compiler.TGateInjection)
+        for operation in continuation.all_operations()
+    )
+
+    architecture_without_magic = ft_compiler.LocalFTArchitecture(
+        modules=(ft_compiler.LocalFTModule("module"),),
+        links=frozenset(),
+    )
+    with pytest.raises(ValueError, match="magic-state slot"):
+        ft_compiler.compile_local_verified(
+            circuit,
+            architecture_without_magic,
+            {qubit: "module"},
+            magic_state_source=ft_compiler.TrustedSteaneMagicStateSource(),
+        )
+
+    local_plan = ft_compiler.compile_local_verified(
+        circuit,
+        ft_compiler.LocalFTArchitecture(
+            modules=(ft_compiler.LocalFTModule("module", magic_state_slots=1),),
+            links=frozenset(),
+        ),
+        {qubit: "module"},
+        magic_state_source=ft_compiler.TrustedSteaneMagicStateSource(),
+    )
+    assert local_plan.physical_qubit_bound == 42
 
 
 @pytest.mark.parametrize("error_index", range(7))

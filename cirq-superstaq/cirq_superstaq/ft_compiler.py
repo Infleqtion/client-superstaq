@@ -13,13 +13,14 @@ from __future__ import annotations
 from collections import deque
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Protocol
 
 import cirq
 import numpy as np
 import qualtran
 
 STEANE_CODE_SIZE = 7
+REED_MULLER_15_CODE_SIZE = 15
 
 _LOGICAL_ZERO_CODEWORDS = (
     (0, 0, 0, 0, 0, 0, 0),
@@ -45,6 +46,58 @@ _SYNDROME_TO_INDEX = {
 }
 
 
+@dataclass(frozen=True)
+class ReedMuller15Code:
+    """The ``[[15, 1, 3]]`` code used by Gottesman Protocol 13.4."""
+
+    x_stabilizer_supports: tuple[tuple[int, ...], ...] = (
+        tuple(range(8)),
+        (0, 1, 2, 3, 8, 9, 10, 11),
+        (0, 1, 4, 5, 8, 9, 12, 13),
+        (0, 2, 4, 6, 8, 10, 12, 14),
+    )
+    z_stabilizer_supports: tuple[tuple[int, ...], ...] = (
+        (0, 1, 2, 3),
+        (0, 1, 4, 5),
+        (0, 2, 4, 6),
+        (0, 1, 8, 9),
+        (0, 2, 8, 10),
+        (0, 4, 8, 12),
+        tuple(range(8)),
+        (0, 1, 2, 3, 8, 9, 10, 11),
+        (0, 1, 4, 5, 8, 9, 12, 13),
+        (0, 2, 4, 6, 8, 10, 12, 14),
+    )
+    logical_pivot: int = 8
+    stabilizer_pivots: tuple[int, ...] = (0, 1, 2, 4)
+    systematic_rows: tuple[tuple[int, tuple[int, ...]], ...] = (
+        (8, (9, 10, 11, 12, 13, 14)),
+        (0, (3, 5, 6, 8, 11, 13, 14)),
+        (1, (3, 5, 7, 8, 10, 12, 14)),
+        (2, (3, 6, 7, 8, 9, 12, 13)),
+        (4, (5, 6, 7, 8, 9, 10, 11)),
+    )
+
+    def phase_error_syndrome(self, z_errors: Sequence[int]) -> tuple[int, ...]:
+        """Returns the four X-stabilizer checks detecting input magic-state Z errors."""
+        if len(z_errors) != REED_MULLER_15_CODE_SIZE:
+            raise ValueError("The 15-qubit Reed-Muller code requires 15 error bits.")
+        return tuple(
+            sum(int(z_errors[index]) for index in support) % 2
+            for support in self.x_stabilizer_supports
+        )
+
+    def accepts_phase_errors(self, z_errors: Sequence[int]) -> bool:
+        """Returns whether the distillation projection accepts this error pattern."""
+        return not any(self.phase_error_syndrome(z_errors))
+
+    def output_has_phase_error(self, z_errors: Sequence[int]) -> bool:
+        """Returns the decoded logical-Z error for an accepted input pattern."""
+        if not self.accepts_phase_errors(z_errors):
+            raise ValueError("Rejected Reed-Muller error patterns have no output state.")
+        return bool(sum(map(int, z_errors)) % 2)
+
+
 def _validate_block(qubits: Sequence[cirq.Qid]) -> None:
     if len(qubits) != STEANE_CODE_SIZE:
         raise ValueError(f"A Steane code block must contain {STEANE_CODE_SIZE} qubits.")
@@ -62,6 +115,16 @@ def transversal_x(qubits: Sequence[cirq.Qid]) -> list[cirq.Operation]:
     """Returns a transversal logical X operation."""
     _validate_block(qubits)
     return list(cirq.X.on_each(*qubits))
+
+
+def transversal_s(qubits: Sequence[cirq.Qid]) -> list[cirq.Operation]:
+    """Returns the Steane logical S operation.
+
+    With this encoder convention, physical ``S**-1`` on every qubit implements
+    logical S on the encoded block.
+    """
+    _validate_block(qubits)
+    return [(cirq.S**-1)(qubit) for qubit in qubits]
 
 
 def transversal_cx(
@@ -335,6 +398,287 @@ class VerifiedSteaneBellPair(qualtran.GateWithRegisters):
         yield transversal_cx(bell_a_qubits, bell_b_qubits)
 
 
+def _steane_magic_state_vector() -> np.ndarray:
+    zero = np.zeros(2**STEANE_CODE_SIZE, dtype=np.complex128)
+    one = np.zeros_like(zero)
+    for codeword in _LOGICAL_ZERO_CODEWORDS:
+        zero[cirq.big_endian_bits_to_int(codeword)] = 1 / np.sqrt(8)
+    for codeword in _LOGICAL_ONE_CODEWORDS:
+        one[cirq.big_endian_bits_to_int(codeword)] = 1 / np.sqrt(8)
+    return (zero + np.exp(1j * np.pi / 4) * one) / np.sqrt(2)
+
+
+class EncodedMagicStateSource(Protocol):
+    """Composable source interface consumed by non-Clifford injection gadgets."""
+
+    def preparation_bloq(self, key_prefix: str = "magic_state") -> qualtran.GateWithRegisters:
+        """Returns a Bloq that prepares one encoded ``T|+>`` resource."""
+        ...
+
+    def accepts(self, measurements: Mapping[str, Sequence[int]], key_prefix: str) -> bool:
+        """Returns whether a postselected preparation attempt succeeded."""
+        ...
+
+
+@dataclass(frozen=True)
+class TrustedSteaneMagicState(qualtran.GateWithRegisters):
+    """Prepares an exact encoded Steane magic state from a trusted primitive."""
+
+    @property
+    def signature(self) -> Any:
+        return qualtran.Signature.build(magic=STEANE_CODE_SIZE)
+
+    def decompose_from_registers(
+        self,
+        *,
+        context: cirq.DecompositionContext,
+        magic: np.ndarray,
+    ) -> cirq.OP_TREE:
+        del context
+        yield cirq.StatePreparationChannel(
+            _steane_magic_state_vector(), name="TrustedSteaneMagicState"
+        ).on(*tuple(magic.ravel()))
+
+
+@dataclass(frozen=True)
+class TrustedSteaneMagicStateSource:
+    """Functional source implementation replaceable by verification or distillation."""
+
+    def preparation_bloq(self, key_prefix: str = "magic_state") -> qualtran.GateWithRegisters:
+        del key_prefix
+        return TrustedSteaneMagicState()
+
+    def accepts(self, measurements: Mapping[str, Sequence[int]], key_prefix: str) -> bool:
+        del measurements, key_prefix
+        return True
+
+
+@dataclass(frozen=True)
+class TGateInjection(qualtran.GateWithRegisters):
+    """Consumes an encoded magic state to apply logical T to a Steane block."""
+
+    measurement_key: str = "t_injection_magic"
+
+    @property
+    def signature(self) -> Any:
+        return qualtran.Signature.build(data=STEANE_CODE_SIZE, magic=STEANE_CODE_SIZE)
+
+    def decompose_from_registers(
+        self,
+        *,
+        context: cirq.DecompositionContext,
+        data: np.ndarray,
+        magic: np.ndarray,
+    ) -> cirq.OP_TREE:
+        del context
+        data_qubits = tuple(data.ravel())
+        magic_qubits = tuple(magic.ravel())
+        yield transversal_cx(data_qubits, magic_qubits)
+        yield cirq.measure(*magic_qubits, key=self.measurement_key)
+        yield (
+            operation.with_classical_controls(
+                SteaneCodeCondition(cirq.MeasurementKey(self.measurement_key))
+            )
+            for operation in transversal_s(data_qubits)
+        )
+
+
+def reed_muller_distillation_passed(
+    measurements: Mapping[str, Sequence[int]], key_prefix: str
+) -> bool:
+    """Returns whether all preparation and Reed-Muller syndrome checks passed."""
+    check_count = len(ReedMuller15Code().x_stabilizer_supports) + len(
+        ReedMuller15Code().z_stabilizer_supports
+    )
+    return all(
+        steane_zero_verification_passed(measurements[f"{key_prefix}_verify_{index}"])
+        and steane_zero_verification_passed(measurements[f"{key_prefix}_syndrome_{index}"])
+        for index in range(check_count)
+    )
+
+
+@dataclass(frozen=True)
+class FifteenToOneMagicStateDistillation(qualtran.GateWithRegisters):
+    """Gottesman's encoded 15-to-1 magic-state distillation protocol.
+
+    ``magic`` contains fifteen Steane-encoded noisy magic states. On acceptance,
+    block 8 contains the distilled state; all other blocks and both ancillas are
+    consumed. Rejected attempts must be discarded and restarted.
+    """
+
+    key_prefix: str = "fifteen_to_one"
+
+    @property
+    def signature(self) -> Any:
+        return qualtran.Signature.build(
+            magic=REED_MULLER_15_CODE_SIZE * STEANE_CODE_SIZE,
+            ancilla=STEANE_CODE_SIZE,
+            verifier=STEANE_CODE_SIZE,
+        )
+
+    def decompose_from_registers(
+        self,
+        *,
+        context: cirq.DecompositionContext,
+        magic: np.ndarray,
+        ancilla: np.ndarray,
+        verifier: np.ndarray,
+    ) -> cirq.OP_TREE:
+        del context
+        blocks = tuple(
+            tuple(block)
+            for block in np.asarray(magic).reshape(REED_MULLER_15_CODE_SIZE, STEANE_CODE_SIZE)
+        )
+        ancilla_block = tuple(ancilla.ravel())
+        verifier_block = tuple(verifier.ravel())
+        code = ReedMuller15Code()
+        checks = tuple(("x", support) for support in code.x_stabilizer_supports) + tuple(
+            ("z", support) for support in code.z_stabilizer_supports
+        )
+
+        for check_index, (basis, support) in enumerate(checks):
+            yield cirq.reset_each(*ancilla_block, *verifier_block)
+            verification_key = f"{self.key_prefix}_verify_{check_index}"
+            if basis == "x":
+                yield VerifiedSteanePlus(verification_key).on_registers(
+                    candidate=np.asarray(ancilla_block),
+                    verifier=np.asarray(verifier_block),
+                )
+                for block_index in support:
+                    yield transversal_cx(ancilla_block, blocks[block_index])
+                yield transversal_h(ancilla_block)
+            else:
+                yield VerifiedSteaneZero(verification_key).on_registers(
+                    candidate=np.asarray(ancilla_block),
+                    verifier=np.asarray(verifier_block),
+                )
+                for block_index in support:
+                    yield transversal_cx(blocks[block_index], ancilla_block)
+            yield cirq.measure(
+                *ancilla_block,
+                key=f"{self.key_prefix}_syndrome_{check_index}",
+            )
+
+        encoder_cnots = [
+            (pivot, target) for pivot, targets in code.systematic_rows for target in targets
+        ]
+        for control, target in reversed(encoder_cnots):
+            yield transversal_cx(blocks[control], blocks[target])
+        for pivot in code.stabilizer_pivots:
+            yield transversal_h(blocks[pivot])
+        yield transversal_s(blocks[code.logical_pivot])
+
+
+@dataclass(frozen=True)
+class KnillCorrectedMagicState(qualtran.GateWithRegisters):
+    """Prepares a raw encoded magic state and refreshes it through Knill EC."""
+
+    raw_source: EncodedMagicStateSource
+    key_prefix: str = "corrected_magic"
+
+    @property
+    def signature(self) -> Any:
+        return qualtran.Signature.build(magic=STEANE_CODE_SIZE)
+
+    def decompose_from_registers(
+        self,
+        *,
+        context: cirq.DecompositionContext,
+        magic: np.ndarray,
+    ) -> cirq.OP_TREE:
+        allocated = context.qubit_manager.qalloc(4 * STEANE_CODE_SIZE)
+        data, bell_a, bell_a_verifier, bell_b_verifier = (
+            np.asarray(allocated[start : start + STEANE_CODE_SIZE])
+            for start in range(0, len(allocated), STEANE_CODE_SIZE)
+        )
+        protocol = VerifiedKnillEC(f"{self.key_prefix}_ec")
+        yield self.raw_source.preparation_bloq(f"{self.key_prefix}_raw").on_registers(magic=data)
+        yield protocol.bell_pair.on_registers(
+            bell_a=bell_a,
+            bell_a_verifier=bell_a_verifier,
+            bell_b=magic,
+            bell_b_verifier=bell_b_verifier,
+        )
+        yield protocol.teleportation.on_registers(
+            data=data,
+            bell_a=bell_a,
+            bell_b=magic,
+        )
+        context.qubit_manager.qfree(allocated)
+
+
+@dataclass(frozen=True)
+class KnillCorrectedMagicStateSource:
+    """Source adapter applying verified Knill EC to every raw magic candidate."""
+
+    raw_source: EncodedMagicStateSource = TrustedSteaneMagicStateSource()
+
+    def preparation_bloq(self, key_prefix: str = "magic_state") -> qualtran.GateWithRegisters:
+        return KnillCorrectedMagicState(self.raw_source, key_prefix)
+
+    def accepts(self, measurements: Mapping[str, Sequence[int]], key_prefix: str) -> bool:
+        protocol = VerifiedKnillEC(f"{key_prefix}_ec")
+        return self.raw_source.accepts(
+            measurements, f"{key_prefix}_raw"
+        ) and protocol.verification_passed(measurements)
+
+
+@dataclass(frozen=True)
+class DistilledSteaneMagicState(qualtran.GateWithRegisters):
+    """Prepares one postselected distilled state from fifteen raw source Bloqs."""
+
+    raw_source: EncodedMagicStateSource
+    key_prefix: str = "distilled_magic"
+
+    @property
+    def signature(self) -> Any:
+        return qualtran.Signature.build(magic=STEANE_CODE_SIZE)
+
+    def decompose_from_registers(
+        self,
+        *,
+        context: cirq.DecompositionContext,
+        magic: np.ndarray,
+    ) -> cirq.OP_TREE:
+        allocated = context.qubit_manager.qalloc(
+            16 * STEANE_CODE_SIZE
+        )  # Fourteen inputs plus syndrome ancilla and verifier.
+        allocated_blocks = [
+            tuple(allocated[start : start + STEANE_CODE_SIZE])
+            for start in range(0, len(allocated), STEANE_CODE_SIZE)
+        ]
+        magic_blocks = allocated_blocks[:14]
+        magic_blocks.insert(ReedMuller15Code().logical_pivot, tuple(magic.ravel()))
+        ancilla_block, verifier_block = allocated_blocks[14:]
+
+        for input_index, block in enumerate(magic_blocks):
+            yield self.raw_source.preparation_bloq(
+                f"{self.key_prefix}_raw_{input_index}"
+            ).on_registers(magic=np.asarray(block))
+        yield FifteenToOneMagicStateDistillation(self.key_prefix).on_registers(
+            magic=np.asarray(magic_blocks).reshape(-1),
+            ancilla=np.asarray(ancilla_block),
+            verifier=np.asarray(verifier_block),
+        )
+        context.qubit_manager.qfree(allocated)
+
+
+@dataclass(frozen=True)
+class DistilledSteaneMagicStateSource:
+    """Postselected 15-to-1 source implementing Gottesman Protocol 13.4."""
+
+    raw_source: EncodedMagicStateSource = KnillCorrectedMagicStateSource()
+
+    def preparation_bloq(self, key_prefix: str = "magic_state") -> qualtran.GateWithRegisters:
+        return DistilledSteaneMagicState(self.raw_source, key_prefix)
+
+    def accepts(self, measurements: Mapping[str, Sequence[int]], key_prefix: str) -> bool:
+        return all(
+            self.raw_source.accepts(measurements, f"{key_prefix}_raw_{index}")
+            for index in range(REED_MULLER_15_CODE_SIZE)
+        ) and reed_muller_distillation_passed(measurements, key_prefix)
+
+
 @dataclass(frozen=True)
 class KnillTeleportation(qualtran.GateWithRegisters):
     """Teleports an encoded Steane block through an accepted logical Bell pair.
@@ -510,6 +854,7 @@ class VerifiedExecutionRound:
     logical_qubit_indices: tuple[int, ...]
     resources: tuple[VerifiedExecutionResource, ...]
     moment_index: int
+    magic_block: tuple[cirq.Qid, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -527,6 +872,7 @@ class VerifiedExecutionPlan:
     rounds: tuple[VerifiedExecutionRound, ...]
     measured_logical_qubit_indices: tuple[int, ...]
     measurement_key: str
+    magic_state_source: EncodedMagicStateSource | None = None
 
     @property
     def data(self) -> tuple[cirq.Qid, ...]:
@@ -540,6 +886,13 @@ class VerifiedExecutionPlan:
         """Returns independently schedulable, offline Bell-pair preparations."""
         operations = []
         for round_ in self.rounds:
+            if round_.magic_block is not None:
+                assert self.magic_state_source is not None
+                operations.append(
+                    self.magic_state_source.preparation_bloq(
+                        f"verified_magic_{round_.moment_index}"
+                    ).on_registers(magic=np.asarray(round_.magic_block))
+                )
             for resource in round_.resources:
                 for preparation, blocks in zip(
                     resource.factory.preparations, resource.bell_pair_blocks
@@ -570,6 +923,20 @@ class VerifiedExecutionPlan:
                 control_index, target_index = round_.logical_qubit_indices
                 circuit.append(
                     transversal_cx(current_blocks[control_index], current_blocks[target_index])
+                )
+            elif round_.logical_gate == cirq.T:
+                assert round_.magic_block is not None
+                assert self.magic_state_source is not None
+                magic_key_prefix = f"verified_magic_{round_.moment_index}"
+                if not self.magic_state_source.accepts(verification_measurements, magic_key_prefix):
+                    raise RuntimeError("Encoded magic-state distillation was rejected.")
+                circuit.append(
+                    TGateInjection(
+                        measurement_key=f"verified_t_injection_{round_.moment_index}"
+                    ).on_registers(
+                        data=np.asarray(current_blocks[round_.logical_qubit_indices[0]]),
+                        magic=np.asarray(round_.magic_block),
+                    )
                 )
             elif not isinstance(round_.logical_gate, cirq.IdentityGate):
                 raise ValueError(f"Unsupported verified logical gate: {round_.logical_gate!r}")
@@ -608,12 +975,14 @@ class LocalFTModule:
     logical_capacity: int = 1
     bell_pair_slots: int = 1
     bell_pair_attempt_capacity: int = 1
+    magic_state_slots: int = 0
 
     def __post_init__(self) -> None:
         if (
             self.logical_capacity < 1
             or self.bell_pair_slots < 1
             or self.bell_pair_attempt_capacity < 1
+            or self.magic_state_slots < 0
         ):
             raise ValueError("Local module capacities must be positive.")
 
@@ -701,6 +1070,7 @@ class LocalVerifiedExecutionPlan:
         return sum(
             STEANE_CODE_SIZE * module.logical_capacity
             + 4 * STEANE_CODE_SIZE * module.bell_pair_slots * module.bell_pair_attempt_capacity
+            + STEANE_CODE_SIZE * module.magic_state_slots
             for module in self.architecture.modules
         )
 
@@ -711,9 +1081,14 @@ def compile_local_verified(
     placement: Mapping[cirq.Qid, str],
     *,
     preparation_attempts: int = 1,
+    magic_state_source: EncodedMagicStateSource | None = None,
 ) -> LocalVerifiedExecutionPlan:
     """Compiles a verified program while enforcing module capacity and locality."""
-    plan = compile_verified(circuit, preparation_attempts=preparation_attempts)
+    plan = compile_verified(
+        circuit,
+        preparation_attempts=preparation_attempts,
+        magic_state_source=magic_state_source,
+    )
     if set(placement) != set(plan.logical_qubits):
         raise ValueError("Placement must assign every logical qubit exactly once.")
     logical_module_ids = [placement[qubit] for qubit in plan.logical_qubits]
@@ -730,6 +1105,10 @@ def compile_local_verified(
     slots_used: dict[tuple[int, str], int] = {}
     for round_index, round_ in enumerate(plan.rounds):
         migrations = []
+        if round_.logical_gate == cirq.T:
+            module_id = logical_module_ids[round_.logical_qubit_indices[0]]
+            if architecture.module(module_id).magic_state_slots < 1:
+                raise ValueError(f"Module {module_id!r} has no encoded magic-state slot.")
         if round_.logical_gate == cirq.CNOT:
             control_index, target_index = round_.logical_qubit_indices
             control_module = logical_module_ids[control_index]
@@ -779,7 +1158,10 @@ def compile_local_verified(
 
 
 def compile_verified(
-    circuit: cirq.AbstractCircuit, *, preparation_attempts: int = 3
+    circuit: cirq.AbstractCircuit,
+    *,
+    preparation_attempts: int = 3,
+    magic_state_source: EncodedMagicStateSource | None = None,
 ) -> VerifiedExecutionPlan:
     """Compiles a multi-qubit Clifford program into two verified stages."""
     logical_qubits = tuple(sorted(circuit.all_qubits()))
@@ -808,9 +1190,12 @@ def compile_verified(
             logical_gate == cirq.X
             or logical_gate == cirq.H
             or logical_gate == cirq.CNOT
+            or logical_gate == cirq.T
             or isinstance(logical_gate, cirq.IdentityGate)
         ):
             raise ValueError(f"Unsupported verified logical operation: {logical_operation!r}")
+        if logical_gate == cirq.T and magic_state_source is None:
+            raise ValueError("Logical T requires an encoded magic-state source.")
 
     measurement_operation = operations[-1]
     measured_indices = tuple(logical_qubit_indices[qubit] for qubit in measurement_operation.qubits)
@@ -824,7 +1209,7 @@ def compile_verified(
         for logical_index in range(len(logical_qubits))
     )
     rounds = []
-    next_resource_index = 0
+    next_physical_qubit = len(logical_qubits) * STEANE_CODE_SIZE
     for round_index, (moment_index, logical_operation) in enumerate(logical_operations):
         participating_indices = tuple(
             logical_qubit_indices[qubit] for qubit in logical_operation.qubits
@@ -833,11 +1218,8 @@ def compile_verified(
         for logical_index in participating_indices:
             allocated_attempts = []
             for _ in range(preparation_attempts):
-                start = (
-                    len(logical_qubits) * STEANE_CODE_SIZE
-                    + 4 * STEANE_CODE_SIZE * next_resource_index
-                )
-                next_resource_index += 1
+                start = next_physical_qubit
+                next_physical_qubit += 4 * STEANE_CODE_SIZE
                 blocks = tuple(
                     tuple(cirq.LineQubit.range(start + offset, start + offset + STEANE_CODE_SIZE))
                     for offset in range(0, 4 * STEANE_CODE_SIZE, STEANE_CODE_SIZE)
@@ -855,12 +1237,19 @@ def compile_verified(
                     ),
                 )
             )
+        magic_block = None
+        if logical_operation.gate == cirq.T:
+            magic_block = tuple(
+                cirq.LineQubit.range(next_physical_qubit, next_physical_qubit + STEANE_CODE_SIZE)
+            )
+            next_physical_qubit += STEANE_CODE_SIZE
         rounds.append(
             VerifiedExecutionRound(
                 logical_gate=logical_operation.gate,
                 logical_qubit_indices=participating_indices,
                 resources=tuple(resources),
                 moment_index=moment_index,
+                magic_block=magic_block,
             )
         )
 
@@ -870,6 +1259,7 @@ def compile_verified(
         rounds=tuple(rounds),
         measured_logical_qubit_indices=measured_indices,
         measurement_key=measurement_keys[0],
+        magic_state_source=magic_state_source,
     )
 
 
@@ -877,6 +1267,11 @@ _FT_BLOQ_TYPES = (
     VerifiedSteaneZero,
     VerifiedSteanePlus,
     VerifiedSteaneBellPair,
+    TrustedSteaneMagicState,
+    TGateInjection,
+    FifteenToOneMagicStateDistillation,
+    KnillCorrectedMagicState,
+    DistilledSteaneMagicState,
     KnillTeleportation,
 )
 
@@ -1273,6 +1668,49 @@ class LocalVerifiedFTSimulator:
             params=cirq.ParamResolver({}),
             measurements={measurement_key: decoded},
         )
+
+
+class LocalLogicalCliffordTSimulator:
+    """General logical backend for accepted local Clifford+T execution plans.
+
+    The encoded factory and gadget hierarchy is validated by
+    :func:`compile_local_verified`; simulation then occurs at the logical level,
+    avoiding an intractable state vector over the encoded distillation factory.
+    """
+
+    def __init__(
+        self,
+        architecture: LocalFTArchitecture,
+        placement: Mapping[cirq.Qid, str],
+        *,
+        magic_state_source: EncodedMagicStateSource | None = None,
+        preparation_attempts: int = 1,
+        seed: cirq.RANDOM_STATE_OR_SEED_LIKE = None,
+    ) -> None:
+        self.architecture = architecture
+        self.placement = dict(placement)
+        self.magic_state_source = (
+            DistilledSteaneMagicStateSource() if magic_state_source is None else magic_state_source
+        )
+        self.preparation_attempts = preparation_attempts
+        self._simulator = cirq.Simulator(seed=seed)
+        self.last_plan: LocalVerifiedExecutionPlan | None = None
+
+    def run(
+        self,
+        circuit: cirq.AbstractCircuit,
+        *,
+        repetitions: int = 1,
+    ) -> cirq.Result:
+        """Validates the encoded local plan and simulates its accepted logical action."""
+        self.last_plan = compile_local_verified(
+            circuit,
+            self.architecture,
+            self.placement,
+            preparation_attempts=self.preparation_attempts,
+            magic_state_source=self.magic_state_source,
+        )
+        return self._simulator.run(circuit, repetitions=repetitions)
 
 
 def compile(circuit: cirq.AbstractCircuit) -> cirq.Circuit:
