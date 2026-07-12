@@ -887,10 +887,10 @@ def movement_op(moves: Mapping[cirq.Qid, cirq.Qid]) -> cirq.Operation:
 
     Args:
         moves: A dictionary mapping initial qubit positions to their destinations. For example,
-        `{q0: q1, q1: q2}` indicates a shift of two qubits (initially `q0` and `q1`) by one step (to
-        positions `q1` and `q2`). In this case `q2` (absent from `moves.keys()`) is assumed to be an
-        empty site at the start of the operation, and `q0` (absent from `moves.values()`) will be
-        empty after the move.
+            `moves={q0: q1, q1: q2}` indicates a shift of two qubits (initially `q0` and `q1`) by
+            one step (to positions `q1` and `q2`). In this case `q2` (absent from `moves.keys()`) is
+            assumed to be an empty site at the start of the operation, and `q0` (absent from
+            `moves.values()`) will be empty after the move.
 
     Returns:
         A `MovementGate` operation implementing the indicated move.
