@@ -10,10 +10,14 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections import deque
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from typing import Any
 
 import cirq
 import numpy as np
+import qualtran
 
 STEANE_CODE_SIZE = 7
 
@@ -66,10 +70,7 @@ def transversal_cx(
     """Returns pairwise CNOT operations between two equally sized code blocks."""
     if len(control_qubits) != len(target_qubits):
         raise ValueError("Control and target blocks must have the same size.")
-    return [
-        cirq.CX(control, target)
-        for control, target in zip(control_qubits, target_qubits)
-    ]
+    return [cirq.CX(control, target) for control, target in zip(control_qubits, target_qubits)]
 
 
 def encode(qubits: Sequence[cirq.Qid]) -> cirq.Circuit:
@@ -96,9 +97,7 @@ def physical_measurements_to_logical_measurements(measurements: Sequence[int]) -
         return 0
     if codeword in _LOGICAL_ONE_CODEWORDS:
         return 1
-    raise ValueError(
-        f"The physical measurement is outside the Steane codespace: {codeword}"
-    )
+    raise ValueError(f"The physical measurement is outside the Steane codespace: {codeword}")
 
 
 def syndrome(measurements: Sequence[int]) -> tuple[int, int, int]:
@@ -142,9 +141,7 @@ def qec_simulator(circuit: cirq.Circuit, repetitions: int = 1) -> cirq.ResultDic
     return cirq.ResultDict(params=result.params, measurements=logical_measurements)
 
 
-def _resolve_and_correct(
-    classical_data: cirq.ClassicalDataStore, key: cirq.MeasurementKey
-) -> bool:
+def _resolve_and_correct(classical_data: cirq.ClassicalDataStore, key: cirq.MeasurementKey) -> bool:
     # Cirq's condition API exposes recorded values but does not currently provide a public mutation
     # method. Correction is applied to a copy; only the decoded control value is needed here.
     measured = np.asarray(classical_data.records[key][0], dtype=np.int8)
@@ -158,6 +155,1126 @@ class SteaneCodeCondition(cirq.KeyCondition):
         return _resolve_and_correct(classical_data, self.key)
 
 
+@dataclass(frozen=True)
+class SteanePauliFrameUpdate:
+    """Physical and logical Pauli corrections decoded from a Bell measurement."""
+
+    physical_x_index: int | None
+    physical_z_index: int | None
+    logical_x: bool
+    logical_z: bool
+
+
+class SteaneBellMeasurementDecoder:
+    """Decodes the two physical measurement blocks produced by Knill EC."""
+
+    @staticmethod
+    def decode(
+        data_measurements: Sequence[int], bell_a_measurements: Sequence[int]
+    ) -> SteanePauliFrameUpdate:
+        """Returns the physical and logical updates for the teleported block."""
+        data_syndrome = syndrome(data_measurements)
+        bell_a_syndrome = syndrome(bell_a_measurements)
+        corrected_data = correct_error(data_measurements, data_syndrome)
+        corrected_bell_a = correct_error(bell_a_measurements, bell_a_syndrome)
+        return SteanePauliFrameUpdate(
+            physical_x_index=_SYNDROME_TO_INDEX.get(bell_a_syndrome),
+            physical_z_index=_SYNDROME_TO_INDEX.get(data_syndrome),
+            logical_x=bool(physical_measurements_to_logical_measurements(corrected_bell_a)),
+            logical_z=bool(physical_measurements_to_logical_measurements(corrected_data)),
+        )
+
+
+@dataclass(frozen=True)
+class SteaneSyndromeCondition(cirq.KeyCondition):
+    """Classical condition selecting one physical correction from a Steane syndrome."""
+
+    error_index: int = -1
+
+    def resolve(self, classical_data: cirq.ClassicalDataStore) -> bool:
+        measured = np.asarray(classical_data.records[self.key][0], dtype=np.int8)
+        return _SYNDROME_TO_INDEX.get(syndrome(measured)) == self.error_index
+
+
+def steane_zero_verification_passed(measurements: Sequence[int]) -> bool:
+    """Returns whether a Steane-zero verification measurement should be accepted."""
+    try:
+        return physical_measurements_to_logical_measurements(measurements) == 0
+    except ValueError:
+        return False
+
+
+@dataclass(frozen=True)
+class VerifiedSteaneZero(qualtran.GateWithRegisters):
+    """A postselected Qualtran Bloq that prepares ``|0>_L`` for the Steane code.
+
+    ``candidate`` and ``verifier`` must both start in ``|0>``. Each block is
+    encoded independently, after which a transversal CNOT compares the candidate
+    with the verifier and the verifier is measured in the Z basis. The candidate
+    is a verified output only when :func:`steane_zero_verification_passed` returns
+    true for the measurement under ``verification_key``. A failed attempt must be
+    discarded; retry and routing policy intentionally belong to a higher-level
+    resource factory.
+
+    This is the optimized distance-three Steane preparation described in
+    Gottesman, section 13.1.2, figure 13.3.
+    """
+
+    verification_key: str = "steane_zero_verification"
+
+    @property
+    def signature(self) -> Any:
+        return qualtran.Signature.build(
+            candidate=STEANE_CODE_SIZE,
+            verifier=STEANE_CODE_SIZE,
+        )
+
+    def decompose_from_registers(
+        self,
+        *,
+        context: cirq.DecompositionContext,
+        candidate: np.ndarray,
+        verifier: np.ndarray,
+    ) -> cirq.OP_TREE:
+        del context
+        candidate_qubits = tuple(candidate.ravel())
+        verifier_qubits = tuple(verifier.ravel())
+
+        yield cirq.Circuit.zip(encode(candidate_qubits), encode(verifier_qubits))
+        yield transversal_cx(candidate_qubits, verifier_qubits)
+        yield cirq.measure(*verifier_qubits, key=self.verification_key)
+
+
+@dataclass(frozen=True)
+class VerifiedSteanePlus(qualtran.GateWithRegisters):
+    """A postselected ``|+>_L`` preparation composed from ``VerifiedSteaneZero``.
+
+    The verification measurement and acceptance rule are inherited from the
+    underlying zero-state preparation. The retained candidate is transformed to
+    ``|+>_L`` by the Steane code's transversal logical Hadamard.
+    """
+
+    verification_key: str = "steane_plus_verification"
+
+    @property
+    def signature(self) -> Any:
+        return qualtran.Signature.build(
+            candidate=STEANE_CODE_SIZE,
+            verifier=STEANE_CODE_SIZE,
+        )
+
+    def decompose_from_registers(
+        self,
+        *,
+        context: cirq.DecompositionContext,
+        candidate: np.ndarray,
+        verifier: np.ndarray,
+    ) -> cirq.OP_TREE:
+        del context
+        candidate_qubits = tuple(candidate.ravel())
+
+        yield VerifiedSteaneZero(self.verification_key).on_registers(
+            candidate=candidate,
+            verifier=verifier,
+        )
+        yield transversal_h(candidate_qubits)
+
+
+def steane_bell_pair_verification_passed(
+    plus_measurements: Sequence[int], zero_measurements: Sequence[int]
+) -> bool:
+    """Returns whether both preparations underlying a Steane Bell pair passed."""
+    return steane_zero_verification_passed(plus_measurements) and steane_zero_verification_passed(
+        zero_measurements
+    )
+
+
+@dataclass(frozen=True)
+class VerifiedSteaneBellPair(qualtran.GateWithRegisters):
+    """A postselected encoded Bell pair composed from verified Steane states.
+
+    The ``bell_a`` block is prepared as ``|+>_L`` and controls a transversal CNOT
+    into ``bell_b``, which is prepared as ``|0>_L``. The output blocks form
+    ``(|00>_L + |11>_L) / sqrt(2)`` only when the measurements under both
+    verification keys pass :func:`steane_bell_pair_verification_passed`.
+    """
+
+    plus_verification_key: str = "steane_bell_plus_verification"
+    zero_verification_key: str = "steane_bell_zero_verification"
+
+    @property
+    def signature(self) -> Any:
+        return qualtran.Signature.build(
+            bell_a=STEANE_CODE_SIZE,
+            bell_a_verifier=STEANE_CODE_SIZE,
+            bell_b=STEANE_CODE_SIZE,
+            bell_b_verifier=STEANE_CODE_SIZE,
+        )
+
+    def decompose_from_registers(
+        self,
+        *,
+        context: cirq.DecompositionContext,
+        bell_a: np.ndarray,
+        bell_a_verifier: np.ndarray,
+        bell_b: np.ndarray,
+        bell_b_verifier: np.ndarray,
+    ) -> cirq.OP_TREE:
+        del context
+        bell_a_qubits = tuple(bell_a.ravel())
+        bell_b_qubits = tuple(bell_b.ravel())
+
+        yield VerifiedSteanePlus(self.plus_verification_key).on_registers(
+            candidate=bell_a,
+            verifier=bell_a_verifier,
+        )
+        yield VerifiedSteaneZero(self.zero_verification_key).on_registers(
+            candidate=bell_b,
+            verifier=bell_b_verifier,
+        )
+        yield transversal_cx(bell_a_qubits, bell_b_qubits)
+
+
+@dataclass(frozen=True)
+class KnillTeleportation(qualtran.GateWithRegisters):
+    """Teleports an encoded Steane block through an accepted logical Bell pair.
+
+    ``bell_a`` and ``bell_b`` must be the two retained blocks from an accepted
+    :class:`VerifiedSteaneBellPair` attempt. This Bloq deliberately performs no
+    resource preparation: keeping verification away from live ``data`` makes the
+    acceptance and retry boundary explicit. ``data`` and ``bell_a`` are consumed
+    by measurement, and the teleported logical state is left in ``bell_b``.
+    """
+
+    measurement_key_prefix: str = "knill_teleportation"
+
+    @property
+    def signature(self) -> Any:
+        return qualtran.Signature.build(
+            data=STEANE_CODE_SIZE,
+            bell_a=STEANE_CODE_SIZE,
+            bell_b=STEANE_CODE_SIZE,
+        )
+
+    def decompose_from_registers(
+        self,
+        *,
+        context: cirq.DecompositionContext,
+        data: np.ndarray,
+        bell_a: np.ndarray,
+        bell_b: np.ndarray,
+    ) -> cirq.OP_TREE:
+        del context
+        data_qubits = tuple(data.ravel())
+        bell_a_qubits = tuple(bell_a.ravel())
+        bell_b_qubits = tuple(bell_b.ravel())
+        data_key = f"{self.measurement_key_prefix}_data"
+        bell_a_key = f"{self.measurement_key_prefix}_bell_a"
+
+        yield transversal_cx(data_qubits, bell_a_qubits)
+        yield transversal_h(data_qubits)
+        yield cirq.measure(*data_qubits, key=data_key)
+        yield cirq.measure(*bell_a_qubits, key=bell_a_key)
+        yield (
+            cirq.Z(qubit).with_classical_controls(
+                SteaneSyndromeCondition(cirq.MeasurementKey(data_key), index)
+            )
+            for index, qubit in enumerate(bell_b_qubits)
+        )
+        yield (
+            cirq.X(qubit).with_classical_controls(
+                SteaneSyndromeCondition(cirq.MeasurementKey(bell_a_key), index)
+            )
+            for index, qubit in enumerate(bell_b_qubits)
+        )
+        yield (
+            cirq.Z(qubit).with_classical_controls(
+                SteaneCodeCondition(cirq.MeasurementKey(data_key))
+            )
+            for qubit in bell_b_qubits
+        )
+        yield (
+            cirq.X(qubit).with_classical_controls(
+                SteaneCodeCondition(cirq.MeasurementKey(bell_a_key))
+            )
+            for qubit in bell_b_qubits
+        )
+
+
+@dataclass(frozen=True)
+class VerifiedKnillEC:
+    """Coordinates verified resource preparation and Knill teleportation.
+
+    This is intentionally not a single Bloq. Resource verification is
+    postselected and must finish successfully before the Bell pair is allowed to
+    interact with live data. ``bell_pair`` and ``teleportation`` expose the two
+    independently schedulable Bloq stages; a resource factory may retry or prepare
+    multiple copies between them.
+    """
+
+    key_prefix: str = "verified_knill_ec"
+
+    @property
+    def plus_verification_key(self) -> str:
+        return f"{self.key_prefix}_plus_verification"
+
+    @property
+    def zero_verification_key(self) -> str:
+        return f"{self.key_prefix}_zero_verification"
+
+    @property
+    def bell_pair(self) -> VerifiedSteaneBellPair:
+        """Returns the offline, postselected Bell-resource preparation Bloq."""
+        return VerifiedSteaneBellPair(
+            plus_verification_key=self.plus_verification_key,
+            zero_verification_key=self.zero_verification_key,
+        )
+
+    @property
+    def teleportation(self) -> KnillTeleportation:
+        """Returns the Bloq that consumes a previously accepted Bell pair."""
+        return KnillTeleportation(measurement_key_prefix=f"{self.key_prefix}_teleportation")
+
+    def verification_passed(self, measurements: Mapping[str, Sequence[int]]) -> bool:
+        """Returns whether one resource-preparation result is safe to consume."""
+        return steane_bell_pair_verification_passed(
+            measurements[self.plus_verification_key],
+            measurements[self.zero_verification_key],
+        )
+
+
+@dataclass(frozen=True)
+class VerifiedSteaneBellPairFactory:
+    """Creates a bounded batch of verified Bell-pair preparation attempts.
+
+    The factory owns only classical orchestration: physical block allocation,
+    parallel scheduling, and routing the selected blocks remain responsibilities
+    of the compiler or runtime. Each attempt has independent measurement keys so
+    that preparation may happen without interacting with live data.
+    """
+
+    attempts: int
+    key_prefix: str = "steane_bell_pair"
+
+    def __post_init__(self) -> None:
+        if self.attempts < 1:
+            raise ValueError("A Bell-pair factory must make at least one attempt.")
+
+    def protocol(self, attempt_index: int) -> VerifiedKnillEC:
+        """Returns the independently keyed protocol for one factory attempt."""
+        if not 0 <= attempt_index < self.attempts:
+            raise IndexError(f"Bell-pair attempt index out of range: {attempt_index}")
+        return VerifiedKnillEC(key_prefix=f"{self.key_prefix}_{attempt_index}")
+
+    @property
+    def preparations(self) -> tuple[VerifiedSteaneBellPair, ...]:
+        """Returns the Bell-preparation Bloqs in this bounded batch."""
+        return tuple(self.protocol(index).bell_pair for index in range(self.attempts))
+
+    def select(self, measurements: Mapping[str, Sequence[int]]) -> int:
+        """Returns the index of the first accepted Bell pair.
+
+        Raises:
+            RuntimeError: If every preparation attempt was rejected.
+        """
+        for index in range(self.attempts):
+            if self.protocol(index).verification_passed(measurements):
+                return index
+        raise RuntimeError("No verified Steane Bell-pair preparation was accepted.")
+
+
+@dataclass(frozen=True)
+class SteaneBellPairBlocks:
+    """Physical blocks allocated to one verified Bell-pair preparation attempt."""
+
+    bell_a: tuple[cirq.Qid, ...]
+    bell_a_verifier: tuple[cirq.Qid, ...]
+    bell_b: tuple[cirq.Qid, ...]
+    bell_b_verifier: tuple[cirq.Qid, ...]
+
+
+@dataclass(frozen=True)
+class VerifiedExecutionResource:
+    """Verified Bell resources allocated to one logical block in one round."""
+
+    logical_qubit_index: int
+    factory: VerifiedSteaneBellPairFactory
+    bell_pair_blocks: tuple[SteaneBellPairBlocks, ...]
+
+
+@dataclass(frozen=True)
+class VerifiedExecutionRound:
+    """One logical operation and resources for each participating block."""
+
+    logical_gate: cirq.Gate
+    logical_qubit_indices: tuple[int, ...]
+    resources: tuple[VerifiedExecutionResource, ...]
+    moment_index: int
+
+
+@dataclass(frozen=True)
+class VerifiedExecutionPlan:
+    """A staged verified compilation for an arbitrary-depth Clifford circuit.
+
+    The resource preparation circuit must execute first while preserving the
+    unmeasured Bell blocks. Once its classical results are available,
+    :meth:`build_continuation` selects accepted attempts and chains the live data
+    locations independently for every logical block.
+    """
+
+    logical_qubits: tuple[cirq.Qid, ...]
+    data_blocks: tuple[tuple[cirq.Qid, ...], ...]
+    rounds: tuple[VerifiedExecutionRound, ...]
+    measured_logical_qubit_indices: tuple[int, ...]
+    measurement_key: str
+
+    @property
+    def data(self) -> tuple[cirq.Qid, ...]:
+        """Returns the initial data block for a one-logical-qubit plan."""
+        if len(self.data_blocks) != 1:
+            raise ValueError("A multi-qubit execution plan has more than one data block.")
+        return self.data_blocks[0]
+
+    @property
+    def resource_preparation_circuit(self) -> cirq.Circuit:
+        """Returns independently schedulable, offline Bell-pair preparations."""
+        operations = []
+        for round_ in self.rounds:
+            for resource in round_.resources:
+                for preparation, blocks in zip(
+                    resource.factory.preparations, resource.bell_pair_blocks
+                ):
+                    operations.append(
+                        preparation.on_registers(
+                            bell_a=np.asarray(blocks.bell_a),
+                            bell_a_verifier=np.asarray(blocks.bell_a_verifier),
+                            bell_b=np.asarray(blocks.bell_b),
+                            bell_b_verifier=np.asarray(blocks.bell_b_verifier),
+                        )
+                    )
+        return cirq.Circuit(operations)
+
+    def build_continuation(
+        self, verification_measurements: Mapping[str, Sequence[int]]
+    ) -> cirq.Circuit:
+        """Builds the data-touching stage using accepted pairs for every block."""
+        circuit = cirq.Circuit.zip(*(encode(block) for block in self.data_blocks))
+        current_blocks = list(self.data_blocks)
+
+        for round_ in self.rounds:
+            if round_.logical_gate == cirq.X:
+                circuit.append(transversal_x(current_blocks[round_.logical_qubit_indices[0]]))
+            elif round_.logical_gate == cirq.H:
+                circuit.append(transversal_h(current_blocks[round_.logical_qubit_indices[0]]))
+            elif round_.logical_gate == cirq.CNOT:
+                control_index, target_index = round_.logical_qubit_indices
+                circuit.append(
+                    transversal_cx(current_blocks[control_index], current_blocks[target_index])
+                )
+            elif not isinstance(round_.logical_gate, cirq.IdentityGate):
+                raise ValueError(f"Unsupported verified logical gate: {round_.logical_gate!r}")
+
+            for resource in round_.resources:
+                selected_index = resource.factory.select(verification_measurements)
+                selected_blocks = resource.bell_pair_blocks[selected_index]
+                protocol = resource.factory.protocol(selected_index)
+                circuit.append(
+                    protocol.teleportation.on_registers(
+                        data=np.asarray(current_blocks[resource.logical_qubit_index]),
+                        bell_a=np.asarray(selected_blocks.bell_a),
+                        bell_b=np.asarray(selected_blocks.bell_b),
+                    )
+                )
+                current_blocks[resource.logical_qubit_index] = selected_blocks.bell_b
+
+        circuit.append(
+            cirq.measure(
+                *(
+                    physical_qubit
+                    for logical_index in self.measured_logical_qubit_indices
+                    for physical_qubit in current_blocks[logical_index]
+                ),
+                key=self.measurement_key,
+            )
+        )
+        return circuit
+
+
+@dataclass(frozen=True)
+class LocalFTModule:
+    """A fixed-capacity module in a local fault-tolerant architecture."""
+
+    module_id: str
+    logical_capacity: int = 1
+    bell_pair_slots: int = 1
+    bell_pair_attempt_capacity: int = 1
+
+    def __post_init__(self) -> None:
+        if (
+            self.logical_capacity < 1
+            or self.bell_pair_slots < 1
+            or self.bell_pair_attempt_capacity < 1
+        ):
+            raise ValueError("Local module capacities must be positive.")
+
+
+@dataclass(frozen=True)
+class LocalFTArchitecture:
+    """Modules and direct communication links available to the compiler."""
+
+    modules: tuple[LocalFTModule, ...]
+    links: frozenset[tuple[str, str]]
+
+    def __post_init__(self) -> None:
+        module_ids = [module.module_id for module in self.modules]
+        if len(set(module_ids)) != len(module_ids):
+            raise ValueError("Local module identifiers must be unique.")
+        known_ids = set(module_ids)
+        for first, second in self.links:
+            if first == second or first not in known_ids or second not in known_ids:
+                raise ValueError(f"Invalid local architecture link: {(first, second)!r}")
+
+    def module(self, module_id: str) -> LocalFTModule:
+        try:
+            return next(module for module in self.modules if module.module_id == module_id)
+        except StopIteration as ex:
+            raise ValueError(f"Unknown local module: {module_id!r}") from ex
+
+    def are_neighbors(self, first: str, second: str) -> bool:
+        return first == second or (first, second) in self.links or (second, first) in self.links
+
+    def shortest_path(self, first: str, second: str) -> tuple[str, ...]:
+        """Returns a shortest path of local links between two modules."""
+        self.module(first)
+        self.module(second)
+        queue = deque([(first, (first,))])
+        visited = {first}
+        while queue:
+            current, path = queue.popleft()
+            if current == second:
+                return path
+            neighbors = {
+                right if left == current else left
+                for left, right in self.links
+                if left == current or right == current
+            }
+            for neighbor in sorted(neighbors - visited):
+                visited.add(neighbor)
+                queue.append((neighbor, path + (neighbor,)))
+        raise ValueError(f"No local route connects modules {first!r} and {second!r}.")
+
+
+@dataclass(frozen=True)
+class LocalResourceAssignment:
+    """A reusable module-owned Bell-resource slot assigned to one logical block."""
+
+    logical_qubit_index: int
+    module_id: str
+    slot_index: int
+
+
+@dataclass(frozen=True)
+class LocalScheduledRound:
+    """Local routing and bounded resource assignments for one logical round."""
+
+    round_index: int
+    moment_index: int
+    migrations: tuple[tuple[int, tuple[str, ...]], ...]
+    resources: tuple[LocalResourceAssignment, ...]
+
+
+@dataclass(frozen=True)
+class LocalVerifiedExecutionPlan:
+    """A verified execution plan with fixed logical-module ownership."""
+
+    verified_plan: VerifiedExecutionPlan
+    architecture: LocalFTArchitecture
+    logical_module_ids: tuple[str, ...]
+    scheduled_rounds: tuple[LocalScheduledRound, ...]
+
+    def module_for_logical_index(self, logical_index: int) -> LocalFTModule:
+        return self.architecture.module(self.logical_module_ids[logical_index])
+
+    @property
+    def physical_qubit_bound(self) -> int:
+        """Returns the fixed module capacity, independent of program depth."""
+        return sum(
+            STEANE_CODE_SIZE * module.logical_capacity
+            + 4 * STEANE_CODE_SIZE * module.bell_pair_slots * module.bell_pair_attempt_capacity
+            for module in self.architecture.modules
+        )
+
+
+def compile_local_verified(
+    circuit: cirq.AbstractCircuit,
+    architecture: LocalFTArchitecture,
+    placement: Mapping[cirq.Qid, str],
+    *,
+    preparation_attempts: int = 1,
+) -> LocalVerifiedExecutionPlan:
+    """Compiles a verified program while enforcing module capacity and locality."""
+    plan = compile_verified(circuit, preparation_attempts=preparation_attempts)
+    if set(placement) != set(plan.logical_qubits):
+        raise ValueError("Placement must assign every logical qubit exactly once.")
+    logical_module_ids = [placement[qubit] for qubit in plan.logical_qubits]
+    occupancy = {module.module_id: 0 for module in architecture.modules}
+    for module_id in logical_module_ids:
+        module = architecture.module(module_id)
+        occupancy[module_id] += 1
+        if occupancy[module_id] > module.logical_capacity:
+            raise ValueError(f"Logical capacity exceeded for module {module_id!r}.")
+        if preparation_attempts > module.bell_pair_attempt_capacity:
+            raise ValueError(f"Bell-pair attempt capacity exceeded for module {module_id!r}.")
+
+    scheduled_rounds = []
+    slots_used: dict[tuple[int, str], int] = {}
+    for round_index, round_ in enumerate(plan.rounds):
+        migrations = []
+        if round_.logical_gate == cirq.CNOT:
+            control_index, target_index = round_.logical_qubit_indices
+            control_module = logical_module_ids[control_index]
+            target_module = logical_module_ids[target_index]
+            path = architecture.shortest_path(control_module, target_module)
+            if len(path) > 2:
+                destination = path[-2]
+                if occupancy[destination] >= architecture.module(destination).logical_capacity:
+                    raise ValueError(
+                        f"Logical capacity exceeded while routing into {destination!r}."
+                    )
+                occupancy[control_module] -= 1
+                occupancy[destination] += 1
+                logical_module_ids[control_index] = destination
+                migrations.append((control_index, path[:-1]))
+
+        resource_assignments = []
+        for logical_index in round_.logical_qubit_indices:
+            module_id = logical_module_ids[logical_index]
+            slot_key = (round_.moment_index, module_id)
+            slot_index = slots_used.get(slot_key, 0)
+            module = architecture.module(module_id)
+            if slot_index >= module.bell_pair_slots:
+                raise ValueError(
+                    f"Bell-pair slot capacity exceeded in module {module_id!r} "
+                    f"during moment {round_.moment_index}."
+                )
+            slots_used[slot_key] = slot_index + 1
+            resource_assignments.append(
+                LocalResourceAssignment(logical_index, module_id, slot_index)
+            )
+        scheduled_rounds.append(
+            LocalScheduledRound(
+                round_index=round_index,
+                moment_index=round_.moment_index,
+                migrations=tuple(migrations),
+                resources=tuple(resource_assignments),
+            )
+        )
+
+    return LocalVerifiedExecutionPlan(
+        plan,
+        architecture,
+        tuple(logical_module_ids),
+        tuple(scheduled_rounds),
+    )
+
+
+def compile_verified(
+    circuit: cirq.AbstractCircuit, *, preparation_attempts: int = 3
+) -> VerifiedExecutionPlan:
+    """Compiles a multi-qubit Clifford program into two verified stages."""
+    logical_qubits = tuple(sorted(circuit.all_qubits()))
+    logical_qubit_indices = {qubit: index for index, qubit in enumerate(logical_qubits)}
+
+    logical_operations = []
+    measurement_keys = []
+    for moment_index, moment in enumerate(circuit):
+        for operation in moment.operations:
+            if isinstance(operation.gate, cirq.MeasurementGate):
+                measurement_keys.append(cirq.measurement_key_name(operation))
+            else:
+                logical_operations.append((moment_index, operation))
+    operations = tuple(circuit.all_operations())
+    if (
+        not logical_operations
+        or len(measurement_keys) != 1
+        or not isinstance(operations[-1].gate, cirq.MeasurementGate)
+    ):
+        raise ValueError(
+            "Verified compilation requires at least one logical gate and one final measurement."
+        )
+    for _, logical_operation in logical_operations:
+        logical_gate = logical_operation.gate
+        if logical_gate is None or not (
+            logical_gate == cirq.X
+            or logical_gate == cirq.H
+            or logical_gate == cirq.CNOT
+            or isinstance(logical_gate, cirq.IdentityGate)
+        ):
+            raise ValueError(f"Unsupported verified logical operation: {logical_operation!r}")
+
+    measurement_operation = operations[-1]
+    measured_indices = tuple(logical_qubit_indices[qubit] for qubit in measurement_operation.qubits)
+    data_blocks = tuple(
+        tuple(
+            cirq.LineQubit.range(
+                logical_index * STEANE_CODE_SIZE,
+                (logical_index + 1) * STEANE_CODE_SIZE,
+            )
+        )
+        for logical_index in range(len(logical_qubits))
+    )
+    rounds = []
+    next_resource_index = 0
+    for round_index, (moment_index, logical_operation) in enumerate(logical_operations):
+        participating_indices = tuple(
+            logical_qubit_indices[qubit] for qubit in logical_operation.qubits
+        )
+        resources = []
+        for logical_index in participating_indices:
+            allocated_attempts = []
+            for _ in range(preparation_attempts):
+                start = (
+                    len(logical_qubits) * STEANE_CODE_SIZE
+                    + 4 * STEANE_CODE_SIZE * next_resource_index
+                )
+                next_resource_index += 1
+                blocks = tuple(
+                    tuple(cirq.LineQubit.range(start + offset, start + offset + STEANE_CODE_SIZE))
+                    for offset in range(0, 4 * STEANE_CODE_SIZE, STEANE_CODE_SIZE)
+                )
+                allocated_attempts.append(SteaneBellPairBlocks(*blocks))
+            resources.append(
+                VerifiedExecutionResource(
+                    logical_qubit_index=logical_index,
+                    bell_pair_blocks=tuple(allocated_attempts),
+                    factory=VerifiedSteaneBellPairFactory(
+                        attempts=preparation_attempts,
+                        key_prefix=(
+                            f"verified_compile_round_{round_index}_logical_{logical_index}"
+                        ),
+                    ),
+                )
+            )
+        rounds.append(
+            VerifiedExecutionRound(
+                logical_gate=logical_operation.gate,
+                logical_qubit_indices=participating_indices,
+                resources=tuple(resources),
+                moment_index=moment_index,
+            )
+        )
+
+    return VerifiedExecutionPlan(
+        logical_qubits=logical_qubits,
+        data_blocks=data_blocks,
+        rounds=tuple(rounds),
+        measured_logical_qubit_indices=measured_indices,
+        measurement_key=measurement_keys[0],
+    )
+
+
+_FT_BLOQ_TYPES = (
+    VerifiedSteaneZero,
+    VerifiedSteanePlus,
+    VerifiedSteaneBellPair,
+    KnillTeleportation,
+)
+
+
+def _lower_ft_operation(operation: cirq.Operation) -> list[cirq.Operation]:
+    if not isinstance(operation.gate, _FT_BLOQ_TYPES):
+        return [operation]
+    decomposition = cirq.decompose_once(operation.gate, qubits=operation.qubits)
+    return [
+        lowered
+        for child in cirq.flatten_op_tree(decomposition)
+        for lowered in _lower_ft_operation(child)
+    ]
+
+
+def lower_ft_circuit(circuit: cirq.AbstractCircuit) -> cirq.Circuit:
+    """Recursively lowers the fault-tolerant Qualtran Bloqs into Cirq operations."""
+    lowered = cirq.Circuit()
+    for moment in circuit:
+        lowered.append(
+            (
+                operation
+                for original in moment.operations
+                for operation in _lower_ft_operation(original)
+            )
+        )
+    return lowered
+
+
+class VerifiedFTSimulator:
+    """Executes verified staged plans while preserving accepted resource states."""
+
+    def __init__(
+        self,
+        *,
+        preparation_attempts: int = 3,
+        max_preparation_batches: int = 10,
+        seed: cirq.RANDOM_STATE_OR_SEED_LIKE = None,
+    ) -> None:
+        if max_preparation_batches < 1:
+            raise ValueError("max_preparation_batches must be positive.")
+        self.preparation_attempts = preparation_attempts
+        self.max_preparation_batches = max_preparation_batches
+        self._simulator = cirq.CliffordSimulator(seed=seed)
+
+    def _run_once(self, plan: VerifiedExecutionPlan) -> np.ndarray:
+        preparation = lower_ft_circuit(plan.resource_preparation_circuit)
+        all_qubits = sorted(
+            preparation.all_qubits() | {qubit for block in plan.data_blocks for qubit in block}
+        )
+
+        for _ in range(self.max_preparation_batches):
+            preparation_result = self._simulator.simulate(
+                preparation,
+                qubit_order=all_qubits,
+            )
+            try:
+                continuation = plan.build_continuation(preparation_result.measurements)
+            except RuntimeError:
+                continue
+
+            lowered_continuation = lower_ft_circuit(continuation)
+            continuation_result = self._simulator.simulate(
+                lowered_continuation,
+                qubit_order=all_qubits,
+                initial_state=preparation_result._final_simulator_state,
+            )
+            physical_measurements = continuation_result.measurements[plan.measurement_key]
+            return np.asarray(
+                [
+                    physical_measurements[index * STEANE_CODE_SIZE : (index + 1) * STEANE_CODE_SIZE]
+                    for index in range(len(plan.measured_logical_qubit_indices))
+                ]
+            )
+
+        raise RuntimeError("Verified resource preparation exhausted its retry budget.")
+
+    def run(
+        self,
+        circuit: cirq.AbstractCircuit,
+        *,
+        repetitions: int = 1,
+    ) -> cirq.ResultDict:
+        """Compiles and executes a verified logical Clifford circuit."""
+        plan = compile_verified(circuit, preparation_attempts=self.preparation_attempts)
+        decoded = np.empty((repetitions, len(plan.measured_logical_qubit_indices)), dtype=np.int8)
+        for repetition in range(repetitions):
+            physical_blocks = self._run_once(plan)
+            for logical_index, physical_measurements in enumerate(physical_blocks):
+                decoded[repetition, logical_index] = physical_measurements_to_logical_measurements(
+                    physical_measurements
+                )
+        return cirq.ResultDict(
+            params=cirq.ParamResolver({}),
+            measurements={plan.measurement_key: decoded},
+        )
+
+
+@dataclass(frozen=True)
+class LocalDecoderEvent:
+    """A Bell-measurement decode performed within one module."""
+
+    module_id: str
+    data_key: str
+    bell_a_key: str
+
+
+@dataclass(frozen=True)
+class LocalClassicalMessage:
+    """A nearest-neighbor Pauli-frame message sent after routed teleportation."""
+
+    source_module: str
+    destination_module: str
+    data_key: str
+    bell_a_key: str
+
+
+class LocalVerifiedFTSimulator:
+    """Executes verified operations using reset-and-reused local physical pools."""
+
+    def __init__(
+        self,
+        architecture: LocalFTArchitecture,
+        placement: Mapping[cirq.Qid, str],
+        *,
+        preparation_attempts: int = 1,
+        max_preparation_batches: int = 10,
+        seed: cirq.RANDOM_STATE_OR_SEED_LIKE = None,
+    ) -> None:
+        self.architecture = architecture
+        self.placement = dict(placement)
+        self.preparation_attempts = preparation_attempts
+        self.max_preparation_batches = max_preparation_batches
+        self._simulator = cirq.CliffordSimulator(seed=seed)
+        self.last_plan: LocalVerifiedExecutionPlan | None = None
+        self.decoder_events: list[LocalDecoderEvent] = []
+        self.classical_messages: list[LocalClassicalMessage] = []
+        self.executed_reset_count = 0
+        self.physical_qubits_used = 0
+        self._key_counter = 0
+
+    def _new_key_prefix(self, label: str) -> str:
+        prefix = f"local_{label}_{self._key_counter}"
+        self._key_counter += 1
+        return prefix
+
+    def _allocate_module_blocks(self) -> dict[str, tuple[tuple[cirq.Qid, ...], ...]]:
+        blocks = {}
+        next_qubit = 0
+        for module in self.architecture.modules:
+            block_count = (
+                module.logical_capacity
+                + 4 * module.bell_pair_slots * module.bell_pair_attempt_capacity
+            )
+            module_blocks = []
+            for _ in range(block_count):
+                module_blocks.append(
+                    tuple(cirq.LineQubit.range(next_qubit, next_qubit + STEANE_CODE_SIZE))
+                )
+                next_qubit += STEANE_CODE_SIZE
+            blocks[module.module_id] = tuple(module_blocks)
+        self.physical_qubits_used = next_qubit
+        return blocks
+
+    def _simulate_stage(
+        self,
+        circuit: cirq.Circuit,
+        all_qubits: Sequence[cirq.Qid],
+        state: Any = None,
+    ) -> Any:
+        return self._simulator.simulate(
+            lower_ft_circuit(circuit),
+            qubit_order=all_qubits,
+            initial_state=state,
+        )
+
+    @staticmethod
+    def _free_blocks(
+        module_id: str,
+        module_blocks: Mapping[str, tuple[tuple[cirq.Qid, ...], ...]],
+        current_blocks: Mapping[int, tuple[cirq.Qid, ...]],
+        current_modules: Mapping[int, str],
+    ) -> list[tuple[cirq.Qid, ...]]:
+        occupied = {
+            current_blocks[index] for index, owner in current_modules.items() if owner == module_id
+        }
+        return [block for block in module_blocks[module_id] if block not in occupied]
+
+    def _prepare_bell_pair(
+        self,
+        source_module: str,
+        destination_module: str,
+        module_blocks: Mapping[str, tuple[tuple[cirq.Qid, ...], ...]],
+        current_blocks: Mapping[int, tuple[cirq.Qid, ...]],
+        current_modules: Mapping[int, str],
+        all_qubits: Sequence[cirq.Qid],
+        state: Any,
+    ) -> tuple[Any, tuple[cirq.Qid, ...], tuple[cirq.Qid, ...], VerifiedKnillEC]:
+        if source_module == destination_module:
+            free = self._free_blocks(source_module, module_blocks, current_blocks, current_modules)
+            if len(free) < 4:
+                raise RuntimeError(f"Module {source_module!r} has no free Bell-resource slot.")
+            bell_a, bell_a_verifier, bell_b, bell_b_verifier = free[:4]
+        else:
+            source_free = self._free_blocks(
+                source_module, module_blocks, current_blocks, current_modules
+            )
+            destination_free = self._free_blocks(
+                destination_module, module_blocks, current_blocks, current_modules
+            )
+            if len(source_free) < 2 or len(destination_free) < 2:
+                raise RuntimeError("A routed Bell link requires two free blocks at each endpoint.")
+            bell_a, bell_a_verifier = source_free[:2]
+            bell_b, bell_b_verifier = destination_free[:2]
+
+        resource_qubits = bell_a + bell_a_verifier + bell_b + bell_b_verifier
+        for _ in range(self.max_preparation_batches):
+            prefix = self._new_key_prefix("resource")
+            protocol = VerifiedKnillEC(prefix)
+            preparation = cirq.Circuit(
+                cirq.reset_each(*resource_qubits),
+                protocol.bell_pair.on_registers(
+                    bell_a=np.asarray(bell_a),
+                    bell_a_verifier=np.asarray(bell_a_verifier),
+                    bell_b=np.asarray(bell_b),
+                    bell_b_verifier=np.asarray(bell_b_verifier),
+                ),
+            )
+            self.executed_reset_count += len(resource_qubits)
+            result = self._simulate_stage(preparation, all_qubits, state)
+            if protocol.verification_passed(result.measurements):
+                return result._final_simulator_state, bell_a, bell_b, protocol
+            state = result._final_simulator_state
+        raise RuntimeError("Verified local resource preparation exhausted its retry budget.")
+
+    def _teleport(
+        self,
+        logical_index: int,
+        source_module: str,
+        destination_module: str,
+        module_blocks: Mapping[str, tuple[tuple[cirq.Qid, ...], ...]],
+        current_blocks: dict[int, tuple[cirq.Qid, ...]],
+        current_modules: dict[int, str],
+        all_qubits: Sequence[cirq.Qid],
+        state: Any,
+    ) -> Any:
+        state, bell_a, bell_b, protocol = self._prepare_bell_pair(
+            source_module,
+            destination_module,
+            module_blocks,
+            current_blocks,
+            current_modules,
+            all_qubits,
+            state,
+        )
+        teleportation = protocol.teleportation.on_registers(
+            data=np.asarray(current_blocks[logical_index]),
+            bell_a=np.asarray(bell_a),
+            bell_b=np.asarray(bell_b),
+        )
+        result = self._simulate_stage(cirq.Circuit(teleportation), all_qubits, state)
+        data_key = f"{protocol.teleportation.measurement_key_prefix}_data"
+        bell_a_key = f"{protocol.teleportation.measurement_key_prefix}_bell_a"
+        self.decoder_events.append(LocalDecoderEvent(source_module, data_key, bell_a_key))
+        if source_module != destination_module:
+            if not self.architecture.are_neighbors(source_module, destination_module):
+                raise RuntimeError("Classical Pauli-frame messages may only cross one local link.")
+            self.classical_messages.append(
+                LocalClassicalMessage(source_module, destination_module, data_key, bell_a_key)
+            )
+        current_blocks[logical_index] = bell_b
+        current_modules[logical_index] = destination_module
+        return result._final_simulator_state
+
+    def _run_once(self, circuit: cirq.AbstractCircuit) -> np.ndarray:
+        assert self.last_plan is not None
+        plan = self.last_plan
+        module_blocks = self._allocate_module_blocks()
+        all_qubits = sorted(
+            qubit for blocks in module_blocks.values() for block in blocks for qubit in block
+        )
+        current_modules = {
+            index: self.placement[qubit]
+            for index, qubit in enumerate(plan.verified_plan.logical_qubits)
+        }
+        used_data_slots = {module.module_id: 0 for module in self.architecture.modules}
+        current_blocks = {}
+        for logical_index, module_id in current_modules.items():
+            slot = used_data_slots[module_id]
+            current_blocks[logical_index] = module_blocks[module_id][slot]
+            used_data_slots[module_id] += 1
+
+        initialization = cirq.Circuit.zip(*(encode(block) for block in current_blocks.values()))
+        result = self._simulate_stage(initialization, all_qubits)
+        state = result._final_simulator_state
+        logical_operations = [
+            operation
+            for operation in circuit.all_operations()
+            if not isinstance(operation.gate, cirq.MeasurementGate)
+        ]
+
+        for round_index, (operation, scheduled) in enumerate(
+            zip(logical_operations, plan.scheduled_rounds)
+        ):
+            for logical_index, path in scheduled.migrations:
+                for source_module, destination_module in zip(path, path[1:]):
+                    state = self._teleport(
+                        logical_index,
+                        source_module,
+                        destination_module,
+                        module_blocks,
+                        current_blocks,
+                        current_modules,
+                        all_qubits,
+                        state,
+                    )
+
+            logical_indices = plan.verified_plan.rounds[round_index].logical_qubit_indices
+            gate_circuit = cirq.Circuit()
+            if operation.gate == cirq.X:
+                gate_circuit.append(transversal_x(current_blocks[logical_indices[0]]))
+            elif operation.gate == cirq.H:
+                gate_circuit.append(transversal_h(current_blocks[logical_indices[0]]))
+            elif operation.gate == cirq.CNOT:
+                gate_circuit.append(
+                    transversal_cx(
+                        current_blocks[logical_indices[0]],
+                        current_blocks[logical_indices[1]],
+                    )
+                )
+            result = self._simulate_stage(gate_circuit, all_qubits, state)
+            state = result._final_simulator_state
+
+            for logical_index in logical_indices:
+                module_id = current_modules[logical_index]
+                state = self._teleport(
+                    logical_index,
+                    module_id,
+                    module_id,
+                    module_blocks,
+                    current_blocks,
+                    current_modules,
+                    all_qubits,
+                    state,
+                )
+
+        measurement = next(
+            operation
+            for operation in circuit.all_operations()
+            if isinstance(operation.gate, cirq.MeasurementGate)
+        )
+        measured_indices = [
+            plan.verified_plan.logical_qubits.index(qubit) for qubit in measurement.qubits
+        ]
+        measurement_circuit = cirq.Circuit(
+            cirq.measure(
+                *(qubit for index in measured_indices for qubit in current_blocks[index]),
+                key=cirq.measurement_key_name(measurement),
+            )
+        )
+        result = self._simulate_stage(measurement_circuit, all_qubits, state)
+        physical = result.measurements[cirq.measurement_key_name(measurement)]
+        return np.asarray(
+            [
+                physical[index * STEANE_CODE_SIZE : (index + 1) * STEANE_CODE_SIZE]
+                for index in range(len(measured_indices))
+            ]
+        )
+
+    def run(
+        self,
+        circuit: cirq.AbstractCircuit,
+        *,
+        repetitions: int = 1,
+    ) -> cirq.ResultDict:
+        """Executes routed verified operations on fixed reusable module pools."""
+        self.last_plan = compile_local_verified(
+            circuit,
+            self.architecture,
+            self.placement,
+            preparation_attempts=self.preparation_attempts,
+        )
+        self.decoder_events.clear()
+        self.classical_messages.clear()
+        self.executed_reset_count = 0
+        measurement_key = self.last_plan.verified_plan.measurement_key
+        measured_count = len(self.last_plan.verified_plan.measured_logical_qubit_indices)
+        decoded = np.empty((repetitions, measured_count), dtype=np.int8)
+        for repetition in range(repetitions):
+            physical_blocks = self._run_once(circuit)
+            for index, physical in enumerate(physical_blocks):
+                decoded[repetition, index] = physical_measurements_to_logical_measurements(physical)
+        return cirq.ResultDict(
+            params=cirq.ParamResolver({}),
+            measurements={measurement_key: decoded},
+        )
+
+
 def compile(circuit: cirq.AbstractCircuit) -> cirq.Circuit:
     """Compiles a logical circuit using Knill-style error-correcting teleportation."""
     logical_qubits = sorted(circuit.all_qubits())
@@ -167,9 +1284,7 @@ def compile(circuit: cirq.AbstractCircuit) -> cirq.Circuit:
     def make_blocks(offset: int) -> dict[cirq.Qid, list[cirq.LineQubit]]:
         return {
             qubit: physical_qubits[
-                offset
-                + index * STEANE_CODE_SIZE : offset
-                + (index + 1) * STEANE_CODE_SIZE
+                offset + index * STEANE_CODE_SIZE : offset + (index + 1) * STEANE_CODE_SIZE
             ]
             for index, qubit in enumerate(logical_qubits)
         }
@@ -286,11 +1401,7 @@ def compile(circuit: cirq.AbstractCircuit) -> cirq.Circuit:
     for key, measured_qubits in logical_measurements:
         compiled.append(
             cirq.measure(
-                *(
-                    physical
-                    for qubit in measured_qubits
-                    for physical in current_blocks[qubit]
-                ),
+                *(physical for qubit in measured_qubits for physical in current_blocks[qubit]),
                 key=key,
             )
         )
@@ -339,16 +1450,14 @@ class FTSimulator:
             for repetition, row in enumerate(physical_values):
                 for logical_index in range(logical_qubit_count):
                     start = logical_index * STEANE_CODE_SIZE
-                    decoded[
-                        repetition, logical_index
-                    ] = physical_measurements_to_logical_measurements(
-                        row[start : start + STEANE_CODE_SIZE]
+                    decoded[repetition, logical_index] = (
+                        physical_measurements_to_logical_measurements(
+                            row[start : start + STEANE_CODE_SIZE]
+                        )
                     )
             logical_measurements[key] = decoded
 
-        return cirq.ResultDict(
-            params=physical_result.params, measurements=logical_measurements
-        )
+        return cirq.ResultDict(params=physical_result.params, measurements=logical_measurements)
 
 
 def generate_logical_circuit(
