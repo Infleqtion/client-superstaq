@@ -140,6 +140,7 @@ jobs:
       - name: Install dependencies, using minimum supported versions
         run: |
           min_versions=$(sed -E "s/[~>]=([0-9]+(\.[0-9]+)*)(;.*)?/==\1\3/" ${{ matrix.type }}/requirements.txt ${{ matrix.type }}/dev-requirements.txt)
+          echo $min_versions
           python -m pip install --upgrade pip
           pip install ./checks-superstaq ${{ matrix.dependencies }} $min_versions
       - name: Coverage check
