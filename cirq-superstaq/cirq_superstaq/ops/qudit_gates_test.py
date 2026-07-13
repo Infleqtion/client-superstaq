@@ -187,8 +187,7 @@ def test_movement_gate() -> None:
     assert cirq.equal_up_to_global_phase(gate, css.PermutationGate([1, 2, 0], dimension=3))
     assert gate is gate**1
     assert isinstance(gate**-1, css.MovementGate)
-    assert (gate**-1).dimension == 3
-    assert (gate**-1).moves == {1: 0, 2: 1}
+    assert gate**-1 == css.MovementGate({1: 0, 2: 1}, dimension=3)
     np.testing.assert_array_equal(cirq.unitary(gate**-1), cirq.unitary(gate).T)
     cirq.testing.assert_implements_consistent_protocols(
         gate, ignore_decompose_to_default_gateset=True, local_vals={"css": css}
@@ -203,8 +202,7 @@ def test_movement_gate() -> None:
     assert cirq.qid_shape(gate) == (2, 2, 2, 2, 2, 2)
     assert gate is gate**1
     assert isinstance(gate**-1, css.MovementGate)
-    assert (gate**-1).dimension == 2
-    assert (gate**-1).moves == {4: 2, 3: 3, 0: 1, 5: 4}
+    assert gate**-1 == css.MovementGate({4: 2, 3: 3, 0: 1, 5: 4}, dimension=2)
     np.testing.assert_array_equal(cirq.unitary(gate**-1), cirq.unitary(gate).T)
 
     qubits = cirq.LineQubit.range(6)
@@ -236,6 +234,8 @@ def test_movement_op() -> None:
     op = css.movement_op({q2: q3, q3: q4})
     assert op.gate == css.MovementGate({0: 1, 1: 2})
     assert op == css.MovementGate({0: 1, 1: 2}).on(q2, q3, q4)
+    assert op == op**1
+    assert op**-1 == css.movement_op({q3: q2, q4: q3})
     assert repr(op).startswith("css.movement_op")  # Confirm we're using `_op_repr_`
     cirq.testing.assert_equivalent_repr(op, local_vals={"css": css})
     cirq.testing.assert_has_diagram(
@@ -269,6 +269,8 @@ def test_movement_op() -> None:
     op = css.movement_op({qt6: qt5, qt7: qt6})
     assert op.gate == css.MovementGate({1: 0, 2: 1}, dimension=3)
     assert op == css.MovementGate({1: 0, 2: 1}, dimension=3).on(qt5, qt6, qt7)
+    assert op == op**1
+    assert op**-1 == css.movement_op({qt5: qt6, qt6: qt7})
     cirq.testing.assert_equivalent_repr(op, local_vals={"css": css})
     cirq.testing.assert_has_diagram(
         cirq.Circuit(op),
