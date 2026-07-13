@@ -136,6 +136,14 @@ class PermutationGate(cirq.QubitPermutationGate):
             qudits = [qubits[qs.index(q)] for q in op.qubits]
             yield css.qudit_swap_op(*qudits)
 
+    def __pow__(self, exponent: cirq.TParamVal) -> PermutationGate:
+        if exponent == 1:
+            return self
+        if exponent == -1:
+            permutation = [self._permutation.index(i) for i in range(self.num_qubits())]
+            return PermutationGate(permutation, dimension=self._dimension)
+        return NotImplemented
+
     def _value_equality_values_(self) -> tuple[int, ...] | tuple[tuple[int, ...], int]:
         permutation_val = super()._value_equality_values_()
         if self._dimension == 2:
@@ -208,6 +216,14 @@ class MovementGate(PermutationGate):
         Note this is not always unique.
         """
         return dict(enumerate(self._permutation))
+
+    def __pow__(self, exponent: cirq.TParamVal) -> MovementGate:
+        if exponent == 1:
+            return self
+        if exponent == -1:
+            moves = {j: i for i, j in self._moves.items()}
+            return MovementGate(moves, dimension=self._dimension)
+        return NotImplemented
 
     # Type check override necessary because `cirq.QubitPermutationGate` uses legacy `tuple` output
     def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:  # type: ignore[override]

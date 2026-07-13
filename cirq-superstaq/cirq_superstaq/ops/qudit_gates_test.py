@@ -126,6 +126,11 @@ def test_permutation_gate() -> None:
         gate, resolvers=[*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]
     )
 
+    assert gate is gate**1
+    assert isinstance(gate**-1, css.PermutationGate)
+    assert (gate**-1).dimension == 2
+    np.testing.assert_array_equal(cirq.unitary(gate**-1), cirq.unitary(gate).T)
+
     gate = css.PermutationGate(permutation, dimension=3)
     assert gate.permutation == permutation
     assert gate.dimension == 3
@@ -146,6 +151,11 @@ def test_permutation_gate() -> None:
     cirq.testing.assert_json_roundtrip_works(
         gate, resolvers=[*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]
     )
+
+    assert gate is gate**1
+    assert isinstance(gate**-1, css.PermutationGate)
+    assert (gate**-1).dimension == 3
+    np.testing.assert_array_equal(cirq.unitary(gate**-1), cirq.unitary(gate).T)
 
     assert cirq.trace_distance_bound(css.PermutationGate([0, 1, 2], dimension=3)) == 0.0
 
@@ -175,6 +185,11 @@ def test_movement_gate() -> None:
     assert gate == css.PermutationGate([1, 2, 0], dimension=3)
     assert cirq.approx_eq(gate, css.PermutationGate([1, 2, 0], dimension=3))
     assert cirq.equal_up_to_global_phase(gate, css.PermutationGate([1, 2, 0], dimension=3))
+    assert gate is gate**1
+    assert isinstance(gate**-1, css.MovementGate)
+    assert (gate**-1).dimension == 3
+    assert (gate**-1).moves == {1: 0, 2: 1}
+    np.testing.assert_array_equal(cirq.unitary(gate**-1), cirq.unitary(gate).T)
     cirq.testing.assert_implements_consistent_protocols(
         gate, ignore_decompose_to_default_gateset=True, local_vals={"css": css}
     )
@@ -186,6 +201,11 @@ def test_movement_gate() -> None:
     assert gate.dimension == 2
     assert cirq.num_qubits(gate) == 6
     assert cirq.qid_shape(gate) == (2, 2, 2, 2, 2, 2)
+    assert gate is gate**1
+    assert isinstance(gate**-1, css.MovementGate)
+    assert (gate**-1).dimension == 2
+    assert (gate**-1).moves == {4: 2, 3: 3, 0: 1, 5: 4}
+    np.testing.assert_array_equal(cirq.unitary(gate**-1), cirq.unitary(gate).T)
 
     qubits = cirq.LineQubit.range(6)
     cirq.testing.assert_circuits_have_same_unitary_given_final_permutation(
