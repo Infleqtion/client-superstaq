@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 import abc
-from collections.abc import Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from collections.abc import Set as AbstractSet
 from typing import TYPE_CHECKING, Any
 
@@ -113,6 +113,161 @@ class QuditSwapGate(cirq.Gate, cirq.InterchangeableQubitsGate):
             return f"css.SWAP{self._dimension}"
 
         return f"css.QuditSwapGate(dimension={self._dimension!r})"
+
+
+class PermutationGate(cirq.QubitPermutationGate):
+    """Extension of `cirq.QubitPermutationGate` to support qudits of arbitrary dimension."""
+
+    def __init__(self, permutation: Sequence[int], dimension: int = 2) -> None:
+        self._dimension = dimension
+        super().__init__(permutation)
+
+    @property
+    def dimension(self) -> int:
+        return self._dimension
+
+    def _qid_shape_(self) -> tuple[int, ...]:
+        return (self._dimension,) * len(self._permutation)
+
+    def _decompose_(self, qubits: Sequence[cirq.Qid]) -> Iterator[cirq.Operation]:
+        qs = [q.with_dimension(2) for q in qubits]
+
+        for op in cirq.decompose_once(cirq.QubitPermutationGate(self._permutation).on(*qs)):
+            qudits = [qubits[qs.index(q)] for q in op.qubits]
+            yield css.qudit_swap_op(*qudits)
+
+    def __pow__(self, exponent: cirq.TParamVal) -> PermutationGate:
+        if exponent == 1:
+            return self
+        if exponent == -1:
+            permutation = [self._permutation.index(i) for i in range(self.num_qubits())]
+            return PermutationGate(permutation, dimension=self._dimension)
+        return NotImplemented
+
+    def _value_equality_values_(self) -> tuple[int, ...] | tuple[tuple[int, ...], int]:
+        permutation_val = super()._value_equality_values_()
+        if self._dimension == 2:
+            return permutation_val
+        return permutation_val, self._dimension
+
+    def _equal_up_to_global_phase_(self, other: object, atol: float = 1e-8) -> bool:
+        return self == other
+
+    def _trace_distance_bound_(self) -> float:
+        if all(i == j for i, j in enumerate(self._permutation)):
+            return 0.0
+        return 1.0
+
+    def _json_dict_(self) -> dict[str, object]:
+        return cirq.obj_to_dict_helper(self, ["permutation", "dimension"])
+
+    @classmethod
+    def _from_json_dict_(
+        cls, permutation: Sequence[int], dimension: int = 2, **_: Any
+    ) -> PermutationGate:
+        return cls(permutation, dimension=dimension)
+
+    def __repr__(self) -> str:
+        return f"css.PermutationGate({self.permutation!r}, dimension={self._dimension})"
+
+
+class MovementGate(PermutationGate):
+    """A gate to represent qubit shuttling.
+
+    Mostly just a wrapper for a permutation gate, but doesn't require destinations for empty sites.
+    """
+
+    def __init__(self, moves: Mapping[int, int], dimension: int = 2) -> None:
+        moves = {int(i): int(j) for i, j in moves.items()}
+
+        all_indices = set(moves.keys()) | set(moves.values())
+        num_qubits = max(all_indices) + 1
+
+        if invalid_indices := all_indices.difference(range(num_qubits)):
+            raise ValueError(f"Invalid indices: {invalid_indices}.")
+
+        if invalid_indices := all_indices.symmetric_difference(range(num_qubits)):
+            raise ValueError(f"Missing indices: {invalid_indices}.")
+
+        if len(set(moves.values())) < len(moves):
+            raise ValueError("Multiple qubits are mapped to the same site.")
+
+        # Fill out permutation with "empty" moves
+        depopulated = sorted(all_indices.difference(moves.values()))
+        permutation = []
+        for i in range(num_qubits):
+            if i in moves:
+                permutation.append(moves[i])
+            else:
+                permutation.append(depopulated.pop(0))
+        assert not depopulated
+
+        super().__init__(permutation, dimension=dimension)
+        self._moves = moves
+
+    @property
+    def moves(self) -> dict[int, int]:
+        return self._moves
+
+    @property
+    def complete_map(self) -> dict[int, int]:
+        """A complete (one-to-one and onto) initial-to-final map, including "moves" of empty sites.
+
+        Note this is not always unique.
+        """
+        return dict(enumerate(self._permutation))
+
+    def __pow__(self, exponent: cirq.TParamVal) -> MovementGate:
+        if exponent == 1:
+            return self
+        if exponent == -1:
+            moves = {j: i for i, j in self._moves.items()}
+            return MovementGate(moves, dimension=self._dimension)
+        return NotImplemented
+
+    # Type check override necessary because `cirq.QubitPermutationGate` uses legacy `tuple` output
+    def _circuit_diagram_info_(self, args: cirq.CircuitDiagramInfoArgs) -> cirq.CircuitDiagramInfo:  # type: ignore[override]
+        if args.use_unicode_characters:
+            lline, rline = "┤├"
+        else:
+            lline = rline = "|"
+
+        lmarks = [lline] * self.num_qubits()
+        rmarks = [rline] * self.num_qubits()
+        for i, j in self._moves.items():
+            lmarks[i] = f"{lline}{i}"
+            rmarks[j] = f"{i}{rline}"
+
+        lwidth = max(map(len, lmarks))
+        rwidth = max(map(len, rmarks))
+        wire_symbols = [
+            left.ljust(lwidth + 1) + right.rjust(rwidth + 1) for left, right in zip(lmarks, rmarks)
+        ]
+        return cirq.CircuitDiagramInfo(wire_symbols=wire_symbols, connected=False)
+
+    def _json_dict_(self) -> dict[str, object]:
+        return super()._json_dict_() | {"initial": list(self._moves.keys())}
+
+    @classmethod
+    def _from_json_dict_(
+        cls,
+        permutation: Sequence[int],
+        dimension: int = 2,
+        initial: Sequence[int] = (),
+        **_: object,
+    ) -> MovementGate:
+        moves = {i: permutation[i] for i in initial}
+        return cls(moves, dimension=dimension)
+
+    def __repr__(self) -> str:
+        if self._dimension == 2:
+            return f"css.MovementGate({self._moves})"
+
+        return f"css.MovementGate({self._moves}, dimension={self._dimension})"
+
+    def _op_repr_(self, qubits: Sequence[cirq.Qid]) -> str:
+        moves = {qubits[i]: qubits[j] for i, j in self._moves.items()}
+        return f"css.movement_op({moves})"
 
 
 class BSwapPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
@@ -743,6 +898,28 @@ def qudit_swap_op(qudit0: cirq.Qid, qudit1: cirq.Qid) -> cirq.Operation:
     return QuditSwapGate(dimension=qudit0.dimension).on(qudit0, qudit1)
 
 
+def movement_op(moves: Mapping[cirq.Qid, cirq.Qid]) -> cirq.Operation:
+    """Construct a `MovementGate` operation implementing the given moves.
+
+    Args:
+        moves: A dictionary mapping initial qubit positions to their destinations. For example,
+            `moves={q0: q1, q1: q2}` indicates a shift of two qubits (initially `q0` and `q1`) by
+            one step (to positions `q1` and `q2`). In this case `q2` (absent from `moves.keys()`) is
+            assumed to be an empty site at the start of the operation, and `q0` (absent from
+            `moves.values()`) will be empty after the move.
+
+    Returns:
+        A `MovementGate` operation implementing the indicated move.
+    """
+    all_qubits = sorted(moves.keys() | moves.values())
+    dimension = max((q.dimension for q in all_qubits), default=2)
+    if dimension != min((q.dimension for q in all_qubits), default=2):
+        raise ValueError("All qubits must have the same dimension.")
+
+    move_indices = {all_qubits.index(qi): all_qubits.index(qf) for qi, qf in moves.items()}
+    return MovementGate(move_indices, dimension=dimension).on(*all_qubits)
+
+
 def qubit_subspace_op(
     sub_op: cirq.Operation,
     qid_shape: Sequence[int],
@@ -797,21 +974,16 @@ def custom_resolver(
     Returns:
         The resolved Cirq Gate matching the input, or None if no match.
     """
-    if cirq_type == "QuditSwapGate":
-        return QuditSwapGate
-    if cirq_type == "BSwapPowGate":
-        return BSwapPowGate
-    if cirq_type == "QutritCZPowGate":
-        return QutritCZPowGate
-    if cirq_type == "VirtualZPowGate":
-        return VirtualZPowGate
-    if cirq_type == "QutritZ0PowGate":
-        return QutritZ0PowGate
-    if cirq_type == "QutritZ1PowGate":
-        return QutritZ1PowGate
-    if cirq_type == "QutritZ2PowGate":
-        return QutritZ2PowGate
-    if cirq_type == "QubitSubspaceGate":
-        return QubitSubspaceGate
-
-    return None
+    cirq_type_to_type: dict[str, type[cirq.Gate]] = {
+        "QuditSwapGate": QuditSwapGate,
+        "BSwapPowGate": BSwapPowGate,
+        "QutritCZPowGate": QutritCZPowGate,
+        "VirtualZPowGate": VirtualZPowGate,
+        "QutritZ0PowGate": QutritZ0PowGate,
+        "QutritZ1PowGate": QutritZ1PowGate,
+        "QutritZ2PowGate": QutritZ2PowGate,
+        "QubitSubspaceGate": QubitSubspaceGate,
+        "PermutationGate": PermutationGate,
+        "MovementGate": MovementGate,
+    }
+    return cirq_type_to_type.get(cirq_type)
