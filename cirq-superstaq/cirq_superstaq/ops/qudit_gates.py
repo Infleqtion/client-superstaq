@@ -144,6 +144,21 @@ class PermutationGate(cirq.QubitPermutationGate):
             return PermutationGate(permutation, dimension=self._dimension)
         return NotImplemented
 
+    def _mul_with_qubits(self, qubits: sequence[cirq.Qid], other: object) -> cirq.Operation:
+        """Compose permutation operations via multiplication operator."""
+        if isinstance(other, cirq.Operation) and isinstance(other.gate, cirq.QubitPermutationGate):
+            all_qubits = [*qubits, *(q for q in other.qubits if q not in qubits)]
+            permutation = []
+            for i, q in enumerate(all_qubits):
+                if q in qubits:
+                    q = qubits[self._permutation[i]]
+                if q in other.qubits:
+                    i = other.qubits.index(q)
+                    q = qubits[other._permutation[i]]
+                permutation.append(all_qubits.index(q))
+            return PermutationGate(permutation).on(*all_qubits)
+        return NotImplemented
+
     def _value_equality_values_(self) -> tuple[int, ...] | tuple[tuple[int, ...], int]:
         permutation_val = super()._value_equality_values_()
         if self._dimension == 2:
