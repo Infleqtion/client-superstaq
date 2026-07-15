@@ -839,6 +839,44 @@ def test_multijob_overall_status(multi_circuit_job: css.Job) -> None:
     with patched_requests(job_info):
         assert multi_circuit_job.status() == "Running"
 
+    job_info = {
+        "job_id1": {
+            "status": "Submitted",
+        }
+    }
+    job_info |= {
+        f"job_id{i}": {
+            "status": "Done",
+        }
+        for i in range(2, 5)
+    }
+    multi_circuit_job._job = job_info
+    job_id_list = multi_circuit_job._job_id.split(",")  # Separate aggregated job ids
+
+    status_occurrence = {multi_circuit_job._job[job_id]["status"] for job_id in job_id_list}
+    assert status_occurrence == {"Submitted", "Done"}
+    multi_circuit_job._update_status_queue_info()
+    assert multi_circuit_job._overall_status == "Submitted"
+
+    job_info = {
+        "job_id1": {
+            "status": "Queued",
+        }
+    }
+    job_info |= {
+        f"job_id{i}": {
+            "status": "Failed",
+        }
+        for i in range(2, 5)
+    }
+    multi_circuit_job._job = job_info
+    job_id_list = multi_circuit_job._job_id.split(",")  # Separate aggregated job ids
+
+    status_occurrence = {multi_circuit_job._job[job_id]["status"] for job_id in job_id_list}
+    assert status_occurrence == {"Queued", "Failed"}
+    multi_circuit_job._update_status_queue_info()
+    assert multi_circuit_job._overall_status == "Queued"
+
 
 def test_job_getitem(multi_circuit_job: css.Job) -> None:
     job_1 = multi_circuit_job[0]
