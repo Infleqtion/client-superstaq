@@ -714,7 +714,6 @@ def test_update_status_queue_info(backend: qss.SuperstaqBackend) -> None:
     job._update_status_queue_info()
     assert job._overall_status == "Failed"
 
-    # tests the other branches for temp_status as "Not Queued" for test_update_status_queue_info in superstaq_job.py
     mock_statuses = [mock_response(""), mock_response(""), mock_response("")]
     for index, job_id in enumerate(job._job_id.split(",")):
         job._job_info[job_id] = mock_statuses[index]

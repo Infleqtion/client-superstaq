@@ -198,10 +198,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
             raise gss.superstaq_exceptions.SuperstaqUnsuccessfulJobException(
                 self._job_id, self._overall_status
             )
-        else:
-            raise gss.superstaq_exceptions.SuperstaqUnsuccessfulJobException(
-                self._job_id, "Running"
-            )
+        raise gss.superstaq_exceptions.SuperstaqUnsuccessfulJobException(self._job_id, "Running")
 
     def cancel(self, index: int | None = None, **kwargs: object) -> None:
         """Cancel the current job if it is not in a terminal state.
@@ -261,9 +258,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
             if temp_status in status_occurrence:
                 self._overall_status = temp_status
                 return
-            else:
-                self._overall_status = "Not Queued"
-                pass
+            self._overall_status = "Not Queued"
 
     @overload
     def _get_circuits(self, circuit_type: str, index: int) -> qiskit.QuantumCircuit: ...
