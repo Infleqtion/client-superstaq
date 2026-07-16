@@ -32,22 +32,29 @@ import numbers
 import uuid
 import warnings
 from collections import defaultdict
-from collections.abc import Iterable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Literal, overload
+from collections.abc import Callable, Iterable, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Generic, Literal, Union, cast, overload
 
 import cirq
 import general_superstaq as gss
 import matplotlib.pyplot as plt
 import numpy as np
-from general_superstaq import ResourceEstimate
 from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 from scipy.optimize import curve_fit
+from typing_extensions import TypeVar
 
 import cirq_superstaq as css
 
 if TYPE_CHECKING:
     import numpy.typing as npt
     from _typeshed import SupportsItems
+
+CssCompileResultT_co = TypeVar(
+    "CssCompileResultT_co",
+    bound=Union[css.compiler_output.CompilerOutput, css.JobV3],
+    covariant=True,
+    default=css.compiler_output.CompilerOutput,
+)
 
 
 def _to_matrix_gate(matrix: npt.ArrayLike) -> cirq.MatrixGate:
@@ -133,7 +140,7 @@ def counts_to_results(
     return result
 
 
-class Service(gss.service.Service):
+class Service(gss.Service, Generic[CssCompileResultT_co]):
     """A class to access Superstaq's API.
 
     To access the API, this class requires a remote host url and an API key. These can be
@@ -142,12 +149,48 @@ class Service(gss.service.Service):
     `SUPERSTAQ_API_KEY`, or setting an API key in a configuration file.
     """
 
+    @overload
+    def __init__(
+        self: Service[css.compiler_output.CompilerOutput],
+        api_key: str | None = None,
+        remote_host: str | None = None,
+        default_target: str | None = None,
+        api_version: gss.typing.ApiV2 = "v0.2.0",
+        max_retry_seconds: int = 3600,
+        verbose: bool = False,
+        cq_token: str | None = None,
+        ibmq_token: str | None = None,
+        ibmq_instance: str | None = None,
+        ibmq_channel: str | None = None,
+        use_stored_ibmq_credentials: bool = False,
+        ibmq_name: str | None = None,
+        **kwargs: object,
+    ) -> None: ...
+
+    @overload
+    def __init__(
+        self: Service[css.JobV3],
+        api_key: str | None = None,
+        remote_host: str | None = None,
+        default_target: str | None = None,
+        api_version: gss.typing.ApiV3 = "v0.3.0",
+        max_retry_seconds: int = 3600,
+        verbose: bool = False,
+        cq_token: str | None = None,
+        ibmq_token: str | None = None,
+        ibmq_instance: str | None = None,
+        ibmq_channel: str | None = None,
+        use_stored_ibmq_credentials: bool = False,
+        ibmq_name: str | None = None,
+        **kwargs: object,
+    ) -> None: ...
+
     def __init__(
         self,
         api_key: str | None = None,
         remote_host: str | None = None,
         default_target: str | None = None,
-        api_version: str = gss.API_VERSION,
+        api_version: gss.typing.ApiV2 | gss.typing.ApiV3 = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
         cq_token: str | None = None,
@@ -221,6 +264,32 @@ class Service(gss.service.Service):
             use_stored_ibmq_credentials=use_stored_ibmq_credentials,
             **kwargs,
         )
+
+    def _map_compile_request_to_client_result(
+        self,
+        json_dict: dict[str, Any],
+        *,
+        legacy_parser: Callable[[dict[str, Any]], css.compiler_output.CompilerOutput],
+    ) -> CssCompileResultT_co:
+        """Maps a compile endpoint's JSON response to the output type expected by the API version.
+
+        Args:
+            json_dict: The JSON output from a compile endpoint.
+            legacy_parser: The JSON parsing function to use for the v0.2.0 API.
+
+        Returns:
+            For v0.3.0, compile-like endpoints will return a `css.JobV3`. For v0.2.0, legacy
+            behavior will be preserved and return a `css.CompilerOutput`.
+
+        Raises:
+            TypeError: If `json_dict` is missing a job ID for the v0.3.0 API version.
+        """
+        if isinstance(self._client, gss.superstaq_client._SuperstaqClientV3):
+            job_id = json_dict.get("job_id")
+            if not isinstance(job_id, str):
+                raise TypeError("No valid job id was found in the compile request.")
+            return cast("CssCompileResultT_co", css.JobV3(client=self._client, job_id=job_id))
+        return cast("CssCompileResultT_co", legacy_parser(json_dict))
 
     def _resolve_target(self, target: str | None) -> str:
         target = target or self.default_target
@@ -410,11 +479,12 @@ class Service(gss.service.Service):
         """Gets a job that has been created on the Superstaq API.
 
         Args:
-            job_id: The UUID of the job. Jobs are assigned these numbers by the server during the
-            creation of the job.
+            job_id: The UUID or string of the job id. Jobs are assigned these numbers by the server
+                during the creation of the job.
 
         Returns:
-            A `css.Job` which can be queried for status or results.
+            A `css.Job` or `css.JobV3` for the v0.2.0 and v0.3.0 API respectively
+            on which job data associated with `job_id` can be queried and/or retrieved.
 
         Raises:
             ~gss.SuperstaqServerException: If there was an error accessing the API.
@@ -426,7 +496,7 @@ class Service(gss.service.Service):
 
     def resource_estimate(
         self, circuits: cirq.Circuit | Sequence[cirq.Circuit], target: str | None = None
-    ) -> ResourceEstimate | list[ResourceEstimate]:
+    ) -> gss.ResourceEstimate | list[gss.ResourceEstimate]:
         """Generates resource estimates for circuit(s).
 
         Args:
@@ -450,7 +520,7 @@ class Service(gss.service.Service):
         json_dict = self._client.resource_estimate(request_json)
 
         resource_estimates = [
-            ResourceEstimate(json_data=resource_estimate)
+            gss.ResourceEstimate(json_data=resource_estimate)
             for resource_estimate in json_dict["resource_estimates"]
         ]
 
@@ -468,7 +538,7 @@ class Service(gss.service.Service):
         gate_defs: None
         | (Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]) = None,
         **kwargs: Any,
-    ) -> css.compiler_output.CompilerOutput:
+    ) -> CssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for AQT using ECA.
 
         The Advanced Quantum Testbed (AQT) is a superconducting transmon quantum computing testbed
@@ -495,9 +565,11 @@ class Service(gss.service.Service):
             kwargs: Other desired aqt_compile_eca options.
 
         Returns:
-            Object whose .circuits attribute is a list (or list of lists) of logically equivalent
-            circuits. If `qtrl` is installed, the object's .seq attribute is a qtrl Sequence object
-            containing pulse sequences for each compiled circuit.
+            For the v0.2.0 API, a `css.CompilerOutput` whose .circuits attribute is a list (or list
+            of lists) of logically equivalent circuits. If `qtrl` is installed, the object's `.seq`
+            attribute is a qtrl Sequence object containing pulse sequences for each compiled
+            circuit. Otherwise (for the v0.3.0 API), an asynchronous `css.JobV3` on which compiled
+            circuits can be queried via `.compiled_circuits()`.
 
         Raises:
             ValueError: If `target` is not a valid AQT target.
@@ -534,7 +606,7 @@ class Service(gss.service.Service):
         pulses: object = None,
         variables: object = None,
         **kwargs: Any,
-    ) -> css.compiler_output.CompilerOutput:
+    ) -> CssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
 
         AQT is a superconducting transmon quantum computing testbed at Lawrence Berkeley National
@@ -564,10 +636,11 @@ class Service(gss.service.Service):
             kwargs: Other desired compile options.
 
         Returns:
-            Object whose .circuit(s) attribute contains the optimized circuits(s). Alternatively for
-            ECA, an object whose .circuits attribute is a list (or list of lists) of logically
-            equivalent circuits. If `qtrl` is installed, the object's .seq attribute is a qtrl
-            Sequence object containing pulse sequences for each compiled circuit.
+            For the v0.2.0 API, a `css.CompilerOutput` whose .circuits attribute is a list (or list
+            of lists) of logically equivalent circuits. If `qtrl` is installed, the object's `.seq`
+            attribute is a qtrl Sequence object containing pulse sequences for each compiled
+            circuit. Otherwise (for the v0.3.0 API), an asynchronous `css.JobV3` on which compiled
+            circuits can be queried via `.compiled_circuits()`.
 
         Raises:
             ValueError: If `target` is not a valid AQT target.
@@ -612,8 +685,17 @@ class Service(gss.service.Service):
             }
 
         request_json["options"] = cirq.to_json(options_dict)
-        json_dict = self._client.post_request("/aqt_compile", request_json)
-        return css.compiler_output.read_json_aqt(json_dict, circuits_is_list, num_eca_circuits)
+        json_dict = (
+            self._client.aqt_compile(request_json)
+            if self._client.api_version == "v0.2.0"
+            else self._client.compile(request_json)
+        )
+        return self._map_compile_request_to_client_result(
+            json_dict,
+            legacy_parser=lambda j_dict: css.compiler_output.read_json_aqt(
+                j_dict, circuits_is_list, num_eca_circuits
+            ),
+        )
 
     def qscout_compile(
         self,
@@ -630,7 +712,7 @@ class Service(gss.service.Service):
         keep_qubit_order: bool = False,
         random_seed: int | None = None,
         **kwargs: Any,
-    ) -> css.compiler_output.CompilerOutput:
+    ) -> CssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at
         Sandia National Laboratories [1].
 
@@ -683,8 +765,11 @@ class Service(gss.service.Service):
             kwargs: Other desired `/qscout_compile` options.
 
         Returns:
-            Object whose .circuit(s) attribute contains optimized `cirq.Circuit`(s), and
-            `.jaqal_program` attribute contains the corresponding Jaqal program(s).
+            For the v0.2.0 API, a `css.CompilerOutput` object whose .circuit(s) attribute contains
+            optimized `cirq.Circuit`(s), and `.jaqal_program` attribute contains the corresponding
+            Jaqal program(s). Otherwise (for the v0.3.0 API), an asynchronous `css.JobV3` on which
+            compiled circuits and Jaqal program can be obtained via `.compiled_circuits()` and
+            `.jaqal_program()` respectively.
 
         Raises:
             ValueError: If `base_entangling_gate` is not a valid gate option.
@@ -719,15 +804,22 @@ class Service(gss.service.Service):
             **kwargs,
         )
 
-        json_dict = self._client.qscout_compile(
-            {
-                "cirq_circuits": serialized_circuits,
-                "options": cirq.to_json(options_dict),
-                "target": target,
-            }
+        request_json = {
+            "cirq_circuits": serialized_circuits,
+            "options": cirq.to_json(options_dict),
+            "target": target,
+        }
+        json_dict = (
+            self._client.qscout_compile(request_json)
+            if self._client.api_version == "v0.2.0"
+            else self._client.compile(request_json)
         )
-
-        return css.compiler_output.read_json_qscout(json_dict, circuits_is_list, num_eca_circuits)
+        return self._map_compile_request_to_client_result(
+            json_dict,
+            legacy_parser=lambda j_dict: css.compiler_output.read_json_qscout(
+                j_dict, circuits_is_list, num_eca_circuits
+            ),
+        )
 
     def cq_compile(
         self,
@@ -738,7 +830,7 @@ class Service(gss.service.Service):
         control_radius: float = 1.0,
         stripped_cz_rads: float = 0.0,
         **kwargs: Any,
-    ) -> css.compiler_output.CompilerOutput:
+    ) -> CssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) to the target CQ device.
 
         Args:
@@ -752,7 +844,9 @@ class Service(gss.service.Service):
             kwargs: Other desired `cq_compile` options.
 
         Returns:
-            Object whose .circuit(s) attribute contains the compiled cirq.Circuit(s).
+            For the v0.3.0 API, an asynchronous `css.JobV3` on which compiled circuits can be
+            queried via `.compiled_circuits()`. Otherwise (for the v0.2.0 API), a
+            `css.CompilerOutput` whose .circuit(s) attribute contains the compiled circuit(s).
 
         Raises:
             ValueError: If `target` is not a valid CQ target.
@@ -778,7 +872,7 @@ class Service(gss.service.Service):
         dynamical_decoupling: bool = True,
         dd_strategy: str = "adaptive",
         **kwargs: Any,
-    ) -> css.compiler_output.CompilerOutput:
+    ) -> CssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) to the target IBMQ device.
 
         Qiskit Terra must be installed to correctly deserialize pulse schedules for pulse-enabled
@@ -807,9 +901,11 @@ class Service(gss.service.Service):
             kwargs: Other desired compile options.
 
         Returns:
-            Object whose .circuit(s) attribute contains the compiled cirq.Circuit(s), and whose
-            .pulse_gate_circuit(s) attribute contains the corresponding pulse schedule(s) (when
-            available).
+            For the v0.2.0 API, a `css.CompilerOutput` whose .circuit(s) attribute contains the
+            compiled cirq.Circuit(s), and whose .pulse_gate_circuit(s) attribute contains the
+            corresponding pulse schedule(s) (when available). Otherwise (for the v0.3.0 API), an
+            asynchronous `css.JobV3` on which compiled circuits can be queried via
+            `.compiled_circuits()`.
 
         Raises:
             ValueError: If `target` is not a valid IBMQ target.
@@ -828,7 +924,7 @@ class Service(gss.service.Service):
         circuits: cirq.Circuit | Sequence[cirq.Circuit],
         target: str,
         **kwargs: Any,
-    ) -> css.compiler_output.CompilerOutput:
+    ) -> CssCompileResultT_co:
         """Compiles the given circuit(s) to the target device's native gateset.
 
         Args:
@@ -837,8 +933,9 @@ class Service(gss.service.Service):
             kwargs: Other desired compile options.
 
         Returns:
-            A `CompilerOutput` object whose .circuit(s) attribute contains optimized compiled
-            circuit(s).
+            For the v0.3.0 API, an asynchronous `css.JobV3` on which compiled circuits can be
+            queried via `.compiled_circuits()`. Otherwise (for the v0.2.0 API), a
+            `css.CompilerOutput` whose .circuit(s) attribute contains the compiled circuit(s).
         """
         target = self._resolve_target(target)
 
@@ -850,7 +947,10 @@ class Service(gss.service.Service):
         request_json = self._get_compile_request_json(circuits, target, **kwargs)
         circuits_is_list = not isinstance(circuits, cirq.Circuit)
         json_dict = self._client.compile(request_json)
-        return css.compiler_output.read_json(json_dict, circuits_is_list)
+        return self._map_compile_request_to_client_result(
+            json_dict,
+            legacy_parser=lambda j_dict: css.compiler_output.read_json(j_dict, circuits_is_list),
+        )
 
     def _get_compile_request_json(
         self,
@@ -972,8 +1072,7 @@ class Service(gss.service.Service):
         Raises:
             ValueError: If `ids` is not of size two.
             ~gss.SuperstaqServerException: If there was an error accessing the API or
-                the jobs submitted
-                through `submit_dfe` have not finished running.
+                the jobs submitted through `submit_dfe` have not finished running.
         """
         return self._client.process_dfe(ids)
 
@@ -1139,8 +1238,8 @@ class Service(gss.service.Service):
 
         Args:
             job_id: String corresponding to the CB job id.
-            counts: Optional list of dictionaries containing results counts to
-        compute fidelities for.
+            counts: Optional list of dictionaries containing results counts to compute fidelities
+                for.
 
         Returns:
             A dict containing the Cycle Benchmarking process data.
