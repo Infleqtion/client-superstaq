@@ -13,7 +13,6 @@
 # limitations under the License.
 from __future__ import annotations
 
-import importlib
 import io
 import json
 import warnings
@@ -124,7 +123,6 @@ def test_circuit_serialization() -> None:
     serialized_circuits = qss.serialization.serialize_circuits(circuits)
     assert isinstance(serialized_circuits, str)
     assert qss.serialization.deserialize_circuits(serialized_circuits) == circuits
-    # qss.serialization(qiskit.circuit.library.QFTGATE)
 
 
 def test_warning_suppression() -> None:
