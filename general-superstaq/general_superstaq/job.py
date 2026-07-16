@@ -1,4 +1,4 @@
-# Copyright 2026 Infleqtion
+# Copyright 2026 Infleqtion, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -105,7 +105,7 @@ class Job:
         index: int | None = None,
         timeout_seconds: float | None = None,
         polling_seconds: float = 5,
-        check_until_compile: bool = False,
+        check_until_compiled: bool = False,
     ) -> None:
         """Waits until either the job is done or some error in the job occurs.
 
@@ -115,12 +115,12 @@ class Job:
             timeout_seconds: Optional total number of seconds to poll for. Otherwise, uses the
                 client instance's max retry seconds.
             polling_seconds: The time interval with which to poll. Defaults to 5.
-            check_until_compile: Boolean flag to consider circuit states considered terminal after
+            check_until_compiled: Boolean flag to consider circuit states considered terminal after
                 compilation is complete. Defaults to `False`.
         """
         terminal_states = (
             gss.models.TERMINAL_COMPILE_STATES
-            if check_until_compile
+            if check_until_compiled
             else gss.models.TERMINAL_CIRCUIT_STATES
         )
         time_waited: float = 0.0

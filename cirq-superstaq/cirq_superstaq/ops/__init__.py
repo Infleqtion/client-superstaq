@@ -1,4 +1,4 @@
-# Copyright 2026 Infleqtion
+# Copyright 2026 Infleqtion, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,6 +40,8 @@ from .qudit_gates import (
     CZ3_INV,
     SWAP3,
     BSwapPowGate,
+    MovementGate,
+    PermutationGate,
     QubitSubspaceGate,
     QuditSwapGate,
     QutritCZPowGate,
@@ -50,6 +52,7 @@ from .qudit_gates import (
     QutritZ2,
     QutritZ2PowGate,
     VirtualZPowGate,
+    movement_op,
     qubit_subspace_op,
     qudit_swap_op,
 )
@@ -71,8 +74,10 @@ __all__ = [
     "BSwapPowGate",
     "Barrier",
     "DDPowGate",
+    "MovementGate",
     "ParallelGates",
     "ParallelRGate",
+    "PermutationGate",
     "QubitSubspaceGate",
     "QuditSwapGate",
     "QutritCZPowGate",
@@ -89,6 +94,7 @@ __all__ = [
     "ZZSwapGate",
     "approx_eq_mod",
     "barrier",
+    "movement_op",
     "parallel_gates_operation",
     "qubit_gates",
     "qubit_subspace_op",

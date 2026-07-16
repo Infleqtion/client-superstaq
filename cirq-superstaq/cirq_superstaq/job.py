@@ -1,4 +1,4 @@
-# Copyright 2026 Infleqtion
+# Copyright 2026 Infleqtion, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -181,7 +181,7 @@ class Job:
             self._refresh_job()
             return self._overall_status
 
-        gss.validation.validate_integer_param(index, min_val=0, parameter_name="index")
+        gss.validation.validate_integer_param(index, min_val=0)
 
         job_ids = self._job_id.split(",")
         requested_job_id = job_ids[index]
@@ -576,7 +576,7 @@ class JobV3(gss.job.Job):
                 compiled circuit.
         """
         self.wait_until_terminal_state(
-            index, timeout_seconds, polling_seconds, check_until_compile=True
+            index, timeout_seconds, polling_seconds, check_until_compiled=True
         )
 
         if index is None:
@@ -611,7 +611,7 @@ class JobV3(gss.job.Job):
         self.wait_until_terminal_state(
             timeout_seconds=timeout_seconds,
             polling_seconds=polling_seconds,
-            check_until_compile=True,
+            check_until_compiled=True,
         )
         return self.job_data.metadata.get("jaqal_program")
 
@@ -668,7 +668,7 @@ class JobV3(gss.job.Job):
             return [self.initial_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
 
         self.wait_until_terminal_state(
-            index, timeout_seconds, polling_seconds, check_until_compile=True
+            index, timeout_seconds, polling_seconds, check_until_compiled=True
         )
 
         lqs = cirq.read_json(json_text=self.job_data.logical_qubits[index])
@@ -711,7 +711,7 @@ class JobV3(gss.job.Job):
             return [self.final_logical_to_physical(i) for i in range(self.job_data.num_circuits)]
 
         self.wait_until_terminal_state(
-            index, timeout_seconds, polling_seconds, check_until_compile=True
+            index, timeout_seconds, polling_seconds, check_until_compiled=True
         )
 
         lqs = cirq.read_json(json_text=self.job_data.logical_qubits[index])
@@ -766,14 +766,14 @@ class JobV3(gss.job.Job):
             ~gss.SuperstaqServerException: If unable to get the results from the API.
             TimeoutError: If no results are available in the provided timeout interval.
             gss.SuperstaqException: If the job counts are missing.
-            NotImplementedError: The job does not admit retrieving result counts.
+            ValueError: The job does not have any result counts.
         """
-        if self.job_data.job_type in (gss.models.JobType.COMPILE, gss.models.JobType.CONVERT):
-            raise NotImplementedError("There are no counts to be retrieved for this job type.")
-
         self.wait_until_terminal_state(index, timeout_seconds, polling_seconds)
         # Check to see if unsuccessful
         self._check_if_unsuccessful(index)
+
+        if all(result is None for result in self.job_data.counts):
+            raise ValueError("There are no counts to be retrieved for this job.")
 
         if index is None:
             return [

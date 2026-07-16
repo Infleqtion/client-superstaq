@@ -1,4 +1,4 @@
-# Copyright 2026 Infleqtion
+# Copyright 2026 Infleqtion, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -1145,7 +1145,7 @@ def test_service_compile_jobV3(
             else job.jaqal_program() is None
         )
 
-        with pytest.raises(NotImplementedError, match=r"There are no counts"):
+        with pytest.raises(ValueError, match=r"There are no counts"):
             _ = job.counts()
 
 
