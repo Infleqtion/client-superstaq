@@ -13,6 +13,7 @@
 # limitations under the License.
 from __future__ import annotations
 
+import datetime
 import json
 import textwrap
 import uuid
@@ -403,6 +404,49 @@ def test_compile(mock_post: MagicMock) -> None:
     assert out.final_logical_to_physicals == [{0: 0}]
 
 
+@patch("requests.Session.get")
+@patch("requests.Session.post")
+def test_compileV3(mock_post: MagicMock, mock_get: MagicMock) -> None:
+    provider = qss.SuperstaqProvider(api_key="MY_TOKEN", api_version="v0.3.0")
+    backend = provider.get_backend("cq_sqale_simulator")
+
+    qc = qiskit.QuantumCircuit(1)
+    qc.h(0)
+
+    fake_job_id = str(uuid.uuid4())
+    mock_post.return_value.json = lambda: gss.models.NewJobResponse(
+        job_id=fake_job_id, num_circuits=1
+    ).model_dump(mode="json")
+
+    fake_job_data = gss.models.JobData(
+        job_type="compile",
+        statuses=["completed"],
+        status_messages=[],
+        user_email="test@email.com",
+        target="cq_sqale_simulator",
+        provider_id=[fake_job_id],
+        num_circuits=1,
+        compiled_circuits=[qss.serialize_circuits(qc)],
+        input_circuits=[qss.serialize_circuits(qc)],
+        circuit_type="qiskit",
+        counts=[None],
+        results_dicts=[None],
+        shots=[0],
+        dry_run=True,
+        submission_timestamp=datetime.datetime.now(tz=datetime.timezone.utc),
+        last_updated_timestamp=[datetime.datetime.now(tz=datetime.timezone.utc)],
+        initial_logical_to_physicals=[{0: 0}],
+        final_logical_to_physicals=[{0: 0}],
+        logical_qubits=["0", "1"],
+        physical_qubits=["0", "1"],
+    )
+    mock_get.return_value.json = lambda: {fake_job_id: fake_job_data.model_dump(mode="json")}
+    out = backend.compile([qc], test_options="yes")
+    assert out.circuits == [qc]
+    assert out.initial_logical_to_physicals == [{0: 0}]
+    assert out.final_logical_to_physicals == [{0: 0}]
+
+
 def test_target_info(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     target = "ibmq_brisbane_qpu"
     backend = fake_superstaq_provider.get_backend(target)
@@ -446,6 +490,13 @@ def test_coupling_map(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     assert isinstance(backend.coupling_map, qiskit.transpiler.CouplingMap)
     assert backend.coupling_map.get_edges() == [(0, 1), (1, 2)]
     assert backend.coupling_map.physical_qubits == [0, 1, 2, 3]
+    assert isinstance(backend.coupling_map, qiskit.transpiler.CouplingMap)
+    assert backend.target_info().get("num_qubits") is not None
+
+    assert backend._target_info is not None
+    backend._target_info.pop("num_qubits")
+    assert backend.coupling_map.physical_qubits == [0, 1, 2]
+    assert backend.target_info().get("num_qubits") is None
 
     backend._target_info = {}
     assert backend.coupling_map is None
