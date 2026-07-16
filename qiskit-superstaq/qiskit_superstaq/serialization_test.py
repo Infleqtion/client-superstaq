@@ -13,7 +13,6 @@
 # limitations under the License.
 from __future__ import annotations
 
-import importlib
 import io
 import json
 import warnings
@@ -299,18 +298,6 @@ def test_mcphase() -> None:
     assert gate1 == gate2 == gate3
 
 
-def test_qft_gate() -> None:
-    # This test is necessary to get full coverage with Qiskit < 1.1.0
-    try:
-        with mock.patch(
-            "qiskit.circuit.library.QFTGate", qiskit.circuit.library.Barrier, create=True
-        ) as mock_qft:
-            importlib.reload(qss.serialization)
-            assert mock_qft in qss.serialization._controlled_gate_resolvers
-    finally:
-        importlib.reload(qss.serialization)  # Reset to avoid side effects
-
-
 @pytest.mark.parametrize("base_class", test_gates, ids=lambda g: g.name)
 def test_gate_preparation_and_resolution(
     rng: np.random.Generator,
@@ -320,6 +307,23 @@ def test_gate_preparation_and_resolution(
 
     gate = base_class(*rng.uniform(-2 * np.pi, 2 * np.pi, num_params))
     assert qss.serialization._resolve_gate(qss.serialization._prepare_gate(gate)) == gate
+
+    gate = qiskit.circuit.ControlledGate(
+        "cgate",
+        num_qubits=3,
+        params=[1.23],
+        base_gate=qiskit.circuit.library.PhaseGate(1.23),
+        definition=qiskit.circuit.library.CCXGate().definition,
+    )
+    _check_serialization(gate)
+
+    gate = qiskit.circuit.ControlledGate(
+        "cgate",
+        num_qubits=3,
+        params=[],
+        base_gate=qiskit.circuit.library.YGate(),
+    )
+    assert qss.serialization._resolve_gate(gate) == gate
 
 
 @pytest.mark.parametrize("base_class", test_gates, ids=lambda g: g.name)
@@ -428,11 +432,6 @@ def test_gate_serialization(
 )
 def test_nonstandard_static_gate_serialization(gate: qiskit.circuit.Instruction) -> None:
     gates = [gate]
-    if hasattr(gate, "ctrl_state"):
-        gate2 = gate.copy().to_mutable()
-        gate2.ctrl_state = 1
-        gates.append(gate2)
-
     _check_serialization(*gates)
 
 

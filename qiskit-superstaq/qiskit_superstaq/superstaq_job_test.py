@@ -41,7 +41,12 @@ def mock_response(status_str: str) -> dict[str, str | int | dict[str, int] | Non
     Returns:
         A mock response.
     """
-    return {"status": status_str, "samples": {"11": 50, "10": 50}, "shots": 100}
+    return {
+        "status": status_str,
+        "samples": {"11": 50, "10": 50},
+        "shots": 100,
+        "overall_status": status_str,
+    }
 
 
 def _mocked_request_response(content: object) -> requests.Response:
@@ -292,11 +297,29 @@ def test_resultV3(mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:
         ]
         assert multi_job.result(index=0).get_counts() == {"011": 30, "001": 50, "111": 20}
 
+        assert job.combined_result().get_counts() == job.result().get_counts()
+        assert job.combined_result().to_dict() == job.result().to_dict()
+
     assert multi_job.combined_result().get_counts() == {"011": 60, "001": 100, "111": 40}
 
     multi_job.job_data.counts[1] = {"00": 123}
     with pytest.raises(ValueError, match="must have the same number of measurements"):
         _ = multi_job.combined_result()
+
+    job = qss.SuperstaqJobV3(mock_client, uuid.UUID(int=42))
+
+    job_dict = modifiy_job_result(
+        job_dictV3(),
+        input_circuits=[qss.serialize_circuits(qc)],
+        compiled_circuits=[qss.serialize_circuits(qc)],
+        counts=[{}],
+        shots=[100],
+        target="ss_example_qpu",
+    )
+
+    with patched_requests({str(job._job_id): job_dict}):
+        ans = job.result(index=0)
+        assert ans.get_counts() == {}
 
 
 def test_counts_arranged(backend: qss.SuperstaqBackend) -> None:
@@ -358,6 +381,16 @@ def test_counts_arranged(backend: qss.SuperstaqBackend) -> None:
     }
     counts = job.result(0).get_counts()
     assert counts == {"00010": 50, "10010": 50}
+
+    job = qss.SuperstaqJob(backend=backend, job_id="789cba")
+    job._job_info["789cba"] = {
+        "status": "Done",
+        "samples": None,
+        "shots": 100,
+        "input_circuit": qss.serialization.serialize_circuits(qc4),
+        "compiled_circuit": qss.serialization.serialize_circuits(qc4),
+    }
+    job.result(0)
 
 
 def test_counts_arrangedV3(mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:
@@ -537,6 +570,12 @@ def test_check_if_stopped(backend: qss.SuperstaqBackend) -> None:
         with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match=status):
             job._check_if_stopped()
 
+        # test to  include `_check_if_stopped"!=("Cancelled", "Failed")` branch for ` in superstaq
+        job = qss.SuperstaqJob(backend=backend, job_id="123abc")
+        job._overall_status = "Running"
+        with pytest.raises(gss.SuperstaqUnsuccessfulJobException, match="Running"):
+            job._check_if_stopped()
+
 
 def test_refresh_job(backend: qss.SuperstaqBackend) -> None:
     job = qss.SuperstaqJob(backend=backend, job_id="123abc,456abc,789abc")
@@ -697,6 +736,12 @@ def test_update_status_queue_info(backend: qss.SuperstaqBackend) -> None:
         job._job_info[job_id] = mock_statuses[index]
     job._update_status_queue_info()
     assert job._overall_status == "Failed"
+
+    mock_statuses = [mock_response(""), mock_response(""), mock_response("")]
+    for index, job_id in enumerate(job._job_id.split(",")):
+        job._job_info[job_id] = mock_statuses[index]
+    job._update_status_queue_info()
+    assert job._overall_status == "Not Queued"
 
 
 def test_get_circuit(backend: qss.SuperstaqBackend) -> None:
@@ -1034,14 +1079,20 @@ def test_eqV3(
 
 def test_to_dict(backend: qss.SuperstaqBackend) -> None:
     job = qss.SuperstaqJob(backend=backend, job_id="12345")
-    with patched_requests({"12345": mock_response("Done")}):
+    with patched_requests({"12345": mock_response("Queued")}):
         assert job.to_dict() == {
             "12345": {
-                "status": "Done",
+                "status": "Queued",
                 "samples": {"11": 50, "10": 50},
                 "shots": 100,
+                "overall_status": "Queued",
             }
         }
+    job = qss.SuperstaqJob(backend=backend, job_id="12345")
+    with patched_requests({"456abc": mock_response("Done")}):
+        job._overall_status = "Done"
+        assert job._overall_status == "Done"
+        assert job.to_dict() == {}
 
 
 def test_set_counts(mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:
