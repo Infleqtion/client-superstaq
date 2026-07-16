@@ -41,7 +41,12 @@ def mock_response(status_str: str) -> dict[str, str | int | dict[str, int] | Non
     Returns:
         A mock response.
     """
-    return {"status": status_str, "samples": {"11": 50, "10": 50}, "shots": 100}
+    return {
+        "status": status_str,
+        "samples": {"11": 50, "10": 50},
+        "shots": 100,
+        "overall_status": status_str,
+    }
 
 
 def _mocked_request_response(content: object) -> requests.Response:
@@ -292,11 +297,29 @@ def test_resultV3(mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:
         ]
         assert multi_job.result(index=0).get_counts() == {"011": 30, "001": 50, "111": 20}
 
+        assert job.combined_result().get_counts() == job.result().get_counts()
+        assert job.combined_result().to_dict() == job.result().to_dict()
+
     assert multi_job.combined_result().get_counts() == {"011": 60, "001": 100, "111": 40}
 
     multi_job.job_data.counts[1] = {"00": 123}
     with pytest.raises(ValueError, match="must have the same number of measurements"):
         _ = multi_job.combined_result()
+
+    job = qss.SuperstaqJobV3(mock_client, uuid.UUID(int=42))
+
+    job_dict = modifiy_job_result(
+        job_dictV3(),
+        input_circuits=[qss.serialize_circuits(qc)],
+        compiled_circuits=[qss.serialize_circuits(qc)],
+        counts=[{}],
+        shots=[100],
+        target="ss_example_qpu",
+    )
+
+    with patched_requests({str(job._job_id): job_dict}):
+        ans = job.result(index=0)
+        assert ans.get_counts() == {}
 
 
 def test_counts_arranged(backend: qss.SuperstaqBackend) -> None:
@@ -1062,8 +1085,14 @@ def test_to_dict(backend: qss.SuperstaqBackend) -> None:
                 "status": "Queued",
                 "samples": {"11": 50, "10": 50},
                 "shots": 100,
+                "overall_status": "Queued",
             }
         }
+    job = qss.SuperstaqJob(backend=backend, job_id="12345")
+    with patched_requests({"456abc": mock_response("Done")}):
+        job._overall_status = "Done"
+        assert job._overall_status == "Done"
+        assert job.to_dict() == {}
 
 
 def test_set_counts(mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:

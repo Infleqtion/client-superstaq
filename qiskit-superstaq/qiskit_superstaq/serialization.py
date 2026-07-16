@@ -101,21 +101,14 @@ _controlled_gate_resolvers: dict[
     qiskit.circuit.library.XGate: lambda gate: qiskit.circuit.library.MCXGate(
         gate.num_ctrl_qubits, ctrl_state=gate.ctrl_state, label=gate.label
     ),
-}
-
-
-if hasattr(qiskit.circuit.library, "QFTGate"):  # pragma: no cover
-    # QFTGate introduced in qiskit 1.2.0
-
-    QFTGate = qiskit.circuit.library.QFTGate
-
-    _controlled_gate_resolvers[QFTGate] = lambda gate: QFTGate(
+    qiskit.circuit.library.QFTGate: lambda gate: qiskit.circuit.library.QFTGate(
         gate.num_qubits - gate.num_ctrl_qubits
     ).control(
         num_ctrl_qubits=gate.num_ctrl_qubits,
         ctrl_state=gate.ctrl_state,
         label=gate.label,
-    )
+    ),
+}
 
 
 def json_encoder(val: object) -> dict[str, object]:
@@ -382,7 +375,7 @@ def _resolve_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instructio
     if type(gate) is qiskit.circuit.ControlledGate:
         gate.base_gate = _resolve_gate(gate.base_gate)
 
-        if gate.definition and gate._definition:  # pragma: no cover
+        if gate.definition and gate._definition:
             gate.definition = _resolve_circuit(gate._definition)
 
         if resolver := _controlled_gate_resolvers.get(gate.base_gate.base_class):
@@ -394,7 +387,7 @@ def _resolve_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instructio
             if (
                 trial_gate.definition == gate.definition
                 or trial_gate._definition == gate._definition
-            ):  # pragma: no cover
+            ):
                 return trial_gate
 
     elif not gate.mutable or type(gate) not in (qiskit.circuit.Instruction, qiskit.circuit.Gate):

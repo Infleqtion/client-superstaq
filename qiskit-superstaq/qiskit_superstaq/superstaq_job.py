@@ -418,7 +418,7 @@ class SuperstaqJob(qiskit.providers.JobV1):
         Returns:
             A dictionary containing updated job information.
         """
-        if self._overall_status not in self.TERMINAL_STATES:  # pragma: no branch
+        if self._overall_status not in self.TERMINAL_STATES:
             self._refresh_job()
         return self._job_info
 
@@ -533,7 +533,7 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         search_list = list(range(self.job_data.num_circuits)) if index is None else [index]
         for i in search_list:
             counts = self.job_data.counts[i]
-            if counts:  # pragma: no cover
+            if counts:
                 num_clbits = self._get_num_clbits(i)
                 circ_meas_bit_indices = self._get_clbit_indices(i)
                 if len(circ_meas_bit_indices) != num_clbits:
@@ -588,7 +588,7 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         result = self.result(timeout=timeout, wait=wait, qubit_indices=qubit_indices)
         counts = result.get_counts()
 
-        if not isinstance(counts, Mapping):  # pragma: no cover
+        if not isinstance(counts, Mapping):
             counts = dict(sum(map(collections.Counter, counts), collections.Counter()))
 
         key_lens = {len(key) for key in counts.keys()}
