@@ -863,7 +863,7 @@ def test_set_counts_jaqal(
         """\
         from qscout.v1.std usepulses *
 
-        register allqubits[3]
+        register allqubits[5]
 
         prepare_all
         R allqubits[2] 0 3.141592653589793
@@ -873,11 +873,11 @@ def test_set_counts_jaqal(
     result = jaqalpaq_run.run_jaqal_string(jaqal_str, overrides={"__repeats__": 1000})
 
     q0, q1, q2 = cirq.LineQubit.range(3)
-    compiled_circuit = cirq.Circuit(cirq.X(q2), css.barrier(q0, q1, q2))
+    circuit = cirq.Circuit(cirq.X(q2), css.barrier(q0, q1, q2))
     mock_get.return_value.json.return_value = {str(uuid.UUID(int=42)): job_dictV3}
 
     jobV3.job_data.final_logical_to_physicals[0] = {0: 0, 1: 1, 2: 2}
-    jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(compiled_circuit)
+    jobV3.job_data.input_circuits[0] = css.serialize_circuits(circuit)
     jobV3.set_counts(result)
     assert jobV3.counts(0) == {"001": 1000}
 
@@ -885,22 +885,29 @@ def test_set_counts_jaqal(
     jobV3.set_counts(result)
     assert jobV3.counts(0) == {"010": 1000}
 
-    jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(
-        compiled_circuit + cirq.measure(q2, q1, q0)
-    )
+    jobV3.job_data.final_logical_to_physicals[0] = {0: 2, 1: 3, 2: 4}
     jobV3.set_counts(result)
     assert jobV3.counts(0) == {"100": 1000}
 
-    jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(
-        compiled_circuit + cirq.Circuit(css.barrier(q0, q1, q2), cirq.measure(q1), cirq.measure(q2))
+    jobV3.job_data.final_logical_to_physicals[0] = {0: 0, 1: 1, 2: 2}
+    jobV3.job_data.input_circuits[0] = css.serialize_circuits(circuit + cirq.measure(q2, q1, q0))
+    jobV3.set_counts(result)
+    assert jobV3.counts(0) == {"100": 1000}
+
+    jobV3.job_data.input_circuits[0] = css.serialize_circuits(
+        circuit + cirq.Circuit(css.barrier(q0, q1, q2), cirq.measure(q1), cirq.measure(q2))
     )
     jobV3.set_counts(result)
     assert jobV3.counts(0) == {"01": 1000}
 
-    jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(
-        compiled_circuit
+    jobV3.job_data.final_logical_to_physicals[0] = {0: 2, 1: 3, 2: 4}
+    jobV3.set_counts(result)
+    assert jobV3.counts(0) == {"00": 1000}
+
+    jobV3.job_data.input_circuits[0] = css.serialize_circuits(
+        circuit
         + cirq.Circuit(
-            css.barrier(q0, q1, q2), cirq.measure(q1, key="b"), cirq.measure(q2, key="a")
+            css.barrier(q0, q1, q2), cirq.measure(q1, key="b"), cirq.measure(q0, key="a")
         )
     )
     jobV3.set_counts(result)

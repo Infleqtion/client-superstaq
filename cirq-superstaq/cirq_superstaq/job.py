@@ -770,12 +770,14 @@ class JobV3(gss.job.Job):
             A list of measured qubit indices, ordered as they should appear in (big-endian)
             bitstrings.
         """
-        compiled_circuit = self.compiled_circuits(index)
-        assert compiled_circuit.are_all_measurements_terminal()
+        indices = super()._terminal_measurement_qubit_indices(index)
 
-        if compiled_circuit.has_measurements():
+        circuit = self.input_circuits(index)
+        if circuit.has_measurements():
+            assert circuit.are_all_measurements_terminal()
+
             key_to_qids: dict[str, tuple[cirq.Qid, ...]] = {}
-            for _, op in compiled_circuit.findall_operations(cirq.is_measurement):
+            for _, op in circuit.findall_operations(cirq.is_measurement):
                 key = cirq.measurement_key_name(op)
                 key_to_qids[key] = op.qubits
 
@@ -783,10 +785,10 @@ class JobV3(gss.job.Job):
             for key in sorted(key_to_qids):
                 qid_list.extend(key_to_qids[key])
 
-            circuit_qubits = sorted(compiled_circuit.all_qubits())
-            return [circuit_qubits.index(q) for q in qid_list]
+            circuit_qubits = sorted(circuit.all_qubits())
+            indices = [indices[circuit_qubits.index(q)] for q in qid_list]
 
-        return super()._terminal_measurement_qubit_indices(index)
+        return indices
 
     def __repr__(self) -> str:
         return f"css.JobV3(client={self._client!r}, job_id={self.job_id()!r})"
