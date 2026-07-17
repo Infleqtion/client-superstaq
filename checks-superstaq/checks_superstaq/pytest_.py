@@ -95,12 +95,7 @@ def run(
             "--force-enable-socket",
             f"--nbmake-timeout={NBMAKE_TIMEOUT}",
         ]
-    elif (parsed_args.integration) or (
-        "--integration" not in args
-        and any(re.match(r".*_integration_test\.py$", arg) for arg in args)
-    ):
-        args_to_pass += ["--force-enable-socket"]
-    else:
+    elif not parsed_args.integration:
         files = check_utils.get_test_files(files, exclude=exclude, silent=silent)
 
     if not files:
