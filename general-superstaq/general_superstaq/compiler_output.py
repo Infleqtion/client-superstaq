@@ -13,9 +13,21 @@
 # limitations under the License.
 from __future__ import annotations
 
+import importlib.util
 import json
+import warnings
 from collections.abc import Sequence
-from typing import Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
+
+import general_superstaq as gss
+
+try:
+    import qtrl.sequence_utils.readout
+except ModuleNotFoundError:
+    pass
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 C = TypeVar("C")
 Q = TypeVar("Q")
@@ -121,6 +133,218 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
 
         return _jaqal_programs_to_subcircuits(self.jaqal_programs)
 
+    @classmethod
+    def read_json_jaqal(
+        cls,
+        json_dict: dict[str, Any],
+        num_eca_circuits: int | None = None,
+    ) -> Self:
+        """Reads out the returned JSON from Superstaq API's Jaqal compilation endpoint.
+
+        Args:
+            json_dict: A JSON dictionary matching the format returned by `/compile` endpoint.
+            num_eca_circuits: Number of logically equivalent random circuits to generate for each
+                input circuit.
+
+        Returns:
+            A `CompilerOutput` object with the compiled Jaqal program(s).
+        """
+        compiled_circuits = json.loads(json_dict["jaqal_strs"])
+
+        initial_logical_to_physicals_list: list[dict[Q, Q]] = list(
+            map(dict, json.loads(json_dict["initial_logical_to_physicals"]))
+        )
+        initial_logical_to_physicals: list[dict[Q, Q]] | list[list[dict[Q, Q]]] = (
+            initial_logical_to_physicals_list
+        )
+
+        final_logical_to_physicals_list: list[dict[Q, Q]] = list(
+            map(dict, json.loads(json_dict["final_logical_to_physicals"]))
+        )
+        final_logical_to_physicals: list[dict[Q, Q]] | list[list[dict[Q, Q]]] = (
+            final_logical_to_physicals_list
+        )
+
+        jaqal_programs: list[str] = json_dict.get("jaqal_programs", compiled_circuits)
+        if num_eca_circuits is not None:
+            compiled_circuits, initial_logical_to_physicals, final_logical_to_physicals = (
+                cls._format_eca_content(
+                    compiled_circuits,
+                    initial_logical_to_physicals_list,
+                    final_logical_to_physicals_list,
+                    num_eca_circuits,
+                )
+            )
+            jaqal_programs = [
+                _jaqal_programs_to_subcircuits(jaqal_programs[i : i + num_eca_circuits])
+                for i in range(0, len(jaqal_programs), num_eca_circuits)
+            ]
+
+        return cls(
+            circuits=compiled_circuits,
+            initial_logical_to_physicals=initial_logical_to_physicals,
+            final_logical_to_physicals=final_logical_to_physicals,
+            jaqal_programs=jaqal_programs,
+        )
+
+    @staticmethod
+    def _get_deserialized_content(
+        json_dict: dict[str, Any],
+        circuits_is_list: bool,
+    ) -> tuple[list[C], list[object] | None, list[dict[Q, Q]], list[dict[Q, Q]]]:
+        compiled_circuits: list[C] = json.loads(json_dict["qasm_strs"])
+        initial_logical_to_physicals_list: list[dict[Q, Q]] = list(
+            map(dict, json.loads(json_dict["initial_logical_to_physicals"]))
+        )
+        final_logical_to_physicals_list: list[dict[Q, Q]] = list(
+            map(dict, json.loads(json_dict["final_logical_to_physicals"]))
+        )
+        pulse_gate_circuits = None
+        if "pulse_gate_circuits" in json_dict:  # pragma: no cover (requires `qiskit_superstaq`)
+            pulse_gate_circuits = gss.serialization.deserialize_qiskit_circuits(
+                json_dict["pulse_gate_circuits"],
+                circuits_is_list,
+                pulse_start_times=json_dict.get("pulse_start_times"),
+            )
+        return (
+            compiled_circuits,
+            pulse_gate_circuits,
+            initial_logical_to_physicals_list,
+            final_logical_to_physicals_list,
+        )
+
+    @staticmethod
+    def _format_eca_content(
+        deserialized_circuits: list[C],
+        initial_logical_to_physicals_list: list[dict[Q, Q]],
+        final_logical_to_physicals_list: list[dict[Q, Q]],
+        num_eca_circuits: int,
+    ) -> tuple[list[list[C]], list[list[dict[Q, Q]]], list[list[dict[Q, Q]]]]:
+        compiled_circuits = [
+            deserialized_circuits[i : i + num_eca_circuits]
+            for i in range(0, len(deserialized_circuits), num_eca_circuits)
+        ]
+        initial_logical_to_physicals = [
+            initial_logical_to_physicals_list[i : i + num_eca_circuits]
+            for i in range(0, len(initial_logical_to_physicals_list), num_eca_circuits)
+        ]
+        final_logical_to_physicals = [
+            final_logical_to_physicals_list[i : i + num_eca_circuits]
+            for i in range(0, len(final_logical_to_physicals_list), num_eca_circuits)
+        ]
+        return compiled_circuits, initial_logical_to_physicals, final_logical_to_physicals
+
+    @classmethod
+    def read_json(
+        cls,
+        json_dict: dict[str, Any],
+        *,
+        circuits_is_list: bool,
+        num_eca_circuits: int | None = None,
+    ) -> Self:
+        """Reads out returned JSON from Superstaq API's AQT compilation endpoint.
+
+        Args:
+            json_dict: The JSON dictionary output from a compile endpoint.
+            circuits_is_list: A boolean flag that controls whether the returned object has a
+                `.circuits` attribute (if `True`) or a `.circuit` attribute (`False`).
+            num_eca_circuits: Optional number of logically equivalent random circuits to generate
+                for each input circuit.
+
+        Returns:
+            A `CompilerOutput` object with the compiled circuit(s). If `qtrl` is available locally,
+            the returned object also stores the pulse sequence in the .seq attribute. Additionally,
+            if included in the server response, the returned object also stores the corresponding
+            pulse gate circuit(s) in its .pulse_gate_circuit(s) attribute (provided
+            `qiskit-superstaq` is available locally).
+        """
+        compiled_circuits: list[C] | list[list[C]]
+        initial_logical_to_physicals_list: list[dict[Q, Q]]
+        final_logical_to_physicals_list: list[dict[Q, Q]]
+        pulse_gate_circuits: list[object] | None
+
+        (
+            compiled_circuits,
+            pulse_gate_circuits,
+            initial_logical_to_physicals_list,
+            final_logical_to_physicals_list,
+        ) = cls._get_deserialized_content(json_dict, circuits_is_list)
+
+        initial_logical_to_physicals: list[dict[Q, Q]] | list[list[dict[Q, Q]]] = (
+            initial_logical_to_physicals_list
+        )
+        final_logical_to_physicals: list[dict[Q, Q]] | list[list[dict[Q, Q]]] = (
+            final_logical_to_physicals_list
+        )
+        jaqal_programs: list[str] | None = json_dict.get("jaqal_programs")
+
+        seq = None
+        if "state_jp" in json_dict:
+            if not importlib.util.find_spec("qtrl"):
+                warnings.warn(
+                    "This output only contains compiled circuits. The `qtrl` package must be "
+                    "installed in order to deserialize compiled pulse sequences.",
+                    stacklevel=2,
+                )
+            else:  # pragma: no cover, b/c qtrl is not open source so it is not in the reqs
+
+                def _sequencer_from_state(state: dict[str, Any]) -> qtrl.sequencer.Sequence:
+                    seq = qtrl.sequencer.Sequence(n_elements=1)
+                    seq.__setstate__(state)
+                    seq.compile()
+                    return seq
+
+                state = gss.serialization.deserialize(json_dict["state_jp"])
+
+                if "readout_jp" in json_dict:
+                    readout_state = gss.serialization.deserialize(json_dict["readout_jp"])
+                    readout_seq = _sequencer_from_state(readout_state)
+
+                    if "readout_qubits" in json_dict:
+                        readout_qubits = json.loads(json_dict["readout_qubits"])
+                        readout_seq._readout = qtrl.sequence_utils.readout._ReadoutInfo(
+                            readout_seq, readout_qubits, n_readouts=len(compiled_circuits)
+                        )
+
+                    state["_readout"] = readout_seq
+
+                seq = _sequencer_from_state(state)
+
+        if num_eca_circuits is not None:
+            compiled_circuits, initial_logical_to_physicals, final_logical_to_physicals = (
+                cls._format_eca_content(
+                    compiled_circuits,
+                    initial_logical_to_physicals_list,
+                    final_logical_to_physicals_list,
+                    num_eca_circuits,
+                )
+            )
+
+            if jaqal_programs is not None:
+                jaqal_programs = [
+                    _jaqal_programs_to_subcircuits(jaqal_programs[i : i + num_eca_circuits])
+                    for i in range(0, len(jaqal_programs), num_eca_circuits)
+                ]
+
+        if circuits_is_list:
+            return cls(
+                compiled_circuits,
+                initial_logical_to_physicals,
+                final_logical_to_physicals,
+                jaqal_programs=jaqal_programs,
+                pulse_gate_circuits=pulse_gate_circuits,
+                seq=seq,
+            )
+
+        return cls(
+            compiled_circuits[0],
+            initial_logical_to_physicals[0],
+            final_logical_to_physicals[0],
+            jaqal_programs=jaqal_programs,
+            pulse_gate_circuits=None if pulse_gate_circuits is None else pulse_gate_circuits[0],
+            seq=seq,
+        )
+
 
 class CompilerOutput(BaseCompilerOutput[str, int]):
     """A class that arranges compiled circuit information."""
@@ -168,59 +392,3 @@ def _jaqal_programs_to_subcircuits(jaqal_programs: Sequence[str]) -> str:
     subcircuits = [jaqal_programs[0]]
     subcircuits += [jaqal_program.partition(separator)[2] for jaqal_program in jaqal_programs[1:]]
     return f"\n{separator}".join(subcircuits)
-
-
-def read_json_jaqal(
-    json_dict: dict[str, Any], num_eca_circuits: int | None = None
-) -> CompilerOutput:
-    """Reads out the returned JSON from Superstaq API's Jaqal compilation endpoint.
-
-    Args:
-        json_dict: A JSON dictionary matching the format returned by `/compile` endpoint.
-        num_eca_circuits: Number of logically equivalent random circuits to generate for each
-            input circuit.
-
-    Returns:
-        A `CompilerOutput` object with the compiled Jaqal program(s).
-    """
-    compiled_circuits = json.loads(json_dict["jaqal_strs"])
-
-    initial_logical_to_physicals_list: list[dict[int, int]] = list(
-        map(dict, json.loads(json_dict["initial_logical_to_physicals"]))
-    )
-    initial_logical_to_physicals: list[dict[int, int]] | list[list[dict[int, int]]] = (
-        initial_logical_to_physicals_list
-    )
-
-    final_logical_to_physicals_list: list[dict[int, int]] = list(
-        map(dict, json.loads(json_dict["final_logical_to_physicals"]))
-    )
-    final_logical_to_physicals: list[dict[int, int]] | list[list[dict[int, int]]] = (
-        final_logical_to_physicals_list
-    )
-
-    jaqal_programs: list[str] = json_dict.get("jaqal_programs", compiled_circuits)
-    if num_eca_circuits:
-        compiled_circuits = [
-            compiled_circuits[i : i + num_eca_circuits]
-            for i in range(0, len(compiled_circuits), num_eca_circuits)
-        ]
-        initial_logical_to_physicals = [
-            initial_logical_to_physicals_list[i : i + num_eca_circuits]
-            for i in range(0, len(initial_logical_to_physicals_list), num_eca_circuits)
-        ]
-        final_logical_to_physicals = [
-            final_logical_to_physicals_list[i : i + num_eca_circuits]
-            for i in range(0, len(final_logical_to_physicals_list), num_eca_circuits)
-        ]
-        jaqal_programs = [
-            _jaqal_programs_to_subcircuits(jaqal_programs[i : i + num_eca_circuits])
-            for i in range(0, len(jaqal_programs), num_eca_circuits)
-        ]
-
-    return CompilerOutput(
-        circuits=compiled_circuits,
-        initial_logical_to_physicals=initial_logical_to_physicals,
-        final_logical_to_physicals=final_logical_to_physicals,
-        jaqal_programs=jaqal_programs,
-    )

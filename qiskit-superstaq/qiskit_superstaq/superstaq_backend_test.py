@@ -294,11 +294,11 @@ def test_ibmq_compile(mock_post: MagicMock) -> None:
         "final_logical_to_physicals": "[[[0, 4], [1, 5]]]",
         "pulse_gate_circuits": qss.serialization.serialize_circuits(qc),
     }
-    assert backend.compile(
-        qiskit.QuantumCircuit(), dd_strategy="standard", test_options="yes"
-    ) == qss.compiler_output.CompilerOutput(
-        qc, initial_logical_to_physical, final_logical_to_physical, pulse_gate_circuits=qc
-    )
+    out = backend.compile(qiskit.QuantumCircuit(), dd_strategy="standard", test_options="yes")
+    assert out.initial_logical_to_physical == initial_logical_to_physical
+    assert out.final_logical_to_physical == final_logical_to_physical
+    assert out.circuit == qc
+    assert out.pulse_gate_circuit == qc
 
     assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
         "dd_strategy": "standard",
@@ -306,9 +306,11 @@ def test_ibmq_compile(mock_post: MagicMock) -> None:
         "test_options": "yes",
     }
 
-    assert backend.compile([qiskit.QuantumCircuit()]) == qss.compiler_output.CompilerOutput(
-        [qc], [initial_logical_to_physical], [final_logical_to_physical], pulse_gate_circuits=[qc]
-    )
+    out = backend.compile([qiskit.QuantumCircuit()])
+    assert out.initial_logical_to_physicals == [initial_logical_to_physical]
+    assert out.final_logical_to_physicals == [final_logical_to_physical]
+    assert out.circuits == [qc]
+    assert out.pulse_gate_circuits == [qc]
     assert json.loads(mock_post.call_args.kwargs["json"]["options"]) == {
         "dd_strategy": "adaptive",
         "dynamical_decoupling": True,

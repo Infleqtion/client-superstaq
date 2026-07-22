@@ -550,6 +550,7 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
     expected_options = {
         "aqt_configs": {},
         "atol": 1e-3,
+        "gateset": {"CZ3": [[5, 6]], "X90": [[5], [6]], "EFX90": [[5], [6]]},
         "gate_defs": {
             "CZ3": css.CZ3,
             "CZ3/T5C4": None,
@@ -557,7 +558,6 @@ def test_service_aqt_compile_single(mock_post_request: mock.MagicMock) -> None:
             "CS2": cirq.MatrixGate(cirq.unitary(cirq.CZ**0.49)),
             "CS3": cirq.MatrixGate(cirq.unitary(css.CZ3**0.5), qid_shape=(3, 3)),
         },
-        "gateset": {"CZ3": [[5, 6]], "X90": [[5], [6]], "EFX90": [[5], [6]]},
     }
     mock_post_request.assert_called_with(
         "/aqt_compile",

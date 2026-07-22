@@ -32,7 +32,7 @@ import numbers
 import uuid
 import warnings
 from collections import defaultdict
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, Generic, Literal, Union, cast, overload
 
 import cirq
@@ -269,13 +269,18 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         self,
         json_dict: dict[str, Any],
         *,
-        legacy_parser: Callable[[dict[str, Any]], css.compiler_output.CompilerOutput],
+        circuits_is_list: bool,
+        num_eca_circuits: int | None = None,
     ) -> CssCompileResultT_co:
         """Maps a compile endpoint's JSON response to the output type expected by the API version.
 
         Args:
             json_dict: The JSON output from a compile endpoint.
-            legacy_parser: The JSON parsing function to use for the v0.2.0 API.
+            circuits_is_list: A boolean flag that controls whether the returned object has a
+                `.circuits` attribute (if `True`) or a `.circuit` attribute (`False`). Note:
+                relevant only for the v0.2.0 API.
+            num_eca_circuits: Optional number of logically equivalent random circuits to generate
+                for each input circuit. Note: relevant only for the v0.2.0 API.
 
         Returns:
             For v0.3.0, compile-like endpoints will return a `css.JobV3`. For v0.2.0, legacy
@@ -289,7 +294,14 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             if not isinstance(job_id, str):
                 raise TypeError("No valid job id was found in the compile request.")
             return cast("CssCompileResultT_co", css.JobV3(client=self._client, job_id=job_id))
-        return cast("CssCompileResultT_co", legacy_parser(json_dict))
+        return cast(
+            "CssCompileResultT_co",
+            css.compiler_output.CompilerOutput.read_json(
+                json_dict=json_dict,
+                circuits_is_list=circuits_is_list,
+                num_eca_circuits=num_eca_circuits,
+            ),
+        )
 
     def _resolve_target(self, target: str | None) -> str:
         target = target or self.default_target
@@ -658,17 +670,14 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             "target": target,
         }
 
-        options_dict: dict[str, object]
-        options_dict = {**kwargs}
+        options_dict: dict[str, object] = gss.validation.get_validated_aqt_options(
+            num_eca_circuits=num_eca_circuits,
+            random_seed=random_seed,
+            atol=atol,
+            gateset=gateset,
+            **kwargs,
+        )
 
-        if num_eca_circuits is not None:
-            gss.validation.validate_integer_param(num_eca_circuits)
-            options_dict["num_eca_circuits"] = int(num_eca_circuits)
-        if random_seed is not None:
-            gss.validation.validate_integer_param(random_seed)
-            options_dict["random_seed"] = int(random_seed)
-        if atol is not None:
-            options_dict["atol"] = float(atol)
         if gate_defs is not None:
             gate_defs_cirq = {}
             for key, val in gate_defs.items():
@@ -676,8 +685,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
                     val = _to_matrix_gate(val)
                 gate_defs_cirq[key] = val
             options_dict["gate_defs"] = gate_defs_cirq
-        if gateset is not None:
-            options_dict["gateset"] = gateset
+
         if pulses or variables:
             options_dict["aqt_configs"] = {
                 "pulses": self._qtrl_config_to_yaml_str(pulses),
@@ -692,9 +700,8 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         )
         return self._map_compile_request_to_client_result(
             json_dict,
-            legacy_parser=lambda j_dict: css.compiler_output.read_json_aqt(
-                j_dict, circuits_is_list, num_eca_circuits
-            ),
+            circuits_is_list=circuits_is_list,
+            num_eca_circuits=num_eca_circuits,
         )
 
     def qscout_compile(
@@ -816,9 +823,8 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         )
         return self._map_compile_request_to_client_result(
             json_dict,
-            legacy_parser=lambda j_dict: css.compiler_output.read_json_qscout(
-                j_dict, circuits_is_list, num_eca_circuits
-            ),
+            circuits_is_list=circuits_is_list,
+            num_eca_circuits=num_eca_circuits,
         )
 
     def cq_compile(
@@ -949,7 +955,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         json_dict = self._client.compile(request_json)
         return self._map_compile_request_to_client_result(
             json_dict,
-            legacy_parser=lambda j_dict: css.compiler_output.read_json(j_dict, circuits_is_list),
+            circuits_is_list=circuits_is_list,
         )
 
     def _get_compile_request_json(
@@ -996,7 +1002,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         shots: int,
         **kwargs: Any,
     ) -> list[str]:
-        """Executes the circuits neccessary for the DFE protocol.
+        """Executes the circuits necessary for the DFE protocol.
 
         The circuits used to prepare the desired states should not contain final measurements, but
         can contain mid-circuit measurements (as long as the intended target supports them). For
