@@ -832,6 +832,20 @@ def test_parallel_gates_eq() -> None:
     assert not cirq.equal_up_to_global_phase(css.ParallelGates(cirq.CX), css.ParallelGates(cirq.X))
 
 
+def test_circuit_diagram_info_() -> None:
+    gate = css.ParallelGates(cirq.X, cirq.ry(2.1))
+    args = cirq.CircuitDiagramInfoArgs(
+        known_qubits=None,
+        known_qubit_count=None,
+        use_unicode_characters=False,
+        precision=None,
+        label_map=None,
+        include_tags=True,
+        transpose=False,
+    )
+    css.ops.qubit_gates.ParallelGates._circuit_diagram_info_(gate, args)
+
+
 def test_parallel_gates_trace_distance_bound() -> None:
     assert cirq.trace_distance_bound(css.ParallelGates(cirq.X)) == 1.0
     assert cirq.trace_distance_bound(css.ParallelGates()) == 0.0
@@ -907,6 +921,14 @@ def test_parallel_gates_equivalence_groups() -> None:
 
     with pytest.raises(ValueError, match=r"index out of range"):
         _ = gate.qubit_index_to_equivalence_group_key(-1)
+
+    qubits = cirq.LineQubit.range(7)
+    gate = css.ParallelGates(cirq.Y, cirq.X, cirq.CZ, cirq.CCZ)
+
+    index = 6
+    indexed_gate, index_in_gate = gate.qubit_index_to_gate_and_index(index)
+    assert gate.qubit_index_to_gate_and_index(index) == (indexed_gate, index_in_gate)
+    assert (indexed_gate, index_in_gate) == (cirq.CCZ, 2)
 
 
 def test_parallel_gates_equivalence_groups_nonadjacent() -> None:
