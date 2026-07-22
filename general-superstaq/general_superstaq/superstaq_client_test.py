@@ -1414,6 +1414,46 @@ def test_superstaq_client_compile_v3(
         "final_logical_to_physicals": expected_map,
     }
 
+    job_id = uuid.UUID(int=0)
+    job_data = {
+        str(job_id): {
+            "job_type": "compile",
+            "statuses": ["completed"],
+            "status_messages": [None],
+            "user_email": "test@email.com",
+            "target": "ss_example_qpu",
+            "provider_id": ["ss"],
+            "num_circuits": 1,
+            "compiled_circuits": ['"compiled world"'],
+            "input_circuits": ["world"],
+            "circuit_type": circuit_type,
+            "counts": [{"count": 200}],
+            "results_dicts": [None],
+            "shots": [200],
+            "dry_run": True,
+            "submission_timestamp": datetime.datetime(1, 1, 1, tzinfo=datetime.timezone.utc),
+            "last_updated_timestamp": [None],
+            "initial_logical_to_physicals": [{0: 0}],
+            "final_logical_to_physicals": [{0: 0}],
+            "logical_qubits": ['[{"qubit": "q0"}]'],
+            "physical_qubits": ['[{"qubit": "q0"}]'],
+            "metadata": {},
+        }
+    }
+    mock_post.return_value.json.return_value = {"job_id": job_id, "num_circuits": 1}
+    mock_get.return_value.json.return_value = job_data
+
+    compilation_results = client_v3.compile({"cirq_circuits": "Hello", "target": "ss_example_qpu"})
+
+    compilation_results = client_v3.compile(
+        {"qiskit_circuits": "Hello", "target": "ss_example_qpu"}
+    )
+
+    with pytest.raises(RuntimeError, match=r"No recognized circuits found."):
+        compilation_results = client_v3.compile(
+            {"unknown_circuits": "Hello", "target": "ss_example_qpu"}
+        )
+
 
 @mock.patch("requests.Session.get")
 @mock.patch("requests.Session.post")
@@ -1658,7 +1698,6 @@ def test_superstaq_client_aces(
             json=expected_json,
             verify=False,
         )
-        # test to  include `Noise:"type"==False` branch for `submit_aces` func in superstaq_client.py
         client.submit_aces(
             target="ss_unconstrained_simulator",
             qubits=[0, 1],
@@ -1760,7 +1799,6 @@ def test_superstaq_client_cb(
             verify=False,
         )
 
-        # test to  include `Noise==False` and `method==False` branches for `submit_cb` func in superstaq_client.py
         client.submit_cb(
             target="ss_unconstrained_simulator",
             shots=100,
