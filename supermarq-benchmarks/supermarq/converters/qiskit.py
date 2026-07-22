@@ -571,7 +571,7 @@ def _handle_qiskit_inst(
         return cirq_gate.on(*cirq_qubits), phase
 
     elif issubclass(inst.base_class, qiskit.circuit.ControlledGate):
-        if cirq_op := _handle_qiskit_controlled_op(inst, cirq_qubits):
+        if cirq_op := _handle_qiskit_controlled_op(inst, cirq_qubits):  # pragma: no branch
             return cirq_op, 0.0
 
     if inst.definition is not None and inst.base_class is not qiskit.circuit.library.UnitaryGate:

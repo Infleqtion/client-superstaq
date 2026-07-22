@@ -120,6 +120,10 @@ def test_build_circuits(su2_experiment: SU2) -> None:  # pragma: no cover
                 ),
             )
 
+    with patch("cirq.single_qubit_matrix_to_phxz", return_value=None):
+        samples = su2_experiment._build_circuits(2, [1, 3])
+        assert len(samples) == 4
+
 
 @pytest.mark.skipif(sys.version_info >= (3, 10), reason="Python version >= 3.10")
 def test_build_circuits_old(su2_experiment: SU2) -> None:  # pragma: no cover
@@ -253,6 +257,25 @@ def test_result_missing_data() -> None:
 
     with pytest.raises(RuntimeError, match=r"No data stored. Cannot plot results."):
         result.plot_results()
+
+    result = SU2Results(
+        target="example",
+        experiment=MagicMock(spec=SU2),
+        data=pd.DataFrame(
+            {
+                "num_two_qubit_gates": 2,
+                "circuit_realization": 1,
+                "uuid": uuid.uuid4(),
+                "00": decay(2, 0.25, 0.975),
+                "01": 0.0,
+                "10": 0.0,
+                "11": 1 - decay(2, 0.25, 0.975),
+            },
+            index=[0],
+        ),
+    )
+    result._analyze()
+    result.plot_results()
 
 
 def test_dump_and_load(

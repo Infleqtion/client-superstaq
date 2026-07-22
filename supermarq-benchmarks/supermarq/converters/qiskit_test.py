@@ -18,6 +18,7 @@ import re
 import textwrap
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
+from unittest.mock import patch
 
 import cirq
 import cirq_superstaq as css
@@ -357,6 +358,11 @@ def test_handle_qiskit_instruction() -> None:
         _, _ = sm.converters.qiskit._handle_qiskit_inst(
             qiskit.circuit.Gate("unknown", 1, []), [cirq.LineQubit(789)], []
         )
+
+    qubits = random_qubits(2)
+    trial_gate = qiskit.circuit.library.CXGate()
+    with patch("supermarq.converters.qiskit._handle_qiskit_controlled_op", return_value=False):
+        assert sm.converters.qiskit._handle_qiskit_inst(trial_gate, qubits, [])[1] == 0.0
 
 
 def test_translate_circuit() -> None:
@@ -1373,6 +1379,22 @@ def test_cirq_to_qiskit_classical_control() -> None:
         qc.z(0)
 
     assert sm.converters.cirq_to_qiskit(cirq_circuit, sorted(cirq_circuit.all_qubits())) == qc
+
+    q0, q1 = sympy.symbols("q0 q1")
+    cr = qiskit.ClassicalRegister(2, "c")
+    with pytest.raises(
+        gss.SuperstaqException,
+        match=re.escape("We don't currently support q0 + q1 in our qiskit classical control flow."),
+    ):
+        sm.converters.qiskit.cirq_classical_control_to_qiskit(
+            cirq.Z(qubits[0]).with_classical_controls(sympy.Add(q0, q1)), {sympy_cond2: "q1"}, cr
+        )
+
+    cr = qiskit.ClassicalRegister(2, "cr")
+    condition = (cr[1], 1)
+    sm.converters.qiskit.cirq_classical_control_to_qiskit(
+        cirq.Z(qubits[0]).with_classical_controls(cr[1]), {condition: 1}, cr
+    )
 
 
 def test_cirq_qubits_to_qiskit() -> None:

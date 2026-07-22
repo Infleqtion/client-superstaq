@@ -233,6 +233,17 @@ def test_results_no_data() -> None:
     with pytest.raises(RuntimeError, match=r"No data stored. Cannot plot results."):
         results.plot_results()
 
+    results = SSBResults(
+        target="example",
+        experiment=SSB(num_circuits=10, cycle_depths=[2, 3, 5]),
+        data=pd.DataFrame(
+            {"initial_sss_index": 4, "num_cz_gates": 2, "00": 1.0, "01": 0.0, "10": 0.0, "11": 0.0},
+            index=[0],
+        ),
+    )
+    results._analyze()
+    results.plot_results()
+
 
 def test_results_not_analyzed() -> None:
     results = SSBResults(target="example", experiment=MagicMock(), data=None)
