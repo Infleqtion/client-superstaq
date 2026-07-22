@@ -1,4 +1,4 @@
-# Copyright 2026 Infleqtion
+# Copyright 2026 Infleqtion, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -91,7 +91,7 @@ def measured_qubit_indices(circuit: cirq.AbstractCircuit) -> list[int]:
     return sorted(qubit_indices)
 
 
-class CompilerOutput(gss.BaseCompilerOutput[cirq.Circuit, cirq.Qid]):
+class CompilerOutput(gss.compiler_output.BaseCompilerOutput[cirq.Circuit, cirq.Qid]):
     """A class that arranges compiled `cirq` circuit information."""
 
     def __init__(
@@ -107,7 +107,7 @@ class CompilerOutput(gss.BaseCompilerOutput[cirq.Circuit, cirq.Qid]):
             | list[dict[cirq.Qid, cirq.Qid]]
             | list[list[dict[cirq.Qid, cirq.Qid]]]
         ),
-        pulse_gate_circuits: Any | None = None,
+        pulse_gate_circuits: object | None = None,
         seq: qtrl.sequencer.Sequence | None = None,
         jaqal_programs: list[str] | None = None,
     ) -> None:

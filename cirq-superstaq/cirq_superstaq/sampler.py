@@ -1,4 +1,4 @@
-# Copyright 2026 Infleqtion
+# Copyright 2026 Infleqtion, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ class Sampler(cirq.Sampler):
 
     def __init__(
         self,
-        service: css.service.Service,
+        service: css.Service[css.compiler_output.CompilerOutput | css.JobV3],
         target: str,
     ) -> None:
         """Constructs the sampler, accessed from the `sampler` method on `css.Service`.
