@@ -30,6 +30,7 @@ from __future__ import annotations
 import datetime
 import http
 import json
+import re
 import textwrap
 import uuid
 from unittest import mock
@@ -897,3 +898,62 @@ def test_set_counts_jaqal(
     )
     jobV3.set_counts(result)
     assert jobV3.counts(0) == {"10": 1000}
+
+
+def test_update_status_queue_info() -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="cirq-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    job = css.Job(client, "job_id1,job_id2,job_id3")
+    job._job = {
+        "job_id1": {"status": "Done"},
+        "job_id2": {"status": "Running"},
+        "job_id3": {"status": "Queued"},
+    }
+    job._update_status_queue_info()
+    assert job._overall_status == "Running"
+
+    job = css.Job(client, "job_id1,job_id2,job_id3")
+    job._job = {
+        "job_id1": {"status": " "},
+        "job_id2": {"status": " "},
+        "job_id3": {"status": " "},
+    }
+    job._update_status_queue_info()
+    assert job._overall_status == "Submitted"
+
+
+def test_check_if_unsuccessful() -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="cirq-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    job = css.Job(client, "job_id1, job_id2, job_id3")
+    job._job = {
+        "job_id1, job_id2, job_id3": {"status": "Done"},
+        "job_id2": {"status": "Running"},
+        "job_id3": {"status": "Canceled"},
+    }
+
+    job = css.Job(client, "job_id1,job_id2,job_id3")
+    job._job = {
+        "job_id1": {"status": "Failed", "failure": {"error": "error"}},
+        "job_id2": {"status": "Failed", "failure": {None: 1}},
+        "": {"status": "Failed", "failure": {"error": "error"}},
+    }
+
+    with pytest.raises(
+        gss.SuperstaqUnsuccessfulJobException,
+        match=re.escape("Job job_id1 terminated with status Failed (error)."),
+    ):
+        css.job.Job._check_if_unsuccessful(job, 0)
+
+    with pytest.raises(
+        gss.SuperstaqUnsuccessfulJobException, match=r"Job job_id2 terminated with status Failed"
+    ):
+        css.job.Job._check_if_unsuccessful(job, 1)
+
+    css.job.Job.__getitem__(job, 2)

@@ -1345,7 +1345,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
                 _objective(np.arange(0, x_values[-1] + 4), A, p),
             )
             e_f += p
-            if legend_labels_count < max_legend_labels:
+            if legend_labels_count < max_legend_labels:  # pragma: no branch
                 truncated_label = "A_" + str(ps) + f"={A:.2f} \np_{ps}={p:.2f}"
                 legend_labels.append(truncated_label)
                 legend_labels_count += 1

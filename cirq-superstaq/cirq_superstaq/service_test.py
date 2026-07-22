@@ -1035,6 +1035,8 @@ def test_service_ibmq_compile(mock_post: mock.MagicMock) -> None:
     with pytest.raises(ValueError, match=r"'ss_example_qpu' is not a valid IBMQ target."):
         service.ibmq_compile(cirq.Circuit(), target="ss_example_qpu")
 
+    service._get_compile_request_json(circuit, target="ibmq_fake_qpu")
+
 
 @pytest.mark.parametrize(
     ("compile_call", "target"),
@@ -1221,6 +1223,20 @@ def test_aces(
         == "id1"
     )
 
+    assert (
+        service.submit_aces(
+            target="ss_unconstrained_simulator",
+            qubits=[0, 1],
+            shots=100,
+            num_circuits=10,
+            mirror_depth=5,
+            extra_depth=5,
+            weights=[1, 2],
+            error_prob=(0.1, 0.1, 0.1),
+        )
+        == "id1"
+    )
+
     mock_post.return_value.json = lambda: [1] * 51
     assert service.process_aces("id1") == [1] * 51
 
@@ -1256,6 +1272,18 @@ def test_cb(
             depths=[1, 2, 3],
             method="dry-run",
             noise="asymmetric_depolarize",
+        )
+        == "id1"
+    )
+    assert (
+        service.submit_cb(
+            target="ss_unconstrained_simulator",
+            repetitions=50,
+            process_circuit=cirq.Circuit(),
+            n_channels=6,
+            n_sequences=30,
+            depths=[1, 2, 3],
+            method="dry-run",
         )
         == "id1"
     )
@@ -1326,6 +1354,46 @@ def test_cb(
     mock_post.return_value.json = lambda: test_data
     assert service.process_cb("id1") == processed_test_data
 
+    test_data = {
+        "circuit_data": {
+            "ps": {
+                "depth_1": {
+                    "seq": {
+                        "result": "{}",
+                        "c_of_p": "{}",
+                        "circuit": "{}",
+                        "compiled_circuit": "{}",
+                    }
+                }
+            }
+        },
+        "instance_information": cirq.to_json(
+            {
+                "target": "aqt_keysight_qpu",
+                "depths": [1, 2, 3],
+                "n_channels": 2,
+            }
+        ),
+        "process_fidelity_data": {
+            "averages": {
+                "test1": [1.0, 1.0, 1.0],
+                "test2": [1.0, 1.0, 1.0],
+                "test3": [1.0, 1.0, 1.0],
+            },
+            "std_devs": {
+                "test1": {"depth=1": 0.0, "depth=2": 0.0, "depth=3": 0.0},
+                "test2": {"depth=1": 0.0, "depth=2": 0.0, "depth=3": 0.0},
+                "test3": {"depth=1": 0.0, "depth=2": 0.0, "depth=3": 0.0},
+            },
+            "evs": {
+                "test1": {"depth=1": [1.0], "depth=2": [1.0], "depth=3": [1.0]},
+                "test2": {"depth=1": [1.0], "depth=2": [1.0], "depth=3": [1.0]},
+                "test3": {"depth=1": [1.0], "depth=2": [1.0], "depth=3": [1.0]},
+            },
+        },
+    }
+    mock_post.return_value.json = lambda: test_data
+    service.process_cb("job_id")
     with patch(
         "matplotlib.pyplot.show",
         return_value={"test": 123},
