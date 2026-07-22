@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2026 Infleqtion
+# Copyright 2026 Infleqtion, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 import os
 import subprocess
 import sys
@@ -49,6 +50,15 @@ def run(
         help="Check that each file is covered by its own test file.",
     )
     parser.add_argument(
+        "-j",
+        "--jobs",
+        type=int,
+        default=None,
+        help="Parallelize modular coverage test across this many concurrent threads. This argument"
+        " is ignored for non-modular coverage tests."
+        " Default: min((os.cpu_count() or 2) // 2, len(files_being_tested))",
+    )
+    parser.add_argument(
         "--branch",
         action="store_true",
         help="Also require all branches to be covered (same as `coverage run --branch`).",
@@ -75,7 +85,9 @@ def run(
 
     # Enable threading setting before other args so -n can be overwritten
     default_threads = (
-        "auto"
+        parsed_args.jobs
+        if not parsed_args.modular and parsed_args.jobs is not None
+        else "auto"
         if not parsed_args.files
         and not parsed_args.modular
         and parsed_args.revisions is None
@@ -99,21 +111,40 @@ def run(
         print("No test files to check for pytest and coverage.")  # noqa: T201
         return 0
 
-    if not parsed_args.modular:
-        test_returncode = _run_on_files(files, test_files, coverage_args, pytest_args)
-        return _report(test_returncode)
+    try:
+        if parsed_args.modular:
+            returncode = _run_modular(files, coverage_args, pytest_args, exclude, parsed_args.jobs)
+        else:
+            result = _run_on_files(files, test_files, coverage_args, pytest_args)
+            returncode = result.returncode
 
-    # Run checks on individual files, skipping repeats
-    subprocess.check_call(["python", "-m", "coverage", "erase"])
+    except BaseException as e:
+        # Clean up any temporary files if the check didn't complete
+        subprocess.check_call([sys.executable, "-m", "coverage", "erase"], cwd=check_utils.root_dir)
+        print(check_utils.failure(f"\nCoverage failed to complete ({e!r})."))  # noqa: T201
+        return 1
+
+    return _report(returncode)
+
+
+def _run_modular(
+    files: list[str],
+    coverage_args: list[str],
+    pytest_args: list[str],
+    exclude: str | Iterable[str],
+    num_jobs: int | None,
+) -> int:
+    """Run modular coverage checks.  If num_workers != 1, these checks are run concurrently."""
+    subprocess.check_call([sys.executable, "-m", "coverage", "erase"], cwd=check_utils.root_dir)
 
     # Move test files to the end of the file list, so if both "x.py" and "x_test.py" are in `files`
     # both will be included in the coverage report
     files.sort(
         key=lambda file: file.endswith("_test.py") or os.path.basename(file).startswith("test_")
     )
-    coverage_args.append("--append")
-    test_returncode = 0
 
+    # Build (files_requiring_coverage, test_files) pairs
+    test_pairs: list[tuple[list[str], list[str]]] = []
     while files:
         file = files.pop(0)
         test_files = check_utils.get_test_files([file], exclude=exclude, silent=True)
@@ -132,11 +163,35 @@ def run(
                 files_requiring_coverage.append(test_file)
                 files.remove(test_file)
 
-        test_returncode |= _run_on_files(
-            files_requiring_coverage, test_files, coverage_args, pytest_args
-        )
+        test_pairs.append((files_requiring_coverage, test_files))
 
-    return _report(test_returncode)
+    test_returncode = 0
+    if num_jobs == 0:
+        # Run modular checks one at a time
+        for files_requiring_coverage, test_files in test_pairs:
+            result = _run_on_files(files_requiring_coverage, test_files, coverage_args, pytest_args)
+            test_returncode |= result.returncode
+        return test_returncode
+
+    # Run modular checks concurrently
+    max_workers = num_jobs or min((os.cpu_count() or 2) // 2, len(test_pairs))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        jobs = [
+            executor.submit(
+                _run_on_files,
+                files_requiring_coverage,
+                test_files,
+                coverage_args,
+                pytest_args,
+                capture_output=True,
+            )
+            for files_requiring_coverage, test_files in test_pairs
+        ]
+        for future in concurrent.futures.as_completed(jobs):
+            result = future.result()
+            print(result.stdout, end="")  # noqa: T201
+            test_returncode |= result.returncode
+    return test_returncode
 
 
 def _run_on_files(
@@ -144,11 +199,12 @@ def _run_on_files(
     test_files: list[str],
     coverage_args: list[str],
     pytest_args: list[str],
-) -> int:
+    *,
+    capture_output: bool = False,
+) -> subprocess.CompletedProcess[str]:
     """Helper function to run coverage tests on the given files with the given pytest arguments."""
     coverage_args = ["--include=" + ",".join(files_requiring_coverage), *coverage_args]
-
-    test_returncode = subprocess.call(
+    return subprocess.run(
         [
             sys.executable,
             "-m",
@@ -160,9 +216,11 @@ def _run_on_files(
             *test_files,
             *pytest_args,
         ],
-        cwd=check_utils.root_dir,
+        check=False,
+        text=True,
+        stdout=subprocess.PIPE if capture_output else None,
+        stderr=subprocess.STDOUT if capture_output else None,
     )
-    return test_returncode
 
 
 def _report(test_returncode: int) -> int:
@@ -172,6 +230,9 @@ def _report(test_returncode: int) -> int:
         stdout=subprocess.DEVNULL,
     )
 
+    # Flush Python's stdout buffer before the subprocess writes directly to it, so captured
+    # test output appears before the coverage report
+    sys.stdout.flush()
     coverage_returncode = subprocess.call(
         [sys.executable, "-m", "coverage", "report", "--precision=2"],
         cwd=check_utils.root_dir,

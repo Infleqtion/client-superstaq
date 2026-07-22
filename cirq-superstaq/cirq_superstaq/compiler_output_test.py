@@ -1,4 +1,4 @@
-# Copyright 2026 Infleqtion
+# Copyright 2026 Infleqtion, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -193,8 +193,11 @@ def test_read_json_pulse_gate_circuits() -> None:
 
     out = css.compiler_output.read_json(json_dict, circuits_is_list=False)
     assert out.circuit == circuit
-    assert out.pulse_gate_circuit == qc_pulse
-    assert out.pulse_gate_circuit.op_start_times == [0, 10]
+
+    pulse_output = out.pulse_gate_circuit
+    assert pulse_output == qc_pulse
+    assert hasattr(pulse_output, "op_start_times")
+    assert pulse_output.op_start_times == [0, 10]
 
     json_dict = {
         "cirq_circuits": css.serialization.serialize_circuits([circuit, circuit]),
@@ -205,8 +208,11 @@ def test_read_json_pulse_gate_circuits() -> None:
     }
     out = css.compiler_output.read_json(json_dict, circuits_is_list=True)
     assert out.circuits == [circuit, circuit]
-    assert out.pulse_gate_circuits == [qc_pulse, qc_pulse]
-    assert out.pulse_gate_circuits[1].op_start_times == [0, 100]
+
+    pulse_output = out.pulse_gate_circuits
+    assert pulse_output == [qc_pulse, qc_pulse]
+    assert all(hasattr(p_out, "op_start_times") for p_out in pulse_output)
+    assert pulse_output[1].op_start_times == [0, 100]
 
     with (
         mock.patch.dict("sys.modules", {"qiskit_superstaq": None}),
