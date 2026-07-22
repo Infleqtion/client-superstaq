@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from __future__ import annotations
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.colors import Normalize
-import supermarq
+
 import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.colors import Normalize
 from matplotlib.lines import Line2D
+
+import supermarq
 
 
 def test_plot_benchmark() -> None:
@@ -87,9 +89,9 @@ def test_plot_correlations() -> None:
     )
 
 
-def test_annotate_heatmap():
+def test_annotate_heatmap() -> None:
     data = np.array([[0, 5], [10, 20]])
-    fig, ax = plt.subplots()
+    ax = plt.subplot()
     im = ax.imshow(data, norm=Normalize(vmin=0, vmax=20), cmap="viridis")
     supermarq.plotting.annotate_heatmap(
         im,
@@ -108,16 +110,11 @@ def test_annotate_heatmap():
     )
 
 
-# def test_close_line():
-#     theta = np.linspace(0, 2*np.pi, 500)
-#     r = 1 + np.cos(theta)
-#     fig, ax = plt.subplots(111, subplot_kw={"projection": "polar"})
-#     plt.plot(theta, r)
-#     # ax.set_title("Polar graph: r = 1 + cos(theta)")
+def test_close_line() -> None:
+    theta = np.linspace(0, 2 * np.pi, 500)
+    r = 1 + np.cos(theta)
+    ax = plt.subplots(11, subplot_kw={"projection": "polar"})
+    plt.plot(theta, r)
 
-#     line = Line2D([0, 1, 2], [0, 1, 0],
-#               color='blue',
-#               linewidth=2,
-#               marker='o',
-#               markersize=8)
-#     supermarq.plotting.RadarAxesMeta(ax)._close_line(line)
+    line = Line2D([0, 1, 2, 0], [0, 1, 0, 0], color="blue", linewidth=2, marker="o", markersize=8)
+    supermarq.plotting.RadarAxesMeta._close_line(ax, line=line)

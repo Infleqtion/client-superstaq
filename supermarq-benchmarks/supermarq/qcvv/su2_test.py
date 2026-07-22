@@ -119,8 +119,10 @@ def test_build_circuits(su2_experiment: SU2) -> None:  # pragma: no cover
                     """  # noqa: E501
                 ),
             )
-    qubits = cirq.LineQubit.range(2)
-    samples = SU2(4, [1, 2, 3, 4], cirq.CNOT)._build_circuits(2, [2, 3])
+
+    with patch("cirq.single_qubit_matrix_to_phxz", return_value=None):
+        samples = su2_experiment._build_circuits(2, [1, 3])
+        assert len(samples) == 4
 
 
 @pytest.mark.skipif(sys.version_info >= (3, 10), reason="Python version >= 3.10")

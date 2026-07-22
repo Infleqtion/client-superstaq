@@ -18,6 +18,7 @@ import re
 import textwrap
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
+from unittest.mock import patch
 
 import cirq
 import cirq_superstaq as css
@@ -357,6 +358,11 @@ def test_handle_qiskit_instruction() -> None:
         _, _ = sm.converters.qiskit._handle_qiskit_inst(
             qiskit.circuit.Gate("unknown", 1, []), [cirq.LineQubit(789)], []
         )
+
+    qubits = random_qubits(2)
+    trial_gate = qiskit.circuit.library.CXGate()
+    with patch("supermarq.converters.qiskit._handle_qiskit_controlled_op", return_value=False):
+        assert sm.converters.qiskit._handle_qiskit_inst(trial_gate, qubits, [])[1] == 0.0
 
 
 def test_translate_circuit() -> None:

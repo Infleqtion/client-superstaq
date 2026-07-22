@@ -15,11 +15,8 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import qiskit
-
 import supermarq
 from supermarq.benchmarks.mermin_bell import MerminBell
-from supermarq import stabilizers
 
 
 def test_mermin_bell_circuit() -> None:
@@ -51,8 +48,6 @@ def test_mermin_bell_score() -> None:
     mb = MerminBell(5)
     assert mb.score(supermarq.simulation.get_ideal_counts(mb.circuit())) == 1
 
-    mermin_op = MerminBell._mermin_operator(mb, num_qubits=3)
-    stabilizers.construct_stabilizer(num_qubits=3, clique=[(0.25, mermin_op)])
-    stabilizers.prepare_x_matrix(MerminBell._get_measurement_circuit(mb))
-
-    stabilizers.patch_z_matrix(MerminBell._get_measurement_circuit(mb))
+    with patch.object(mb, "_get_measurement_circuit") as mock_get_measurement:
+        mock_get_measurement.return_value.get_circuit.return_value.all_operations.return_value = {}
+        assert mb.score({"0": 2.0}) == 0.375
