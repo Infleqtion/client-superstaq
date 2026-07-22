@@ -513,7 +513,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
             else:
                 self.component_gates += (gate,)
 
-    def qubit_index_to_gate_and_index(self, index: int) -> tuple[cirq.Gate, int]:
+    def qubit_index_to_gate_and_index(self, index: int) -> tuple[cirq.Gate, int]: #  This does not return index
         """Gets gate (and index) for the corresponding index.
 
         Args:
@@ -551,7 +551,7 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
         if isinstance(indexed_gate, cirq.InterchangeableQubitsGate):
             gate_key = indexed_gate.qubit_index_to_equivalence_group_key(index_in_gate)
             for i in range(index_in_gate):
-                if gate_key == indexed_gate.qubit_index_to_equivalence_group_key(i):
+                if gate_key == indexed_gate.qubit_index_to_equivalence_group_key(i):  # pragma: no branch
                     return index - index_in_gate + i
         return index
 
