@@ -30,24 +30,34 @@ import numbers
 import uuid
 import warnings
 from collections.abc import Iterable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Generic, Union
 
 import general_superstaq as gss
 import numpy as np
 import qiskit
 from general_superstaq.superstaq_client import _SuperstaqClient
+from typing_extensions import TypeVar
 
 import qiskit_superstaq as qss
+
+from .superstaq_job import SuperstaqJobV3
 
 if TYPE_CHECKING:
     import numpy.typing as npt
     from _typeshed import SupportsItems
 
+QssCompileResultT_co = TypeVar(
+    "QssCompileResultT_co",
+    bound=Union[qss.compiler_output.CompilerOutput, SuperstaqJobV3],
+    covariant=True,
+    default=qss.compiler_output.CompilerOutput,
+)
 
-class SuperstaqBackend(qiskit.providers.BackendV2):
+
+class SuperstaqBackend(qiskit.providers.BackendV2, Generic[QssCompileResultT_co]):
     """This class represents a Superstaq backend."""
 
-    def __init__(self, provider: qss.SuperstaqProvider, target: str) -> None:
+    def __init__(self, provider: qss.SuperstaqProvider[QssCompileResultT_co], target: str) -> None:
         """Initializes a `SuperstaqBackend`.
 
         Args:
@@ -233,7 +243,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         """
         warnings.warn(
             "The `.retrieve_job()` method of `SuperstaqBackend` has been deprecated, and will be "
-            "removed in a future version of qiskit-superstaq. Instead, use the `.get_job()`"
+            "removed in a future version of qiskit-superstaq. Instead, use the `.get_job()` "
             "method of `SuperstaqProvider`.",
             DeprecationWarning,
             stacklevel=2,
@@ -246,7 +256,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         self,
         circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput:
+    ) -> QssCompileResultT_co:
         """Compiles the given circuit(s) to the backend's native gateset.
 
         Args:
@@ -254,30 +264,33 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             kwargs: Other desired compile options.
 
         Returns:
-            A `CompilerOutput` object whose .circuit(s) attribute contains optimized compiled
-            circuit(s).
+            For the v0.3.0 API, an asynchronous `qss.SuperstaqJobV3` on which compiled circuits can
+            be queried via `.compiled_circuits()`. Otherwise (for the v0.2.0 API), a
+            `qss.CompilerOutput` whose .circuit(s) attribute contains the compiled circuit(s).
 
         Raises:
             ValueError: If this backend does not support compilation.
         """
-        if self._provider._client.api_version == "v0.2.0":
-            if self.name.startswith("ibmq_"):
-                return self.ibmq_compile(circuits, **kwargs)
+        if self.name.startswith("ibmq_"):
+            return self.ibmq_compile(circuits, **kwargs)
 
-            if self.name.startswith("aqt_"):
-                return self.aqt_compile(circuits, **kwargs)
+        if self.name.startswith("aqt_"):
+            return self.aqt_compile(circuits, **kwargs)
 
-            if self.name.startswith("qscout_"):
-                return self.qscout_compile(circuits, **kwargs)
+        if self.name.startswith("qscout_"):
+            return self.qscout_compile(circuits, **kwargs)
 
-            if self.name.startswith("cq_"):
-                return self.cq_compile(circuits, **kwargs)
+        if self.name.startswith("cq_"):
+            return self.cq_compile(circuits, **kwargs)
 
         request_json = self._get_compile_request_json(circuits, **kwargs)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
-        return qss.compiler_output.read_json(
-            json_dict, circuits_is_list, api_version=self._provider._client.api_version
+        return self._provider._map_compile_request_to_client_result(
+            json_dict,
+            legacy_parser=lambda j_dict: qss.compiler_output.read_json(
+                j_dict, circuits_is_list, api_version=self._provider._client.api_version
+            ),
         )
 
     def _get_compile_request_json(
@@ -309,7 +322,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         pulses: object = None,
         variables: object = None,
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput:
+    ) -> QssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for the Advanced Quantum Testbed (AQT).
 
         AQT is a superconducting transmon quantum computing testbed at Lawrence Berkeley National
@@ -338,10 +351,12 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             kwargs: Other desired compile options.
 
         Returns:
-            Object whose .circuit(s) attribute contains the optimized circuits(s). Alternatively for
-            ECA, an Object whose .circuits attribute is a list (or list of lists) of logically
-            equivalent circuits. If `qtrl` is installed, the object's .seq attribute is a qtrl
-            Sequence object containing pulse sequences for each compiled circuit.
+            For the v0.2.0 API, a `qss.CompilerOutput` object whose .circuit(s) attribute contains
+            the optimized circuits(s). Alternatively for ECA, an object whose .circuits attribute is
+            a list (or list of lists) of logically equivalent circuits. If `qtrl` is installed, the
+            object's .seq attribute is a qtrl Sequence object containing pulse sequences for each
+            compiled circuit. Otherwise (for the v0.3.0 API), an asynchronous `qss.SuperstaqJobV3`
+            on which compiled circuits can be queried via `.compiled_circuits()`.
 
         Raises:
             ValueError: If this is not an AQT backend.
@@ -370,8 +385,18 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
 
         request_json = self._get_compile_request_json(circuits, **options)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
-        json_dict = self._provider._client.aqt_compile(request_json)
-        return qss.compiler_output.read_json_aqt(json_dict, circuits_is_list, num_eca_circuits)
+        client = self._provider._client
+        json_dict = (
+            client.aqt_compile(request_json)
+            if client.api_version == "v0.2.0"
+            else client.compile(request_json)
+        )
+        return self._provider._map_compile_request_to_client_result(
+            json_dict,
+            legacy_parser=lambda j_dict: qss.compiler_output.read_json_aqt(
+                j_dict, circuits_is_list, num_eca_circuits
+            ),
+        )
 
     def ibmq_compile(
         self,
@@ -380,7 +405,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         dynamical_decoupling: bool = True,
         dd_strategy: str = "adaptive",
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput:
+    ) -> QssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for IBMQ devices.
 
         Superstaq currently supports the following dynamical decoupling strategies:
@@ -405,9 +430,11 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             kwargs: Other desired compile options.
 
         Returns:
-            Object whose .circuit(s) attribute contains the compiled circuits(s), and whose
-            .pulse_gate_circuit(s) attribute contains the corresponding pulse schedule(s) (when
-            available).
+            For the v0.2.0 API, a `qss.CompilerOutput` whose .circuit(s) attribute contains the
+            compiled qiskit.QuantumCircuit(s), and whose .pulse_gate_circuit(s) attribute contains
+            the corresponding pulse schedule(s) (when available). Otherwise (for the v0.3.0 API), an
+            asynchronous `qss.SuperstaqJobV3` on which compiled circuits can be queried via
+            `.compiled_circuits()`.
 
         Raises:
             ValueError: If this is not an IBMQ backend.
@@ -422,7 +449,10 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         request_json = self._get_compile_request_json(circuits, **options)
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
-        return qss.compiler_output.read_json(json_dict, circuits_is_list)
+        return self._provider._map_compile_request_to_client_result(
+            json_dict,
+            legacy_parser=lambda j_dict: qss.compiler_output.read_json(j_dict, circuits_is_list),
+        )
 
     def qscout_compile(
         self,
@@ -438,7 +468,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         keep_qubit_order: bool = False,
         random_seed: int | None = None,
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput:
+    ) -> QssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for the QSCOUT trapped-ion testbed at Sandia
         National Laboratories [1].
 
@@ -490,8 +520,11 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             kwargs: Other desired `/qscout_compile` options.
 
         Returns:
-            Object whose .circuit(s) attribute contains optimized `qiskit.QuantumCircuit`(s), and
-            `.jaqal_program` attribute contains the corresponding Jaqal program(s).
+            For the v0.2.0 API, a `qss.CompilerOutput` object whose .circuit(s) attribute contains
+            optimized `qiskit.QuantumCircuit`(s), and `.jaqal_program` attribute contains the
+            corresponding Jaqal program(s). Otherwise (for the v0.3.0 API), an asynchronous
+            `qss.SuperstaqJobV3` on which compiled circuits and Jaqal program can be obtained via
+            `.compiled_circuits()` and `.jaqal_program()` respectively.
 
         Raises:
             ValueError: If this is not a QSCOUT backend.
@@ -523,8 +556,18 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         )
 
         request_json = self._get_compile_request_json(circuits, **options)
-        json_dict = self._provider._client.qscout_compile(request_json)
-        return qss.compiler_output.read_json_qscout(json_dict, circuits_is_list, num_eca_circuits)
+        client = self._provider._client
+        json_dict = (
+            client.qscout_compile(request_json)
+            if client.api_version == "v0.2.0"
+            else client.compile(request_json)
+        )
+        return self._provider._map_compile_request_to_client_result(
+            json_dict,
+            legacy_parser=lambda j_dict: qss.compiler_output.read_json_qscout(
+                j_dict, circuits_is_list, num_eca_circuits
+            ),
+        )
 
     def cq_compile(
         self,
@@ -534,7 +577,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         control_radius: float = 1.0,
         stripped_cz_rads: float = 0.0,
         **kwargs: Any,
-    ) -> qss.compiler_output.CompilerOutput:
+    ) -> QssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for CQ devices.
 
         Args:
@@ -547,7 +590,9 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
             kwargs: Other desired compile options.
 
         Returns:
-            A CQ `CompilerOutput` object.
+            For the v0.3.0 API, an asynchronous `qss.SuperstaqJobV3` on which compiled circuits can
+            be queried via `.compiled_circuits()`. Otherwise (for the v0.2.0 API), a
+            `qss.CompilerOutput` whose .circuit(s) attribute contains the compiled circuit(s).
 
         Raises:
             ValueError: If this is not a CQ backend.
@@ -564,7 +609,10 @@ class SuperstaqBackend(qiskit.providers.BackendV2):
         )
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
-        return qss.compiler_output.read_json(json_dict, circuits_is_list)
+        return self._provider._map_compile_request_to_client_result(
+            json_dict,
+            legacy_parser=lambda j_dict: qss.compiler_output.read_json(j_dict, circuits_is_list),
+        )
 
     def target_info(self) -> dict[str, Any]:
         """Retrieves configuration information for this target.
