@@ -26,7 +26,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cirq_superstaq import compiler_output, evaluation, resource_counters, validation
+from cirq_superstaq import compiler_output, evaluation, resource_counters, sim, validation
 from cirq_superstaq._version import __version__
 from cirq_superstaq.circuits import (
     msd_5_to_1,
@@ -142,5 +142,6 @@ __all__ = [
     "qudit_swap_op",
     "resource_counters",
     "serialize_circuits",
+    "sim",
     "validation",
 ]
