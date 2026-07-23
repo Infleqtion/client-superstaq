@@ -479,9 +479,9 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         return self.input_circuits(index).num_clbits
 
     def _terminal_measurement_qubit_indices(self, index: int) -> list[int]:
-        """Determines the ordered physical qubit indices for each measurement in a compiled circuit.
+        """Determines the physical qubit index corresponding to each bit in a measured bitstring.
 
-        Assumes all measurements are terminal.
+        The given circuit must already be compiled, and contain only terminal measurements.
 
         Args:
             index: The index of the compiled circuit for which to return qubit indices.
@@ -489,13 +489,24 @@ class SuperstaqJobV3(gss.job.Job, qiskit.providers.JobV1):
         Returns:
             A list of measured qubit indices, ordered as they should appear in (big-endian)
             bitstrings.
+
+        Raises:
+            ValueError: If the circuit contains non-terminal measurements.
         """
         compiled_circuit = self.compiled_circuits(index)
 
+        # Compiled Qiskit circuits are always contain all device qubits, so we can use the qubit
+        # indices of terminal measurements directly (if present)
         classical_bit_mapping = qss.classical_bit_mapping(compiled_circuit)
         if classical_bit_mapping:
+            if "measure" in compiled_circuit.remove_final_measurements(inplace=False).count_ops():
+                raise ValueError(
+                    "This functionality is only supported for circuits with terminal measurements."
+                )
             return [classical_bit_mapping[i] for i in sorted(classical_bit_mapping)]
 
+        # If the circuit contains no measurements, fall back on parent behavior (i.e. assume all
+        # active qubits in the input circuit are measured in order at the end of the circuit).
         return super()._terminal_measurement_qubit_indices(index)
 
     def result(

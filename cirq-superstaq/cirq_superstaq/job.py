@@ -822,9 +822,9 @@ class JobV3(gss.job.Job):
         return dict(combined)
 
     def _terminal_measurement_qubit_indices(self, index: int) -> list[int]:
-        """Determines the ordered physical qubit indices for each measurement in a compiled circuit.
+        """Determines the physical qubit index corresponding to each bit in a measured bitstring.
 
-        Assumes all measurements are terminal.
+        The given circuit must already be compiled, and contain only terminal measurements.
 
         Args:
             index: The index of the compiled circuit for which to return qubit indices.
@@ -832,12 +832,22 @@ class JobV3(gss.job.Job):
         Returns:
             A list of measured qubit indices, ordered as they should appear in (big-endian)
             bitstrings.
-        """
-        indices = super()._terminal_measurement_qubit_indices(index)
 
-        circuit = self.input_circuits(index)
+        Raises:
+            ValueError: If the circuit contains non-terminal measurements.
+        """
+        circuit = self.compiled_circuits(index)
+
+        # The parent (`gss.Job`) method assumes all active qubits are measured at the end of the
+        # circuit. If the circuit includes explicit measurement operations, we should only include
+        # indices corresponding to qubits which are actually measured, ordered according to their
+        # measurement keys (if there are multiple measurements in a Cirq circuit, Superstaq's
+        # convention is to combine them into a bitstring alphabetically by key).
         if circuit.has_measurements():
-            assert circuit.are_all_measurements_terminal()
+            if not circuit.are_all_measurements_terminal():
+                raise ValueError(
+                    "This functionality is only supported for circuits with terminal measurements."
+                )
 
             key_to_qids: dict[str, tuple[cirq.Qid, ...]] = {}
             for _, op in circuit.findall_operations(cirq.is_measurement):
@@ -848,10 +858,12 @@ class JobV3(gss.job.Job):
             for key in sorted(key_to_qids):
                 qid_list.extend(key_to_qids[key])
 
-            circuit_qubits = sorted(circuit.all_qubits())
-            indices = [indices[circuit_qubits.index(q)] for q in qid_list]
+            physical_qubits = cirq.read_json(json_text=self.job_data.physical_qubits[index])
+            return [physical_qubits.index(q) for q in qid_list]
 
-        return indices
+        # If the circuit contains no measurements, fall back on parent behavior (i.e. assume all
+        # active qubits in the input circuit are measured in order at the end of the circuit).
+        return super()._terminal_measurement_qubit_indices(index)
 
     def __repr__(self) -> str:
         return f"css.JobV3(client={self._client!r}, job_id={self.job_id()!r})"
