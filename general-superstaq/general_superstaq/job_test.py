@@ -257,12 +257,17 @@ def test_wait_until_terminal_state_poll_timeout(
     with mock.patch("requests.Session.get") as mock_get:
         mock_get.return_value = _mocked_response({str(uuid.UUID(int=123)): job_dict})
         with pytest.raises(
-            TimeoutError, match=r"Timed out while waiting for results. Final status was 'running'."
+            TimeoutError,
+            match=r"Timed out while waiting for results. Final status",
         ):
-            job.wait_until_terminal_state(index=0, timeout_seconds=5, polling_seconds=10)
-
-        mock_sleep.assert_called_once()
-        assert mock_get.call_count == 2
+            job.wait_until_complete(index=0, timeout_seconds=0.5, polling_seconds=1)
+        job_zero_status = job._status(index=0)
+        overall_status = job._status()
+        assert isinstance(job_zero_status, gss.models.CircuitStatus)
+        assert isinstance(overall_status, gss.models.CircuitStatus)
+        assert job_zero_status == overall_status == "running"
+    mock_sleep.assert_called_once()
+    assert mock_get.call_count == 4
 
 
 @mock.patch("requests.Session.get")
