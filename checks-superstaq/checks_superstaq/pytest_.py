@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright 2026 Infleqtion
+# Copyright 2026 Infleqtion, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
 
 from __future__ import annotations
 
-import re
 import subprocess
 import sys
 import textwrap
@@ -95,12 +94,7 @@ def run(
             "--force-enable-socket",
             f"--nbmake-timeout={NBMAKE_TIMEOUT}",
         ]
-    elif (parsed_args.integration) or (
-        "--integration" not in args
-        and any(re.match(r".*_integration_test\.py$", arg) for arg in args)
-    ):
-        args_to_pass += ["--force-enable-socket"]
-    else:
+    elif not parsed_args.integration:
         files = check_utils.get_test_files(files, exclude=exclude, silent=silent)
 
     if not files:

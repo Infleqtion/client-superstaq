@@ -1,4 +1,4 @@
-# Copyright 2026 Infleqtion
+# Copyright 2026 Infleqtion, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -104,6 +104,15 @@ TERMINAL_CIRCUIT_STATES = [
     CircuitStatus.CANCELLED,
     CircuitStatus.UNRECOGNIZED,
     CircuitStatus.DELETED,
+]
+
+TERMINAL_COMPILE_STATES = [
+    CircuitStatus.AWAITING_SIMULATION,
+    CircuitStatus.AWAITING_SUBMISSION,
+    CircuitStatus.RUNNING,
+    CircuitStatus.SIMULATING,
+    CircuitStatus.PENDING,
+    *TERMINAL_CIRCUIT_STATES,
 ]
 
 UNSUCCESSFUL_CIRCUIT_STATES = [
