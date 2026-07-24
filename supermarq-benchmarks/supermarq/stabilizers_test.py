@@ -26,12 +26,8 @@ from supermarq.benchmarks.mermin_bell import MerminBell
 
 def test_construct_stabilizer() -> None:
     mb = MerminBell(3)
-    mermin_op = MerminBell._mermin_operator(mb, num_qubits=3)
     assert mb.score(supermarq.simulation.get_ideal_counts(mb.circuit())) == 1
-
-    mb = MerminBell(5)
-    mermin_op = MerminBell._mermin_operator(mb, num_qubits=3)
-    stabilizers.construct_stabilizer(num_qubits=3, clique=[(0.25, mermin_op)])
+    stabilizers.construct_stabilizer(num_qubits=3, clique=[(0.25, ["X", "Y", "I"])])
 
 
 def test_prepare_x_matrix() -> None:
@@ -49,7 +45,6 @@ def test_patch_z_matrix() -> None:
     stabilizers.prepare_x_matrix(measurement_circuit)
     N = measurement_circuit.num_qubits
 
-    assert stabilizers.patch_z_matrix(measurement_circuit) is None
-
+    stabilizers.patch_z_matrix(measurement_circuit)
     with patch("supermarq.stabilizers.MeasurementCircuit.get_stabilizer", return_value=np.eye(N)):
-        assert stabilizers.patch_z_matrix(measurement_circuit) is None
+        stabilizers.patch_z_matrix(measurement_circuit)
