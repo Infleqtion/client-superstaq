@@ -930,6 +930,12 @@ def test_parallel_gates_equivalence_groups() -> None:
     assert gate.qubit_index_to_gate_and_index(index) == (indexed_gate, index_in_gate)
     assert (indexed_gate, index_in_gate) == (cirq.CCZ, 2)
 
+    qubits = cirq.LineQubit.range(4)
+    gate = css.ParallelGates(cirq.Y, cirq.CCX)
+    assert gate(qubits[0], qubits[1], qubits[2], qubits[3]) == gate(
+        qubits[0], qubits[2], qubits[1], qubits[3]
+    )
+
 
 def test_parallel_gates_equivalence_groups_nonadjacent() -> None:
     qubits = cirq.LineQubit.range(4)
