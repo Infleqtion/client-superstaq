@@ -1,4 +1,4 @@
-# Copyright 2026 Infleqtion
+# Copyright 2026 Infleqtion, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -318,9 +318,7 @@ def test_compiled_circuitV3(mock_get: mock.MagicMock, job_dictV3: dict[str, obje
     job_result = modifiy_job_result(job_dictV3, compiled_circuits=[None])
     mock_get.return_value.json.return_value = {str(uuid.UUID(int=43)): job_result}
     job = new_jobV3()
-    with pytest.raises(
-        gss.SuperstaqException, match=f"The job {job._job_id} has no compiled circuits."
-    ):
+    with pytest.raises(gss.SuperstaqException, match=r"Some compiled circuits are missing."):
         job.compiled_circuits()
 
     job_result = modifiy_job_result(
@@ -558,6 +556,7 @@ def test_logical_to_physicals(
     job_result = modifiy_job_result(
         job_dictV3,
         num_circuits=2,
+        statuses=["completed"] * 2,
         logical_qubits=[cirq.to_json(cirq.LineQubit.range(2))] * 2,
         physical_qubits=[cirq.to_json(cirq.GridQubit.rect(2, 1))] * 2,
         initial_logical_to_physicals=[{0: 0, 1: 1}, {0: 1, 1: 0}],
@@ -722,24 +721,20 @@ def test_job_counts_poll(
         mock_sleep.assert_called_once()
 
 
-@mock.patch("time.sleep", return_value=None)
-def test_job_counts_pollV3(
-    mock_sleep: mock.MagicMock, jobV3: css.JobV3, job_dictV3: dict[str, object]
-) -> None:
-    running_mock = mock.MagicMock()
-    running_response = {
-        str(uuid.UUID(int=42)): modifiy_job_result(job_dictV3, statuses=["running"])
-    }
-    running_mock.json.return_value = running_response
+def test_job_counts_pollV3(jobV3: css.JobV3, job_dictV3: dict[str, object]) -> None:
+    # Start in a non-terminal state with no counts yet
+    jobV3._job_data = gss.models.JobData(
+        **modifiy_job_result(job_dictV3, statuses=["running"], counts=[None])
+    )
 
-    completed_mock = mock.MagicMock()
-    completed_mock.json.return_value = {str(uuid.UUID(int=42)): job_dictV3}
+    # When `counts()` polls, simulate the job completing and counts becoming available:
+    def _complete_job(*_args: object, **_kwargs: object) -> None:
+        jobV3._job_data = gss.models.JobData(**job_dictV3)
 
-    with mock.patch("requests.Session.get", side_effect=[running_mock, completed_mock]) as mock_get:
-        results = jobV3.counts(index=0, polling_seconds=0)
-        assert results == {"11": 1}
-        assert mock_get.call_count == 2
-        mock_sleep.assert_called_once()
+    with mock.patch.object(jobV3, "wait_until_terminal_state", side_effect=_complete_job) as wait:
+        assert jobV3.counts(index=0, timeout_seconds=100, polling_seconds=25) == {"11": 1}
+
+    wait.assert_called_once_with(0, 100, 25)
 
 
 @mock.patch("time.sleep", return_value=None)

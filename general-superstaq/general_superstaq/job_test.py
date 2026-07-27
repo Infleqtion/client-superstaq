@@ -1,4 +1,4 @@
-# Copyright 2026 Infleqtion
+# Copyright 2026 Infleqtion, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -227,7 +227,7 @@ def test_status_refresh(mock_client: gss.superstaq_client._SuperstaqClientV3) ->
 
 
 @mock.patch("time.sleep", return_value=None)
-def test_wait_until_completed_poll(
+def test_wait_until_terminal_state_no_poll(
     mock_sleep: mock.MagicMock, mock_client: gss.superstaq_client._SuperstaqClientV3
 ) -> None:
     job_dict = _job_dict()
@@ -239,7 +239,7 @@ def test_wait_until_completed_poll(
 
     job = gss.job.Job(mock_client, uuid.UUID(int=123))
     with mock.patch("requests.Session.get", side_effect=[running_mock, completed_mock]) as mock_get:
-        job.wait_until_complete(index=0, polling_seconds=0)
+        job.wait_until_terminal_state(index=0, polling_seconds=0)
         assert mock_get.call_count == 2
         mock_sleep.assert_called_once()
 
@@ -247,7 +247,7 @@ def test_wait_until_completed_poll(
 
 
 @mock.patch("time.sleep", return_value=None)
-def test_wait_until_completed_poll_timeout(
+def test_wait_until_terminal_state_poll_timeout(
     mock_sleep: mock.MagicMock, mock_client: gss.superstaq_client._SuperstaqClientV3
 ) -> None:
     job_dict = _job_dict()

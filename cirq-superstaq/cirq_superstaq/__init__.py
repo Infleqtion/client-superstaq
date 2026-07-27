@@ -1,4 +1,4 @@
-# Copyright 2026 Infleqtion
+# Copyright 2026 Infleqtion, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -52,8 +52,10 @@ from cirq_superstaq.ops import (
     Barrier,
     BSwapPowGate,
     DDPowGate,
+    MovementGate,
     ParallelGates,
     ParallelRGate,
+    PermutationGate,
     QubitSubspaceGate,
     QuditSwapGate,
     QutritCZPowGate,
@@ -70,6 +72,7 @@ from cirq_superstaq.ops import (
     ZZSwapGate,
     approx_eq_mod,
     barrier,
+    movement_op,
     parallel_gates_operation,
     qubit_subspace_op,
     qudit_swap_op,
@@ -102,8 +105,10 @@ __all__ = [
     "DDPowGate",
     "Job",
     "JobV3",
+    "MovementGate",
     "ParallelGates",
     "ParallelRGate",
+    "PermutationGate",
     "QubitSubspaceGate",
     "QuditSwapGate",
     "QutritCZPowGate",
@@ -128,6 +133,7 @@ __all__ = [
     "deserialize_circuits",
     "evaluation",
     "measured_qubit_indices",
+    "movement_op",
     "msd_5_to_1",
     "msd_7_to_1",
     "msd_15_to_1",
