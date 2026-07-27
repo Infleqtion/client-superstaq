@@ -60,7 +60,7 @@ class Sampler(cirq.Sampler):
 
     def __init__(
         self,
-        service: css.service.Service,
+        service: css.Service[css.compiler_output.CompilerOutput | css.JobV3],
         target: str,
     ) -> None:
         """Constructs the sampler, accessed from the `sampler` method on `css.Service`.

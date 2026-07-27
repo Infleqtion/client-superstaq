@@ -111,11 +111,20 @@ def run(
         print("No test files to check for pytest and coverage.")  # noqa: T201
         return 0
 
-    if not parsed_args.modular:
-        result = _run_on_files(files, test_files, coverage_args, pytest_args)
-        return _report(result.returncode)
+    try:
+        if parsed_args.modular:
+            returncode = _run_modular(files, coverage_args, pytest_args, exclude, parsed_args.jobs)
+        else:
+            result = _run_on_files(files, test_files, coverage_args, pytest_args)
+            returncode = result.returncode
 
-    return _report(_run_modular(files, coverage_args, pytest_args, exclude, parsed_args.jobs))
+    except BaseException as e:
+        # Clean up any temporary files if the check didn't complete
+        subprocess.check_call([sys.executable, "-m", "coverage", "erase"], cwd=check_utils.root_dir)
+        print(check_utils.failure(f"\nCoverage failed to complete ({e!r})."))  # noqa: T201
+        return 1
+
+    return _report(returncode)
 
 
 def _run_modular(

@@ -102,6 +102,193 @@ def test_qudit_swap_op() -> None:
         _ = css.qudit_swap_op(qubit0, qudit1)
 
 
+def test_permutation_gate() -> None:
+    qudits = cirq.LineQid(0, 5), cirq.LineQid(3, 5)
+    gate = css.PermutationGate([1, 0], dimension=5)
+    np.testing.assert_array_equal(cirq.unitary(gate), cirq.unitary(css.QuditSwapGate(5)))
+
+    op = gate(*qudits)
+    np.testing.assert_array_equal(cirq.Circuit(op).unitary(), cirq.unitary(css.QuditSwapGate(5)))
+    assert cirq.decompose_once(op) == [css.QuditSwapGate(5).on(*qudits)]
+
+    permutation = (1, 3, 2, 4, 0)
+    qubits = cirq.LineQubit.range(5)
+    gate = css.PermutationGate(permutation, dimension=2)
+    base = cirq.QubitPermutationGate(permutation)
+    assert gate.permutation == permutation
+    assert gate.dimension == 2
+    assert gate == base
+    assert cirq.approx_eq(gate, base)
+    assert cirq.equal_up_to_global_phase(gate, base)
+    assert cirq.decompose(gate(*qubits)) == cirq.decompose(base(*qubits))
+    cirq.testing.assert_implements_consistent_protocols(gate, local_vals={"css": css})
+    cirq.testing.assert_json_roundtrip_works(
+        gate, resolvers=[*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]
+    )
+
+    assert gate is gate**1
+    assert isinstance(gate**-1, css.PermutationGate)
+    assert (gate**-1).dimension == 2
+    np.testing.assert_array_equal(cirq.unitary(gate**-1), cirq.unitary(gate).T)
+
+    gate = css.PermutationGate(permutation, dimension=3)
+    assert gate.permutation == permutation
+    assert gate.dimension == 3
+    assert cirq.qid_shape(gate) == (3, 3, 3, 3, 3)
+    assert cirq.trace_distance_bound(gate) == 1.0
+    assert gate == css.PermutationGate(permutation, dimension=3)
+    assert gate != css.PermutationGate(permutation, dimension=4)
+    assert gate != cirq.QubitPermutationGate(permutation)
+    assert cirq.approx_eq(gate, css.PermutationGate(permutation, dimension=3))
+    assert not cirq.approx_eq(gate, css.PermutationGate(permutation, dimension=4))
+    assert not cirq.approx_eq(gate, cirq.QubitPermutationGate(permutation))
+    assert cirq.equal_up_to_global_phase(gate, css.PermutationGate(permutation, dimension=3))
+    assert not cirq.equal_up_to_global_phase(gate, css.PermutationGate(permutation, dimension=4))
+    assert not cirq.equal_up_to_global_phase(gate, cirq.QubitPermutationGate(permutation))
+    cirq.testing.assert_implements_consistent_protocols(
+        gate, ignore_decompose_to_default_gateset=True, local_vals={"css": css}
+    )
+    cirq.testing.assert_json_roundtrip_works(
+        gate, resolvers=[*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]
+    )
+
+    assert gate is gate**1
+    assert isinstance(gate**-1, css.PermutationGate)
+    assert (gate**-1).dimension == 3
+    np.testing.assert_array_equal(cirq.unitary(gate**-1), cirq.unitary(gate).T)
+
+    assert cirq.trace_distance_bound(css.PermutationGate([0, 1, 2], dimension=3)) == 0.0
+
+
+def test_movement_gate() -> None:
+    gate = css.MovementGate({0: 1})
+    assert gate.dimension == 2
+    assert gate.moves == {0: 1}
+    assert gate.complete_map == {0: 1, 1: 0}
+    assert gate == cirq.QubitPermutationGate([1, 0])
+    assert cirq.approx_eq(gate, cirq.QubitPermutationGate([1, 0]))
+    assert cirq.equal_up_to_global_phase(gate, cirq.QubitPermutationGate([1, 0]))
+    np.testing.assert_array_equal(cirq.unitary(gate), cirq.unitary(cirq.SWAP))
+    cirq.testing.assert_implements_consistent_protocols(gate, local_vals={"css": css})
+
+    gate = css.MovementGate({0: 1}, dimension=5)
+    assert gate.dimension == 5
+    assert gate.moves == {0: 1}
+    assert gate.complete_map == {0: 1, 1: 0}
+    assert gate == css.PermutationGate([1, 0], dimension=5)
+    np.testing.assert_array_equal(cirq.unitary(gate), cirq.unitary(css.QuditSwapGate(5)))
+
+    gate = css.MovementGate({0: 1, 1: 2}, dimension=3)
+    assert gate.dimension == 3
+    assert gate.moves == {0: 1, 1: 2}
+    assert gate.complete_map == {0: 1, 1: 2, 2: 0}
+    assert gate == css.PermutationGate([1, 2, 0], dimension=3)
+    assert cirq.approx_eq(gate, css.PermutationGate([1, 2, 0], dimension=3))
+    assert cirq.equal_up_to_global_phase(gate, css.PermutationGate([1, 2, 0], dimension=3))
+    assert gate is gate**1
+    assert isinstance(gate**-1, css.MovementGate)
+    assert gate**-1 == css.MovementGate({1: 0, 2: 1}, dimension=3)
+    np.testing.assert_array_equal(cirq.unitary(gate**-1), cirq.unitary(gate).T)
+    cirq.testing.assert_implements_consistent_protocols(
+        gate, ignore_decompose_to_default_gateset=True, local_vals={"css": css}
+    )
+
+    moves = {2: 4, 3: 3, 1: 0, 4: 5}
+    gate = css.MovementGate(moves)
+    assert gate.moves == moves
+    assert gate.complete_map == {**moves, 0: 1, 5: 2}
+    assert gate.dimension == 2
+    assert cirq.num_qubits(gate) == 6
+    assert cirq.qid_shape(gate) == (2, 2, 2, 2, 2, 2)
+    assert gate is gate**1
+    assert isinstance(gate**-1, css.MovementGate)
+    assert gate**-1 == css.MovementGate({4: 2, 3: 3, 0: 1, 5: 4}, dimension=2)
+    np.testing.assert_array_equal(cirq.unitary(gate**-1), cirq.unitary(gate).T)
+
+    qubits = cirq.LineQubit.range(6)
+    cirq.testing.assert_circuits_have_same_unitary_given_final_permutation(
+        cirq.Circuit(gate(*qubits)),
+        cirq.Circuit(css.barrier(*qubits)),
+        {qubits[i]: qubits[j] for i, j in gate.complete_map.items()},
+    )
+    cirq.testing.assert_json_roundtrip_works(
+        gate, resolvers=[*css.SUPERSTAQ_RESOLVERS, *cirq.DEFAULT_RESOLVERS]
+    )
+    cirq.testing.assert_implements_consistent_protocols(gate, local_vals={"css": css})
+
+    with pytest.raises(ValueError, match=r"Invalid indices: {-1}"):
+        _ = css.MovementGate({0: -1})
+
+    with pytest.raises(ValueError, match=r"Invalid indices: {-1}"):
+        _ = css.MovementGate({-1: 0})
+
+    with pytest.raises(ValueError, match=r"Missing indices: {1}"):
+        _ = css.MovementGate({0: 2})
+
+    with pytest.raises(ValueError, match=r"same site"):
+        _ = css.MovementGate({0: 2, 1: 2})
+
+
+def test_movement_op() -> None:
+    q2, q3, q4 = cirq.LineQubit.range(2, 5)
+    op = css.movement_op({q2: q3, q3: q4})
+    assert op.gate == css.MovementGate({0: 1, 1: 2})
+    assert op == css.MovementGate({0: 1, 1: 2}).on(q2, q3, q4)
+    assert op == op**1
+    assert op**-1 == css.movement_op({q3: q2, q4: q3})
+    assert repr(op).startswith("css.movement_op")  # Confirm we're using `_op_repr_`
+    cirq.testing.assert_equivalent_repr(op, local_vals={"css": css})
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(op),
+        textwrap.dedent(
+            """
+            2: ───┤0   ├───
+
+            3: ───┤1  0├───
+
+            4: ───┤   1├───
+            """
+        ),
+    )
+
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(op),
+        textwrap.dedent(
+            """
+            2: ---|0   |---
+
+            3: ---|1  0|---
+
+            4: ---|   1|---
+            """
+        ),
+        use_unicode_characters=False,
+    )
+
+    qt5, qt6, qt7 = cirq.LineQid.range(5, 8, dimension=3)
+    op = css.movement_op({qt6: qt5, qt7: qt6})
+    assert op.gate == css.MovementGate({1: 0, 2: 1}, dimension=3)
+    assert op == css.MovementGate({1: 0, 2: 1}, dimension=3).on(qt5, qt6, qt7)
+    assert op == op**1
+    assert op**-1 == css.movement_op({qt5: qt6, qt6: qt7})
+    cirq.testing.assert_equivalent_repr(op, local_vals={"css": css})
+    cirq.testing.assert_has_diagram(
+        cirq.Circuit(op),
+        textwrap.dedent(
+            """
+            5 (d=3): ───┤   1├───
+
+            6 (d=3): ───┤1  2├───
+
+            7 (d=3): ───┤2   ├───
+            """
+        ),
+    )
+
+    with pytest.raises(ValueError, match=r"same dimension"):
+        _ = css.movement_op({q2: qt6})
+
+
 def test_bswap_pow_gate() -> None:
     cirq.testing.assert_eigengate_implements_consistent_protocols(
         css.BSwapPowGate,
