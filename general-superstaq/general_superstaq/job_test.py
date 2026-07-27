@@ -243,8 +243,7 @@ def test_wait_until_completed_poll(
         assert mock_get.call_count == 2
         mock_sleep.assert_called_once()
 
-    assert job.job_data.statuses == ["completed"]
-    assert isinstance(job.job_data.statuses[0], gss.models.CircuitStatus)
+    assert job.job_data.statuses[0] is gss.models.CircuitStatus.COMPLETED
 
 
 @mock.patch("time.sleep", return_value=None)
