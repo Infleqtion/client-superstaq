@@ -260,7 +260,7 @@ def test_result_missing_data() -> None:
 
     result = SU2Results(
         target="example",
-        experiment=MagicMock(spec=SU2),
+        experiment=SU2(2, [1, 1], cirq.CNOT, qubits=None),
         data=pd.DataFrame(
             {
                 "num_two_qubit_gates": 2,
