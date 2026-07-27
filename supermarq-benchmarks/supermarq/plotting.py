@@ -1,4 +1,4 @@
-# Copyright 2026 Infleqtion
+# Copyright 2026 Infleqtion, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,12 +18,16 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
 
 import matplotlib as mpl
+import matplotlib.axes
+import matplotlib.image
+import matplotlib.lines
+import matplotlib.patches
+import matplotlib.projections
 import matplotlib.pyplot as plt
+import matplotlib.text
+import matplotlib.ticker
 import numpy as np
-from matplotlib.patches import Circle
-from matplotlib.projections import register_projection
-from matplotlib.projections.polar import PolarAxes
-from sklearn.linear_model import LinearRegression
+import sklearn.linear_model
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -160,7 +164,7 @@ def plot_correlations(
 
             proper_x = np.array(x)[:, np.newaxis]
             proper_y = np.array(y)
-            model = LinearRegression().fit(proper_x, proper_y)
+            model = sklearn.linear_model.LinearRegression().fit(proper_x, proper_y)
             correlation = model.score(proper_x, proper_y)
             device_correlations.append(correlation)
         temp_correlations.append(device_correlations)
@@ -341,11 +345,15 @@ def annotate_heatmap(
     Returns:
         List of the text annotations.
     """
-    if data is None:
-        data = np.asarray(im.get_array())
+    data = (
+        np.asarray(im.get_array(), dtype=np.float64)
+        if data is None
+        else np.asarray(data, dtype=np.float64)
+    )
+    normalized_data = np.asarray(im.norm(data), dtype=np.float64)
 
     # Normalize the threshold to the images color range.
-    threshold = im.norm(threshold) if threshold is not None else im.norm(data.max()) / 2.0
+    normalized_threshold = im.norm(np.max(data) / 2 if threshold is None else np.asarray(threshold))
 
     # Set default alignment to center, but allow it to be
     # overwritten by textkw.
@@ -356,12 +364,12 @@ def annotate_heatmap(
     if isinstance(valfmt, str):
         valfmt = mpl.ticker.StrMethodFormatter(valfmt)
 
-    # Loop over the data and create a `Text` for each "pixel".
+    # Loop over the data and create a `mpl.text.Text` for each "pixel".
     # Change the text's color depending on the data.
     texts = []
     for i in range(data.shape[0]):
         for j in range(data.shape[1]):
-            kw.update(color=textcolors[int(im.norm(data[i, j]) > threshold)])
+            kw.update(color=textcolors[int(normalized_data[i, j] > normalized_threshold)])
             text = im.axes.text(j, i, valfmt(data[i, j], None), **kw)
             texts.append(text)
 
@@ -393,11 +401,11 @@ def radar_factory(num_vars: int) -> npt.NDArray[np.float64]:
             self.num_vars = num_vars
             super().__init__(*args, **kwargs)
 
-    register_projection(RadarAxes)
+    mpl.projections.register_projection(RadarAxes)
     return theta
 
 
-class RadarAxesMeta(PolarAxes):
+class RadarAxesMeta(mpl.projections.polar.PolarAxes):
     """A helper class to generate feature-vector plots."""
 
     name = "radar"
@@ -468,4 +476,4 @@ class RadarAxesMeta(PolarAxes):
     def _gen_axes_patch(self) -> mpl.patches.Circle:
         # The Axes patch must be centered at (0.5, 0.5) and of radius 0.5
         # in axes coordinates.
-        return Circle((0.5, 0.5), 0.5)
+        return mpl.patches.Circle((0.5, 0.5), 0.5)
