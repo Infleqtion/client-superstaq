@@ -132,8 +132,8 @@ lint.dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 # Enable `from __future__ import annotations` simplification for rules
 lint.future-annotations = true
 
-# Allow up to ten positional arguments for PLR0917 rule
-lint.pylint.max-positional-args = 10
+# Allow up to twelve positional arguments for PLR0917 rule
+lint.pylint.max-positional-args = 12
 
 [tool.ruff.lint.flake8-type-checking]
 exempt-modules = ["collections.abc"]
