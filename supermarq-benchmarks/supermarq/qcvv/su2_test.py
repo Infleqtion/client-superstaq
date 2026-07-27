@@ -232,7 +232,7 @@ def test_haar_random_rotation() -> None:
 
 
 def test_result_not_analyzed() -> None:
-    result = SU2Results(target="example", experiment=MagicMock(spec=SU2))
+    result = SU2Results(target="example", experiment=SU2(2, [1, 1], cirq.CNOT, qubits=None))
 
     for attr in [
         "two_qubit_gate_fidelity",
@@ -250,7 +250,7 @@ def test_result_not_analyzed() -> None:
 
 
 def test_result_missing_data() -> None:
-    result = SU2Results(target="example", experiment=MagicMock(spec=SU2))
+    result = SU2Results(target="example", experiment=SU2(2, [1, 1], cirq.CNOT, qubits=None))
 
     with pytest.raises(RuntimeError, match=r"No data stored. Cannot perform analysis."):
         result._analyze()
