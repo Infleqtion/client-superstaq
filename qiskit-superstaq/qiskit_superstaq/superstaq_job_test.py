@@ -1109,3 +1109,9 @@ def test_set_counts_jaqal(mock_client: gss.superstaq_client._SuperstaqClientV3) 
     job.job_data.compiled_circuits = [qss.serialize_circuits(circuit)]
     job.set_counts(result)
     assert job.result().get_counts(0) == {"01": 1000}
+
+    circuit.x(1)
+    circuit.measure(1, 1)
+    job.job_data.compiled_circuits = [qss.serialize_circuits(circuit)]
+    with pytest.raises(ValueError, match=r"only supported for circuits with terminal measurements"):
+        job.set_counts(result)

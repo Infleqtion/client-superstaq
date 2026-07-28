@@ -547,8 +547,8 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         random_seed: int | None = None,
         target: str = "aqt_keysight_qpu",
         atol: float | None = None,
-        gate_defs: None
-        | (Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]) = None,
+        gate_defs: Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]
+        | None = None,
         **kwargs: Any,
     ) -> CssCompileResultT_co:
         """Compiles and optimizes the given circuit(s) for AQT using ECA.
@@ -612,8 +612,8 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         num_eca_circuits: int | None = None,
         random_seed: int | None = None,
         atol: float | None = None,
-        gate_defs: None
-        | (Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]) = None,
+        gate_defs: Mapping[str, npt.NDArray[np.number[Any]] | cirq.Gate | cirq.Operation | None]
+        | None = None,
         gateset: Mapping[str, Sequence[Sequence[int]]] | None = None,
         pulses: object = None,
         variables: object = None,
