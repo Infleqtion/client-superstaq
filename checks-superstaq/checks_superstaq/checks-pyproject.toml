@@ -22,6 +22,7 @@ lint.select = [
   "B",      # flake8-bugbear checks
   "C",      # flake8-comprehensions, mccabe checks
   "COM818", # trailing-comma-on-bare-tuple error
+  "CPY",    # missing-copyright-notice
   "D",      # pydocstyle checks
   "DTZ",    # flake8-datetimez checks
   "E",      # pycodestyle checks
@@ -131,6 +132,9 @@ lint.dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 # Enable `from __future__ import annotations` simplification for rules
 lint.future-annotations = true
 
+# Allow up to twelve positional arguments for PLR0917 rule
+lint.pylint.max-positional-args = 12
+
 [tool.ruff.lint.flake8-type-checking]
 exempt-modules = ["collections.abc"]
 
@@ -138,7 +142,7 @@ exempt-modules = ["collections.abc"]
 docstring-code-format = true
 
 [tool.ruff.lint.per-file-ignores]
-"*.ipynb" = ["D101", "D102", "D103", "E501", "ERA001", "T201"]
+"*.ipynb" = ["CPY", "D101", "D102", "D103", "E501", "ERA001", "T201"]
 "*test.py" = ["D101", "D102", "D103", "N802", "N803", "S105", "S106"]
 
 [tool.ruff.lint.pydocstyle]
@@ -193,4 +197,4 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-licensee = "Infleqtion"
+licensee = "Infleqtion, Inc."
