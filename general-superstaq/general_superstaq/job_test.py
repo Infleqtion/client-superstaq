@@ -142,7 +142,6 @@ def test_equality(mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:
 def test_refresh_job(
     mock_get: mock.MagicMock, mock_client: gss.superstaq_client._SuperstaqClientV3
 ) -> None:
-
     job_dict = _job_dict()
     job_dict["num_circuits"] = 3
     job_dict["statuses"] = ["running", "awaiting_submission", "completed"]
