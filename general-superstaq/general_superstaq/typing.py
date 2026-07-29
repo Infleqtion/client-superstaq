@@ -1,4 +1,4 @@
-# Copyright 2026 Infleqtion
+# Copyright 2026 Infleqtion, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,10 +15,17 @@
 from __future__ import annotations
 
 from collections.abc import Hashable
-from typing import Any, TypedDict, TypeVar
+from typing import TYPE_CHECKING, Any, Literal, TypedDict, TypeVar
 
 import pydantic
 
+from .superstaq_client import ApiVersion
+
+if TYPE_CHECKING:
+    from typing_extensions import TypeAlias
+
+ApiV2: TypeAlias = Literal[ApiVersion.V0_2_0, "v0.2.0"]
+ApiV3: TypeAlias = Literal[ApiVersion.V0_3_0, "v0.3.0"]
 TQuboKey = TypeVar("TQuboKey", bound=Hashable)
 
 

@@ -1,4 +1,4 @@
-# Copyright 2026 Infleqtion
+# Copyright 2026 Infleqtion, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -119,8 +119,8 @@ def job_dictV3() -> dict[str, object]:
         "last_updated_timestamp": [datetime.datetime.now(tz=datetime.timezone.utc)],
         "initial_logical_to_physicals": [{0: 0, 1: 1}],
         "final_logical_to_physicals": [{0: 0, 1: 1}],
-        "logical_qubits": ["0", "1"],
-        "physical_qubits": ["0", "1"],
+        "logical_qubits": [cirq.to_json(cirq.LineQubit.range(4))],
+        "physical_qubits": [cirq.to_json(cirq.GridQubit.rect(2, 2))],
         "tags": ["some", "tags"],
         "metadata": {"foo": "bar"},
     }
@@ -318,9 +318,7 @@ def test_compiled_circuitV3(mock_get: mock.MagicMock, job_dictV3: dict[str, obje
     job_result = modifiy_job_result(job_dictV3, compiled_circuits=[None])
     mock_get.return_value.json.return_value = {str(uuid.UUID(int=43)): job_result}
     job = new_jobV3()
-    with pytest.raises(
-        gss.SuperstaqException, match=f"The job {job._job_id} has no compiled circuits."
-    ):
+    with pytest.raises(gss.SuperstaqException, match=r"Some compiled circuits are missing."):
         job.compiled_circuits()
 
     job_result = modifiy_job_result(
@@ -558,6 +556,7 @@ def test_logical_to_physicals(
     job_result = modifiy_job_result(
         job_dictV3,
         num_circuits=2,
+        statuses=["completed"] * 2,
         logical_qubits=[cirq.to_json(cirq.LineQubit.range(2))] * 2,
         physical_qubits=[cirq.to_json(cirq.GridQubit.rect(2, 1))] * 2,
         initial_logical_to_physicals=[{0: 0, 1: 1}, {0: 1, 1: 0}],
@@ -722,24 +721,20 @@ def test_job_counts_poll(
         mock_sleep.assert_called_once()
 
 
-@mock.patch("time.sleep", return_value=None)
-def test_job_counts_pollV3(
-    mock_sleep: mock.MagicMock, jobV3: css.JobV3, job_dictV3: dict[str, object]
-) -> None:
-    running_mock = mock.MagicMock()
-    running_response = {
-        str(uuid.UUID(int=42)): modifiy_job_result(job_dictV3, statuses=["running"])
-    }
-    running_mock.json.return_value = running_response
+def test_job_counts_pollV3(jobV3: css.JobV3, job_dictV3: dict[str, object]) -> None:
+    # Start in a non-terminal state with no counts yet
+    jobV3._job_data = gss.models.JobData(
+        **modifiy_job_result(job_dictV3, statuses=["running"], counts=[None])
+    )
 
-    completed_mock = mock.MagicMock()
-    completed_mock.json.return_value = {str(uuid.UUID(int=42)): job_dictV3}
+    # When `counts()` polls, simulate the job completing and counts becoming available:
+    def _complete_job(*_args: object, **_kwargs: object) -> None:
+        jobV3._job_data = gss.models.JobData(**job_dictV3)
 
-    with mock.patch("requests.Session.get", side_effect=[running_mock, completed_mock]) as mock_get:
-        results = jobV3.counts(index=0, polling_seconds=0)
-        assert results == {"11": 1}
-        assert mock_get.call_count == 2
-        mock_sleep.assert_called_once()
+    with mock.patch.object(jobV3, "wait_until_terminal_state", side_effect=_complete_job) as wait:
+        assert jobV3.counts(index=0, timeout_seconds=100, polling_seconds=25) == {"11": 1}
+
+    wait.assert_called_once_with(0, 100, 25)
 
 
 @mock.patch("time.sleep", return_value=None)
@@ -758,24 +753,21 @@ def test_job_counts_poll_timeout(
     assert mock_sleep.call_count == 11
 
 
-@mock.patch("time.sleep", return_value=None)
-def test_job_counts_poll_timeoutV3(
-    mock_sleep: mock.MagicMock, jobV3: css.JobV3, job_dictV3: dict[str, object]
-) -> None:
-    running_mock = mock.MagicMock()
-    running_response = {
-        str(uuid.UUID(int=42)): modifiy_job_result(job_dictV3, statuses=["running"])
-    }
-    running_mock.json.return_value = running_response
+def test_job_counts_poll_timeoutV3(jobV3: css.JobV3, job_dictV3: dict[str, object]) -> None:
+    # Update `_job_data` to a still running job
+    jobV3._job_data = gss.models.JobData(
+        **modifiy_job_result(job_dictV3, statuses=["running"], counts=[None])
+    )
 
-    with mock.patch("requests.Session.get", side_effect=[running_mock, running_mock]) as mock_get:
-        with pytest.raises(
-            TimeoutError, match=r"Timed out while waiting for results. Final status was 'running'"
-        ):
-            jobV3.counts(index=0, timeout_seconds=5, polling_seconds=10)
-
-        mock_sleep.assert_called_once()
-        assert mock_get.call_count == 2
+    with (
+        mock.patch.object(
+            jobV3, "_refresh_job", autospec=True, return_value=None
+        ) as mock_job_refresh,
+        pytest.raises(TimeoutError, match=r"Final status was"),
+        mock.patch("time.sleep", return_value=None),
+    ):
+        jobV3.counts(index=0, timeout_seconds=1, polling_seconds=0.5)
+    assert mock_job_refresh.call_count == 4
 
 
 @mock.patch("time.sleep", return_value=None)
@@ -901,7 +893,7 @@ def test_set_counts_jaqal(
         """\
         from qscout.v1.std usepulses *
 
-        register allqubits[3]
+        register allqubits[5]
 
         prepare_all
         R allqubits[2] 0 3.141592653589793
@@ -910,36 +902,51 @@ def test_set_counts_jaqal(
     )
     result = jaqalpaq_run.run_jaqal_string(jaqal_str, overrides={"__repeats__": 1000})
 
-    q0, q1, q2 = cirq.LineQubit.range(3)
-    compiled_circuit = cirq.Circuit(cirq.X(q2), css.barrier(q0, q1, q2))
+    q0, q1, q2, q3, q4 = cirq.LineQubit.range(5)
+    circuit = cirq.Circuit(cirq.X(q2), css.barrier(q1, q2, q3))
+
     mock_get.return_value.json.return_value = {str(uuid.UUID(int=42)): job_dictV3}
 
+    jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(circuit)
     jobV3.job_data.final_logical_to_physicals[0] = {0: 0, 1: 1, 2: 2}
-    jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(compiled_circuit)
     jobV3.set_counts(result)
     assert jobV3.counts(0) == {"001": 1000}
 
-    jobV3.job_data.final_logical_to_physicals[0] = {0: 1, 1: 2, 2: 0}
-    jobV3.set_counts(result)
-    assert jobV3.counts(0) == {"010": 1000}
-
-    jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(
-        compiled_circuit + cirq.measure(q2, q1, q0)
-    )
+    jobV3.job_data.final_logical_to_physicals[0] = {0: 2, 1: 3, 2: 4}
     jobV3.set_counts(result)
     assert jobV3.counts(0) == {"100": 1000}
 
+    jobV3.job_data.final_logical_to_physicals[0] = {0: 4, 1: 3, 2: 2, 3: 1}
+    jobV3.set_counts(result)
+    assert jobV3.counts(0) == {"0010": 1000}
+
+    jobV3.job_data.physical_qubits[0] = cirq.to_json([q0, q1, q2, q3, q4])
+    jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(circuit + cirq.measure(q1, q2, q3))
+    jobV3.set_counts(result)
+    assert jobV3.counts(0) == {"010": 1000}
+
+    jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(circuit + cirq.measure(q2, q4))
+    jobV3.set_counts(result)
+    assert jobV3.counts(0) == {"10": 1000}
+
+    jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(circuit + cirq.measure(q4, q2))
+    jobV3.set_counts(result)
+    assert jobV3.counts(0) == {"01": 1000}
+
     jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(
-        compiled_circuit + cirq.Circuit(css.barrier(q0, q1, q2), cirq.measure(q1), cirq.measure(q2))
+        circuit + cirq.measure(q0, key="a") + cirq.measure(q2, key="b")
     )
     jobV3.set_counts(result)
     assert jobV3.counts(0) == {"01": 1000}
 
     jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(
-        compiled_circuit
-        + cirq.Circuit(
-            css.barrier(q0, q1, q2), cirq.measure(q1, key="b"), cirq.measure(q2, key="a")
-        )
+        circuit + cirq.measure(q0, key="b") + cirq.measure(q2, key="a")
     )
     jobV3.set_counts(result)
     assert jobV3.counts(0) == {"10": 1000}
+
+    jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(
+        cirq.Circuit(cirq.measure(q0), cirq.CZ(q0, q1), cirq.measure(q1))
+    )
+    with pytest.raises(ValueError, match=r"only supported for circuits with terminal measurements"):
+        jobV3.set_counts(result)
