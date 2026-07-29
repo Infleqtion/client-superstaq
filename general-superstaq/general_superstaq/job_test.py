@@ -260,7 +260,7 @@ def test_wait_until_terminal_state_poll_timeout(
             TimeoutError,
             match=r"Timed out while waiting for results. Final status",
         ):
-            job.wait_until_complete(index=0, timeout_seconds=0.5, polling_seconds=1)
+            job.wait_until_terminal_state(index=0, timeout_seconds=0.5, polling_seconds=1)
         job_zero_status = job._status(index=0)
         overall_status = job._status()
         assert isinstance(job_zero_status, gss.models.CircuitStatus)
