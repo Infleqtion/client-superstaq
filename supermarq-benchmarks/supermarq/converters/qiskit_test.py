@@ -1387,13 +1387,15 @@ def test_cirq_to_qiskit_classical_control() -> None:
         match=re.escape("We don't currently support q0 + q1 in our qiskit classical control flow."),
     ):
         sm.converters.qiskit.cirq_classical_control_to_qiskit(
-            cirq.Z(qubits[0]).with_classical_controls(sympy.Add(q0, q1)), {sympy_cond2: "q1"}, cr
+            cirq.Z(qubits[0]).with_classical_controls(sympy.Add(q0, q1)),
+            {str(sympy_cond2): [q1]},
+            cr,
         )
 
     cr = qiskit.ClassicalRegister(2, "cr")
     condition = (cr[1], 1)
     sm.converters.qiskit.cirq_classical_control_to_qiskit(
-        cirq.Z(qubits[0]).with_classical_controls(cr[1]), {condition: 1}, cr
+        cirq.Z(qubits[0]).with_classical_controls(cr[1]), {str(condition): [1]}, cr
     )
 
 
