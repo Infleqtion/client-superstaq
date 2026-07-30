@@ -98,7 +98,7 @@ class MeasurementCircuit:
 
 
 def construct_stabilizer(
-    num_qubits: int, clique: list[tuple[float, list[str]]]
+    num_qubits: int, clique: list[tuple[float, str]]
 ) -> tuple[npt.NDArray[np.uint8], list[str]]:
     """Construct the independent Z+X stabilizer matrix for the given clique.
 

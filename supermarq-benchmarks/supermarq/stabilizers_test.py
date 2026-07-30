@@ -26,7 +26,7 @@ from supermarq.benchmarks.mermin_bell import MerminBell
 def test_construct_stabilizer() -> None:
     mb = MerminBell(3)
     assert mb.score(supermarq.simulation.get_ideal_counts(mb.circuit())) == 1
-    stabilizers.construct_stabilizer(num_qubits=3, clique=[(0.25, ["X", "Y", "I"])])
+    stabilizers.construct_stabilizer(num_qubits=3, clique=[(0.25, "XYI")])
 
 
 def test_prepare_x_matrix() -> None:
