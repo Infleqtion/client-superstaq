@@ -119,8 +119,8 @@ def job_dictV3() -> dict[str, object]:
         "last_updated_timestamp": [datetime.datetime.now(tz=datetime.timezone.utc)],
         "initial_logical_to_physicals": [{0: 0, 1: 1}],
         "final_logical_to_physicals": [{0: 0, 1: 1}],
-        "logical_qubits": ["0", "1"],
-        "physical_qubits": ["0", "1"],
+        "logical_qubits": [cirq.to_json(cirq.LineQubit.range(4))],
+        "physical_qubits": [cirq.to_json(cirq.GridQubit.rect(2, 2))],
         "tags": ["some", "tags"],
         "metadata": {"foo": "bar"},
     }
@@ -855,7 +855,7 @@ def test_set_counts_jaqal(
         """\
         from qscout.v1.std usepulses *
 
-        register allqubits[3]
+        register allqubits[5]
 
         prepare_all
         R allqubits[2] 0 3.141592653589793
@@ -864,36 +864,51 @@ def test_set_counts_jaqal(
     )
     result = jaqalpaq_run.run_jaqal_string(jaqal_str, overrides={"__repeats__": 1000})
 
-    q0, q1, q2 = cirq.LineQubit.range(3)
-    compiled_circuit = cirq.Circuit(cirq.X(q2), css.barrier(q0, q1, q2))
+    q0, q1, q2, q3, q4 = cirq.LineQubit.range(5)
+    circuit = cirq.Circuit(cirq.X(q2), css.barrier(q1, q2, q3))
+
     mock_get.return_value.json.return_value = {str(uuid.UUID(int=42)): job_dictV3}
 
+    jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(circuit)
     jobV3.job_data.final_logical_to_physicals[0] = {0: 0, 1: 1, 2: 2}
-    jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(compiled_circuit)
     jobV3.set_counts(result)
     assert jobV3.counts(0) == {"001": 1000}
 
-    jobV3.job_data.final_logical_to_physicals[0] = {0: 1, 1: 2, 2: 0}
-    jobV3.set_counts(result)
-    assert jobV3.counts(0) == {"010": 1000}
-
-    jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(
-        compiled_circuit + cirq.measure(q2, q1, q0)
-    )
+    jobV3.job_data.final_logical_to_physicals[0] = {0: 2, 1: 3, 2: 4}
     jobV3.set_counts(result)
     assert jobV3.counts(0) == {"100": 1000}
 
+    jobV3.job_data.final_logical_to_physicals[0] = {0: 4, 1: 3, 2: 2, 3: 1}
+    jobV3.set_counts(result)
+    assert jobV3.counts(0) == {"0010": 1000}
+
+    jobV3.job_data.physical_qubits[0] = cirq.to_json([q0, q1, q2, q3, q4])
+    jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(circuit + cirq.measure(q1, q2, q3))
+    jobV3.set_counts(result)
+    assert jobV3.counts(0) == {"010": 1000}
+
+    jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(circuit + cirq.measure(q2, q4))
+    jobV3.set_counts(result)
+    assert jobV3.counts(0) == {"10": 1000}
+
+    jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(circuit + cirq.measure(q4, q2))
+    jobV3.set_counts(result)
+    assert jobV3.counts(0) == {"01": 1000}
+
     jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(
-        compiled_circuit + cirq.Circuit(css.barrier(q0, q1, q2), cirq.measure(q1), cirq.measure(q2))
+        circuit + cirq.measure(q0, key="a") + cirq.measure(q2, key="b")
     )
     jobV3.set_counts(result)
     assert jobV3.counts(0) == {"01": 1000}
 
     jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(
-        compiled_circuit
-        + cirq.Circuit(
-            css.barrier(q0, q1, q2), cirq.measure(q1, key="b"), cirq.measure(q2, key="a")
-        )
+        circuit + cirq.measure(q0, key="b") + cirq.measure(q2, key="a")
     )
     jobV3.set_counts(result)
     assert jobV3.counts(0) == {"10": 1000}
+
+    jobV3.job_data.compiled_circuits[0] = css.serialize_circuits(
+        cirq.Circuit(cirq.measure(q0), cirq.CZ(q0, q1), cirq.measure(q1))
+    )
+    with pytest.raises(ValueError, match=r"only supported for circuits with terminal measurements"):
+        jobV3.set_counts(result)
