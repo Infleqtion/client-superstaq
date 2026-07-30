@@ -1,4 +1,4 @@
-# Copyright 2026 Infleqtion
+# Copyright 2026 Infleqtion, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -119,7 +119,7 @@ class MockSuperstaqProvider(qss.SuperstaqProvider):
         self,
         api_key: str | None = None,
         remote_host: str | None = None,
-        api_version: str = gss.API_VERSION,
+        api_version: gss.typing.ApiV2 | gss.typing.ApiV3 = gss.API_VERSION,
         max_retry_seconds: int = 3600,
         verbose: bool = False,
     ) -> None:
