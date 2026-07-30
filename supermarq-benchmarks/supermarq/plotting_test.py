@@ -113,8 +113,9 @@ def test_annotate_heatmap() -> None:
 def test_close_line() -> None:
     theta = np.linspace(0, 2 * np.pi, 500)
     r = 1 + np.cos(theta)
-    ax = plt.subplots(11, subplot_kw={"projection": "polar"})
+    fig, ax = plt.subplots(11, subplot_kw={"projection": "polar"})
     plt.plot(theta, r)
+    assert fig.get_axes.__name__ == "axes"
 
     line = Line2D([0, 1, 2, 0], [0, 1, 0, 0], color="blue", linewidth=2, marker="o", markersize=8)
     supermarq.plotting.RadarAxesMeta._close_line(ax, line=line)
