@@ -103,34 +103,23 @@ def validate_target(target: str) -> str:
     return target
 
 
-def get_validated_assembly_qubits(string_programs: Sequence[str], *, circuit_type: str) -> int:
-    """Gets the maximum number of qubits that should be initialized for all `string_programs`.
+def get_validated_jaqal_qubits(jaqal_programs: Sequence[str]) -> int:
+    """Gets the maximum number of qubits that should be initialized for all `jaqal_programs`.
 
     Args:
-        string_programs: The Jaqal programs to infer qubit count from.
-        circuit_type: The kind of circuit that `string_programs` correspond to.
+        jaqal_programs: The Jaqal programs to infer qubit count from.
 
     Returns:
-        The max qubit register size needed for all `string_programs`.
+        The max qubit register size needed for all `jaqal_programs`.
 
     Raises:
-        ValueError: If no pattern is defined for `circuit_type`.
-        ValueError: If no qubit count could be inferred from `string_programs`.
+        ValueError: If no qubit count could be inferred from `jaqal_programs`.
     """
-    if circuit_type == "jaqal_strs":
-        pattern = re.compile(r"^\s*register\b.*?\[(\d+)\]", re.MULTILINE)
-    elif circuit_type == "qasm_strs":
-        pattern = re.compile(r"^\s*qreg\b.*?\[(\d+)\]", re.MULTILINE)
-    else:
-        raise ValueError(f"Unsupported circuit type provided: '{circuit_type}'.")
-    register_sizes = (
-        int(m.group(1)) for circuit_str in string_programs for m in pattern.finditer(circuit_str)
-    )
+    pattern = re.compile(r"^\s*register\b.*?\[(\d+)\]", re.MULTILINE)
+    register_sizes = (int(m.group(1)) for jp in jaqal_programs for m in [pattern.search(jp)] if m)
     inferred_num_qubits = max(register_sizes, default=None)
     if inferred_num_qubits is None:
-        raise ValueError(
-            "Could not determine maximum number of qubits from input circuit register(s)."
-        )
+        raise ValueError("Could not determine number of qubits from Jaqal program register(s).")
     return inferred_num_qubits
 
 
