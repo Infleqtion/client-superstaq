@@ -52,6 +52,8 @@ def test_qudit_swap_gate(dimension: int) -> None:
         assert gate**exponent == cirq.IdentityGate(qid_shape=(dimension, dimension))
 
     assert cirq.pow(gate, 1.23, default=None) is None
+    t = sympy.Symbol("t")
+    assert cirq.pow(gate, t, default=None) is None
 
     assert str(gate) == f"SWAP{dimension}"
 

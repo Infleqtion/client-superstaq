@@ -1299,11 +1299,18 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
 
         return circuits_and_metadata
 
-    def plot(self, circuits_and_metadata: dict[str, Any]) -> None:
+    def plot(
+        self,
+        circuits_and_metadata: dict[str, Any],
+        max_legend_labels: int = 4,
+        legend_labels_count: int = 0,
+    ) -> None:
         """Generates plot and fit data estimating decay parameters.
 
         Args:
             circuits_and_metadata: Dictionary containing cycle benchmarking data.
+            max_legend_labels: int
+            legend_labels_count: int
         """
         instance_information = circuits_and_metadata["instance_information"]
         fit_data = circuits_and_metadata["fit_data"]
@@ -1312,8 +1319,6 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         std_devs = circuits_and_metadata["process_fidelity_data"]["std_devs"]
         averages = circuits_and_metadata["process_fidelity_data"]["averages"]
 
-        max_legend_labels = 4
-        legend_labels_count = 0
         legend_labels = []
         custom_handles = []
         legend_colors = []
