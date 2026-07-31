@@ -234,6 +234,8 @@ def test_movement_op() -> None:
     op = css.movement_op({q2: q3, q3: q4})
     assert op.gate == css.MovementGate({0: 1, 1: 2})
     assert op == css.MovementGate({0: 1, 1: 2}).on(q2, q3, q4)
+    assert op == op**1
+    assert op**-1 == css.movement_op({q3: q2, q4: q3})
     assert repr(op).startswith("css.movement_op")  # Confirm we're using `_op_repr_`
     cirq.testing.assert_equivalent_repr(op, local_vals={"css": css})
     cirq.testing.assert_has_diagram(
@@ -267,6 +269,8 @@ def test_movement_op() -> None:
     op = css.movement_op({qt6: qt5, qt7: qt6})
     assert op.gate == css.MovementGate({1: 0, 2: 1}, dimension=3)
     assert op == css.MovementGate({1: 0, 2: 1}, dimension=3).on(qt5, qt6, qt7)
+    assert op == op**1
+    assert op**-1 == css.movement_op({qt5: qt6, qt6: qt7})
     cirq.testing.assert_equivalent_repr(op, local_vals={"css": css})
     cirq.testing.assert_has_diagram(
         cirq.Circuit(op),
