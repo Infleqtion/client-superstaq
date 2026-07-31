@@ -1315,6 +1315,80 @@ def test_superstaq_client_compile_v3(
     )
     assert job_json == {"job_id": str(job_id)}
 
+    job_id = uuid.UUID(int=0)
+    mock_post.return_value.json.return_value = {"job_id": job_id, "num_circuits": 1}
+
+    client_v3.compile({"cirq_circuits": "Hello", "target": "ss_example_qpu"})
+
+    client_v3.compile({"qiskit_circuits": "Hello", "target": "ss_example_qpu"})
+
+    with pytest.raises(RuntimeError, match=r"No recognized circuits found."):
+        client_v3.compile({"unknown_circuits": "Hello", "target": "ss_example_qpu"})
+
+
+@mock.patch("requests.Session.get")
+@mock.patch("requests.Session.post")
+def test_superstaq_client_compile_v3_with_wait(
+    mock_post: mock.MagicMock,
+    mock_get: mock.MagicMock,
+    client_v3: gss.superstaq_client._SuperstaqClientV3,
+) -> None:
+    job_id = uuid.UUID(int=0)
+    compiling_data = {
+        "job_type": "compile",
+        "statuses": ["compiling"],
+        "status_messages": [None],
+        "user_email": "test@email.com",
+        "target": "ss_example_qpu",
+        "provider_id": ["ss"],
+        "num_circuits": 1,
+        "compiled_circuits": ['"compiled world"'],
+        "input_circuits": ["world"],
+        "circuit_type": "cirq",
+        "counts": [{"count": 200}],
+        "results_dicts": [None],
+        "shots": [200],
+        "dry_run": True,
+        "submission_timestamp": datetime.datetime(1, 1, 1, tzinfo=datetime.timezone.utc),
+        "last_updated_timestamp": [None],
+        "initial_logical_to_physicals": [{0: 0}],
+        "final_logical_to_physicals": [{0: 0}],
+        "logical_qubits": ['[{"qubit": "q0"}]'],
+        "physical_qubits": ['[{"qubit": "q0"}]'],
+    }
+
+    mock_post.return_value.json.return_value = {"job_id": job_id, "num_circuits": 1}
+    response1 = mock.MagicMock()
+    response1.json.return_value = {str(job_id): compiling_data}
+    completed_data = compiling_data.copy()
+    completed_data["statuses"] = ["completed"]
+    response2 = mock.MagicMock()
+    response2.json.return_value = {str(job_id): completed_data}
+    mock_get.side_effect = [response1, response2]
+
+    with mock.patch("time.sleep", return_value=None):
+        client_v3.compile({"cirq_circuits": "Hello", "target": "ss_example_qpu"})
+
+    mock_post.assert_called_with(
+        f"http://example.com/{client_v3.api_version}/client/job",
+        json={
+            "job_type": "compile",
+            "target": "ss_example_qpu",
+            "circuits": "Hello",
+            "circuit_type": "cirq",
+            "verbatim": False,
+            "shots": 0,
+            "dry_run": False,
+            "sim_method": None,
+            "priority": 0,
+            "options_dict": {},
+            "tags": [],
+            "metadata": {},
+        },
+        headers=EXPECTED_HEADERS[client_v3.api_version],
+        verify=False,
+    )
+
 
 @pytest.mark.parametrize("client_name", ["client_v2", "client_v3"])
 @mock.patch("requests.Session.post")
@@ -1488,6 +1562,39 @@ def test_superstaq_client_aces(
             json=expected_json,
             verify=False,
         )
+        client.submit_aces(
+            target="ss_unconstrained_simulator",
+            qubits=[0, 1],
+            shots=100,
+            num_circuits=10,
+            mirror_depth=6,
+            extra_depth=4,
+            method="dry-run",
+            weights=[1, 2],
+            tag="test-tag",
+            lifespan=10,
+            noise={"params": (0.01,)},
+        )
+
+        expected_json = {
+            "target": "ss_unconstrained_simulator",
+            "qubits": [0, 1],
+            "shots": 100,
+            "num_circuits": 10,
+            "mirror_depth": 6,
+            "extra_depth": 4,
+            "method": "dry-run",
+            "weights": [1, 2],
+            "noise": {"params": (0.01,)},
+            "tag": "test-tag",
+            "lifespan": 10,
+        }
+        mock_post.assert_called_with(
+            f"http://example.com/{api_version}/aces",
+            headers=EXPECTED_HEADERS[api_version],
+            json=expected_json,
+            verify=False,
+        )
 
         client.process_aces("id")
         mock_post.assert_called_with(
@@ -1560,11 +1667,43 @@ def test_superstaq_client_cb(
             verify=False,
         )
 
+        client.submit_cb(
+            target="ss_unconstrained_simulator",
+            shots=100,
+            serialized_circuits={"circuits": "test_circuit_data"},
+            n_channels=6,
+            n_sequences=30,
+            depths=[2, 4, 6],
+        )
+
+        expected_json = {
+            "target": "ss_unconstrained_simulator",
+            "shots": 100,
+            "circuits": "test_circuit_data",
+            "n_channels": 6,
+            "n_sequences": 30,
+            "depths": [2, 4, 6],
+        }
+
+        mock_post.assert_called_with(
+            f"http://example.com/{api_version}/cb_submit",
+            headers=EXPECTED_HEADERS[api_version],
+            json=expected_json,
+            verify=False,
+        )
         client.process_cb("id", counts="[{}]")
         mock_post.assert_called_with(
             f"http://example.com/{api_version}/cb_fetch",
             headers=EXPECTED_HEADERS[api_version],
             json={"job_id": "id", "counts": "[{}]"},
+            verify=False,
+        )
+        #  test to  include `counts==False` branch for `process_cb` func in superstaq_client.py
+        client.process_cb("id")
+        mock_post.assert_called_with(
+            f"http://example.com/{api_version}/cb_fetch",
+            headers=EXPECTED_HEADERS[api_version],
+            json={"job_id": "id"},
             verify=False,
         )
     else:
@@ -1621,6 +1760,28 @@ def test_superstaq_client_dfe(
             "options": json.dumps({"lifespan": 10}),
         }
 
+        mock_post.assert_called_with(
+            f"http://example.com/{api_version}/dfe_post",
+            headers=EXPECTED_HEADERS[api_version],
+            json=expected_json,
+            verify=False,
+        )
+        # test to  include `kwargs == False` branch for `submit_dfe` func in superstaq_client.py
+        client.submit_dfe(
+            circuit_1={"Hello": "World"},
+            target_1="ss_example_qpu",
+            circuit_2={"Hello": "World"},
+            target_2="ss_example_qpu",
+            num_random_bases=5,
+            shots=100,
+        )
+
+        expected_json = {
+            "state_1": state,
+            "state_2": state,
+            "shots": 100,
+            "n_bases": 5,
+        }
         mock_post.assert_called_with(
             f"http://example.com/{api_version}/dfe_post",
             headers=EXPECTED_HEADERS[api_version],
