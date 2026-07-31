@@ -242,7 +242,7 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
         circuits_is_list: bool,
         num_eca_circuits: int | None = None,
     ) -> Self:
-        """Reads out returned JSON from Superstaq API's AQT compilation endpoint.
+        """Reads out returned JSON from Superstaq API compilation endpoints.
 
         Args:
             json_dict: The JSON dictionary output from a compile endpoint.
