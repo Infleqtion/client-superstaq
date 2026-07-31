@@ -140,7 +140,7 @@ def test_validate_qubo() -> None:
     gss.validation.validate_qubo({(): 123})
 
 
-def test_validate_jaqal_qubits() -> None:
+def test_validate_assembly_qubits() -> None:
     jaqal_program = textwrap.dedent(
         """\
         register baseregister[1]
@@ -169,17 +169,24 @@ def test_validate_jaqal_qubits() -> None:
         """
     )
     assert (
-        gss.validation.get_validated_jaqal_qubits([jaqal_program])
-        == gss.validation.get_validated_jaqal_qubits([jaqal_program] * 3)
+        gss.validation.get_validated_assembly_qubits([jaqal_program], circuit_type="jaqal_strs")
+        == gss.validation.get_validated_assembly_qubits(
+            [jaqal_program] * 3, circuit_type="jaqal_strs"
+        )
         == 1
     )
     assert (
-        gss.validation.get_validated_jaqal_qubits([jaqal_program_alt])
-        == gss.validation.get_validated_jaqal_qubits(
-            [jaqal_program, jaqal_program_alt, jaqal_program]
+        gss.validation.get_validated_assembly_qubits([jaqal_program_alt], circuit_type="jaqal_strs")
+        == gss.validation.get_validated_assembly_qubits(
+            [jaqal_program, jaqal_program_alt, jaqal_program], circuit_type="jaqal_strs"
         )
         == 4
     )
-    with pytest.raises(ValueError, match=r"Could not determine number"):
+    with pytest.raises(ValueError, match=r"Could not determine"):
         missing_qubit_jaqal = "\n".join(jaqal_program.split("\n")[1:])
-        _ = gss.validation.get_validated_jaqal_qubits([missing_qubit_jaqal])
+        _ = gss.validation.get_validated_assembly_qubits(
+            [missing_qubit_jaqal], circuit_type="jaqal_strs"
+        )
+
+    with pytest.raises(ValueError, match=r"Unsupported circuit type"):
+        _ = gss.validation.get_validated_assembly_qubits([], circuit_type="foo_strs")
