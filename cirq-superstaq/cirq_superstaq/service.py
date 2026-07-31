@@ -670,13 +670,17 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             "target": target,
         }
 
-        options_dict: dict[str, object] = gss.validation.get_validated_aqt_options(
-            num_eca_circuits=num_eca_circuits,
-            random_seed=random_seed,
-            atol=atol,
-            gateset=gateset,
-            **kwargs,
-        )
+        options_dict: dict[str, object]
+        options_dict = {**kwargs}
+
+        if num_eca_circuits is not None:
+            gss.validation.validate_integer_param(num_eca_circuits)
+            options_dict["num_eca_circuits"] = int(num_eca_circuits)
+        if random_seed is not None:
+            gss.validation.validate_integer_param(random_seed)
+            options_dict["random_seed"] = int(random_seed)
+        if atol is not None:
+            options_dict["atol"] = float(atol)
 
         if gate_defs is not None:
             gate_defs_cirq = {}
@@ -685,7 +689,8 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
                     val = _to_matrix_gate(val)
                 gate_defs_cirq[key] = val
             options_dict["gate_defs"] = gate_defs_cirq
-
+        if gateset is not None:
+            options_dict["gateset"] = gateset
         if pulses or variables:
             options_dict["aqt_configs"] = {
                 "pulses": self._qtrl_config_to_yaml_str(pulses),

@@ -231,43 +231,6 @@ def _validate_ibm_channel(ibm_channel: str) -> str:
     return ibm_channel
 
 
-def get_validated_aqt_options(
-    num_eca_circuits: int | None = None,
-    random_seed: int | None = None,
-    atol: float | None = None,
-    gateset: Mapping[str, Sequence[Sequence[int]]] | None = None,
-    **kwargs: object,
-) -> dict[str, object]:
-    """Generates an options dictionary packaging the input args into a format compatible for
-        `/aqt_compile`.
-
-    Args:
-        num_eca_circuits: Optional number of logically equivalent random circuits to generate
-            from each input circuit for Equivalent Circuit Averaging (ECA).
-        random_seed: Optional seed used for approximate synthesis and ECA.
-        atol: An optional tolerance to use for approximate gate synthesis.
-        gateset: Which gates to use for compilation. Should be a dictionary with entries in the
-            for `gate_name: [[1, 2], [3, 4]`, where the keys refer to specific gates, and the
-            values indicate which qubit(s) they act upon.
-        kwargs: Other desired compile options.
-
-    Returns:
-        A validated options dictionary packaging provided `args`.
-    """
-    options: dict[str, object] = {**kwargs}
-    if num_eca_circuits is not None:
-        validate_integer_param(num_eca_circuits, parameter_name="num_eca_circuits")
-        options["num_eca_circuits"] = int(num_eca_circuits)
-    if random_seed is not None:
-        validate_integer_param(random_seed, parameter_name="random_seed")
-        options["random_seed"] = int(random_seed)
-    if atol is not None:
-        options["atol"] = float(atol)
-    if gateset is not None:
-        options["gateset"] = gateset
-    return options
-
-
 def get_validated_qscout_options(
     inferred_num_qubits: int,
     *,
