@@ -383,8 +383,8 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
     def aqt_compile_eca(
         self,
         circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
-        *,
         num_equivalent_circuits: int,
+        *,
         random_seed: int | None = None,
         target: str = "aqt_keysight_qpu",
         atol: float | None = None,
