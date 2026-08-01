@@ -31,8 +31,8 @@ def test_mermin_bell_circuit() -> None:
     mb = MerminBell(5)
     assert len(mb.circuit().all_qubits()) == 5
     qiskit_circuit = mb.qiskit_circuit()
-    if isinstance(qiskit_circuit, qiskit.QuantumCircuit):  # pragma: no branch
-        assert qiskit_circuit.num_qubits == 5
+    assert isinstance(qiskit_circuit, qiskit.QuantumCircuit)
+    assert qiskit_circuit.num_qubits == 5
     with patch(
         "supermarq.benchmarks.mermin_bell.MerminBell.circuit",
         return_value=[mb.circuit()],
@@ -53,3 +53,4 @@ def test_mermin_bell_score() -> None:
     with patch.object(mb, "_get_measurement_circuit") as mock_get_measurement:
         mock_get_measurement.return_value.get_circuit.return_value.all_operations.return_value = {}
         assert mb.score({"0": 2.0}) == 0.375
+        mock_get_measurement.assert_called_once()
