@@ -20,18 +20,17 @@ import numpy as np
 
 import supermarq
 from supermarq import stabilizers
-from supermarq.benchmarks.mermin_bell import MerminBell
 
 
 def test_construct_stabilizer() -> None:
-    mb = MerminBell(3)
+    mb = supermarq.benchmarks.MerminBell(3)
     assert mb.score(supermarq.simulation.get_ideal_counts(mb.circuit())) == 1
     stabilizers.construct_stabilizer(num_qubits=3, clique=[(0.25, "XYI")])
 
 
 def test_prepare_x_matrix() -> None:
-    mb = MerminBell(5)
-    measurement_circuit = MerminBell._get_measurement_circuit(mb)
+    mb = supermarq.benchmarks.MerminBell(5)
+    measurement_circuit = supermarq.benchmarks.MerminBell._get_measurement_circuit(mb)
     stabilizers.prepare_x_matrix(measurement_circuit)
     N = measurement_circuit.num_qubits
     with patch("numpy.linalg.matrix_rank", return_value=N - 1):
@@ -39,8 +38,8 @@ def test_prepare_x_matrix() -> None:
 
 
 def test_patch_z_matrix() -> None:
-    mb = MerminBell(5)
-    measurement_circuit = MerminBell._get_measurement_circuit(mb)
+    mb = supermarq.benchmarks.MerminBell(5)
+    measurement_circuit = supermarq.benchmarks.MerminBell._get_measurement_circuit(mb)
     stabilizers.prepare_x_matrix(measurement_circuit)
     N = measurement_circuit.num_qubits
 
