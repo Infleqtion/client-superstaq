@@ -180,9 +180,7 @@ def test_aqt_compile(service: css.Service[css.compiler_output.CompilerOutput | c
 
 
 @pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
-def test_aqt_compile_eca(
-    service: css.Service[css.compiler_output.CompilerOutput],
-) -> None:
+def test_aqt_compile_eca(service: css.Service) -> None:
     circuit = cirq.Circuit(
         cirq.H(cirq.LineQubit(4)),
         cirq.CX(cirq.LineQubit(4), cirq.LineQubit(5)) ** 0.7,
@@ -202,9 +200,7 @@ def test_aqt_compile_eca(
 
 @pytest.mark.skip(reason="Won't pass until server issue related to this is fixed")
 @pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
-def test_aqt_compile_eca_regression(
-    service: css.Service[css.compiler_output.CompilerOutput],
-) -> None:
+def test_aqt_compile_eca_regression(service: css.Service) -> None:
     circuit = cirq.Circuit(
         cirq.H(cirq.LineQubit(4)),
         cirq.CX(cirq.LineQubit(4), cirq.LineQubit(5)) ** 0.7,
@@ -236,9 +232,7 @@ def test_get_balance(service: css.Service[css.compiler_output.CompilerOutput | c
 
 
 @pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
-def test_get_resource_estimate(
-    service: css.Service[css.compiler_output.CompilerOutput],
-) -> None:
+def test_get_resource_estimate(service: css.Service) -> None:
     q0 = cirq.LineQubit(0)
     q1 = cirq.LineQubit(1)
 
@@ -396,7 +390,7 @@ def test_qscout_compile_swap_mirror(
 def test_cq_compile(
     target: str, service: css.Service[css.compiler_output.CompilerOutput | css.JobV3]
 ) -> None:
-    # We use GridQubits cause CQ's qubits are laid in a grid
+    # We use `cirq.GridQubit`s cause CQ's qubits are laid in a grid
     qubits = cirq.GridQubit.rect(2, 2)
     circuit = cirq.Circuit(
         cirq.H(qubits[0]),
@@ -410,16 +404,14 @@ def test_cq_compile(
 
 
 @pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
-def test_get_aqt_configs(
-    service: css.Service[css.compiler_output.CompilerOutput],
-) -> None:
+def test_get_aqt_configs(service: css.Service) -> None:
     res = service.aqt_get_configs()
     assert "pulses" in res
     assert "variables" in res
 
 
 @pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
-def test_supercheq(service: css.Service[css.compiler_output.CompilerOutput]) -> None:
+def test_supercheq(service: css.Service) -> None:
     # fmt: off
     files = [
         [0, 0, 0, 0, 0], [0, 0, 0, 0, 1], [0, 0, 0, 1, 0], [0, 0, 0, 1, 1],
@@ -441,7 +433,7 @@ def test_supercheq(service: css.Service[css.compiler_output.CompilerOutput]) -> 
 
 
 @pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
-def test_dfe(service: css.Service[css.compiler_output.CompilerOutput]) -> None:
+def test_dfe(service: css.Service) -> None:
     circuit = cirq.Circuit(cirq.H(cirq.q(0)))
     target = "ss_unconstrained_simulator"
     with pytest.raises(gss.SuperstaqException, match=r"disabled"):
@@ -457,7 +449,7 @@ def test_dfe(service: css.Service[css.compiler_output.CompilerOutput]) -> None:
 
 
 @pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
-def test_aces(service: css.Service[css.compiler_output.CompilerOutput]) -> None:
+def test_aces(service: css.Service) -> None:
     noise_model = cirq.NoiseModel.from_noise_model_like(cirq.depolarize(0.1))
     with pytest.raises(gss.SuperstaqException, match=r"disabled"):
         _ = service.submit_aces(
