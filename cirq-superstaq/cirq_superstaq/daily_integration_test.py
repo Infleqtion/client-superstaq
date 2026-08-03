@@ -18,6 +18,7 @@ from __future__ import annotations
 import os
 import re
 import uuid
+from typing import TYPE_CHECKING
 
 import cirq
 import general_superstaq as gss
@@ -27,6 +28,9 @@ import qiskit
 from general_superstaq import ResourceEstimate
 
 import cirq_superstaq as css
+
+if TYPE_CHECKING:
+    from typing import TypeGuard
 
 
 @pytest.fixture
@@ -58,19 +62,28 @@ def _get_validated_single_compiled_circuit(
     return out.compiled_circuits(0)
 
 
+def is_exactly_circuit_list(
+    circuits: list[cirq.Circuit] | list[list[cirq.Circuit]],
+) -> TypeGuard[list[cirq.Circuit]]:
+    return all(isinstance(circuit, cirq.Circuit) for circuit in circuits)
+
+
 def _get_validated_list_compiled_circuits(
     out: css.compiler_output.CompilerOutput | css.JobV3, *, num_circuits: int = 2
-) -> list[cirq.Circuit] | list[list[cirq.Circuit]]:
+) -> list[cirq.Circuit]:
     if isinstance(out, css.compiler_output.CompilerOutput):
-        assert isinstance(out.circuits, list)
-        assert len(out.circuits) == num_circuits
-        assert isinstance(out.circuits[num_circuits - 1], cirq.Circuit)
-        return out.circuits
-    assert isinstance(out, css.JobV3)
-    assert isinstance(out.compiled_circuits(), list)
-    assert len(out.compiled_circuits()) == num_circuits
-    assert all(isinstance(out.compiled_circuits(idx), cirq.Circuit) for idx in range(num_circuits))
-    return out.compiled_circuits()
+        compiled_circuits = out.circuits
+    else:
+        assert isinstance(out, css.JobV3)
+        assert all(
+            isinstance(out.compiled_circuits(idx), cirq.Circuit) for idx in range(num_circuits)
+        )
+        compiled_circuits = out.compiled_circuits()
+
+    assert isinstance(compiled_circuits, list)
+    assert len(compiled_circuits) == num_circuits
+    assert is_exactly_circuit_list(compiled_circuits)
+    return compiled_circuits
 
 
 @pytest.mark.parametrize(
