@@ -181,10 +181,7 @@ def test_ibmq_compile_with_token() -> None:
 
 @pytest.mark.parametrize(
     "provider",
-    [
-        "v0.2.0",
-        pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test")),
-    ],
+    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
     indirect=True,
 )
 def test_aqt_compile(
@@ -283,10 +280,7 @@ def test_get_resource_estimate(
 
 @pytest.mark.parametrize(
     "provider",
-    [
-        "v0.2.0",
-        pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test")),
-    ],
+    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
     indirect=True,
 )
 def test_qscout_compile(
@@ -308,10 +302,7 @@ def test_qscout_compile(
 
 @pytest.mark.parametrize(
     "provider",
-    [
-        "v0.2.0",
-        pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test")),
-    ],
+    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
     indirect=True,
 )
 def test_qscout_compile_swap_mirror(

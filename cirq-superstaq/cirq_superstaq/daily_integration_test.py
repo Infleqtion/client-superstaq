@@ -88,10 +88,7 @@ def _get_validated_list_compiled_circuits(
 
 @pytest.mark.parametrize(
     "service",
-    [
-        "v0.2.0",
-        pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test")),
-    ],
+    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
     indirect=True,
 )
 def test_ibmq_compile(
@@ -145,10 +142,7 @@ def test_ibmq_compile_with_token() -> None:
 
 @pytest.mark.parametrize(
     "service",
-    [
-        "v0.2.0",
-        pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test")),
-    ],
+    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
     indirect=True,
 )
 def test_aqt_compile(service: css.Service[css.compiler_output.CompilerOutput | css.JobV3]) -> None:
@@ -217,10 +211,7 @@ def test_aqt_compile_eca_regression(service: css.Service) -> None:
 
 @pytest.mark.parametrize(
     "service",
-    [
-        "v0.2.0",
-        pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test")),
-    ],
+    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
     indirect=True,
 )
 def test_get_balance(service: css.Service[css.compiler_output.CompilerOutput | css.JobV3]) -> None:
@@ -253,10 +244,7 @@ def test_get_resource_estimate(service: css.Service) -> None:
 
 @pytest.mark.parametrize(
     "service",
-    [
-        "v0.2.0",
-        pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test")),
-    ],
+    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
     indirect=True,
 )
 def test_get_targets(service: css.Service[css.compiler_output.CompilerOutput | css.JobV3]) -> None:
@@ -297,10 +285,7 @@ def test_get_targets(service: css.Service[css.compiler_output.CompilerOutput | c
 
 @pytest.mark.parametrize(
     "service",
-    [
-        "v0.2.0",
-        pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test")),
-    ],
+    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
     indirect=True,
 )
 def test_qscout_compile(
@@ -348,10 +333,7 @@ def test_qscout_compile(
 
 @pytest.mark.parametrize(
     "service",
-    [
-        "v0.2.0",
-        pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test")),
-    ],
+    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
     indirect=True,
 )
 def test_qscout_compile_swap_mirror(
@@ -474,10 +456,7 @@ def test_aces(service: css.Service) -> None:
 
 @pytest.mark.parametrize(
     "service",
-    [
-        "v0.2.0",
-        pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test")),
-    ],
+    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
     indirect=True,
 )
 def test_job(service: css.Service[css.compiler_output.CompilerOutput | css.JobV3]) -> None:
@@ -535,10 +514,7 @@ def test_job(service: css.Service[css.compiler_output.CompilerOutput | css.JobV3
 
 @pytest.mark.parametrize(
     "service",
-    [
-        "v0.2.0",
-        pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test")),
-    ],
+    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
     indirect=True,
 )
 @pytest.mark.parametrize("target", ["cq_sqale_simulator", "aws_sv1_simulator"])
@@ -555,10 +531,7 @@ def test_submit_to_provider_simulators(
 
 @pytest.mark.parametrize(
     "service",
-    [
-        "v0.2.0",
-        pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test")),
-    ],
+    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
     indirect=True,
 )
 def test_dry_run_submit_to_sqale_with_qubit_sorting(
@@ -589,10 +562,7 @@ def test_dry_run_submit_to_sqale_with_qubit_sorting(
 
 @pytest.mark.parametrize(
     "service",
-    [
-        "v0.2.0",
-        pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test")),
-    ],
+    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
     indirect=True,
 )
 def test_submit_qubo(service: css.Service[css.compiler_output.CompilerOutput | css.JobV3]) -> None:
