@@ -30,7 +30,7 @@ def test_construct_stabilizer() -> None:
 
 def test_prepare_x_matrix() -> None:
     mb = supermarq.benchmarks.MerminBell(5)
-    measurement_circuit = supermarq.benchmarks.MerminBell._get_measurement_circuit(mb)
+    measurement_circuit = mb._get_measurement_circuit()
     stabilizers.prepare_x_matrix(measurement_circuit)
     N = measurement_circuit.num_qubits
     with patch("numpy.linalg.matrix_rank", return_value=N - 1):
@@ -39,7 +39,7 @@ def test_prepare_x_matrix() -> None:
 
 def test_patch_z_matrix() -> None:
     mb = supermarq.benchmarks.MerminBell(5)
-    measurement_circuit = supermarq.benchmarks.MerminBell._get_measurement_circuit(mb)
+    measurement_circuit = mb._get_measurement_circuit()
     stabilizers.prepare_x_matrix(measurement_circuit)
     N = measurement_circuit.num_qubits
 
