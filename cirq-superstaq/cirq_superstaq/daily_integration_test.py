@@ -378,16 +378,7 @@ def test_qscout_compile_swap_mirror(
     assert num_two_qubit_gates == 3
 
 
-@pytest.mark.parametrize(
-    "service",
-    [
-        "v0.2.0",
-        pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test")),
-    ],
-    indirect=True,
-)
-@pytest.mark.parametrize("target", ["cq_sqale_simulator", "cq_sqale_qpu"])
-def test_cq_compile(
+def _call_cq_compile_and_validate(
     target: str, service: css.Service[css.compiler_output.CompilerOutput | css.JobV3]
 ) -> None:
     # We use `cirq.GridQubit`s cause CQ's qubits are laid in a grid
@@ -401,6 +392,20 @@ def test_cq_compile(
 
     out = service.cq_compile(circuit, target=target)
     _ = _get_validated_single_compiled_circuit(out)
+
+
+@pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
+@pytest.mark.parametrize("target", ["cq_sqale_simulator", "cq_sqale_qpu"])
+def test_cq_compile_v2(target: str, service: css.Service) -> None:
+    _call_cq_compile_and_validate(target, service)
+
+
+@pytest.mark.parametrize(
+    "service", [pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))], indirect=True
+)
+@pytest.mark.parametrize("target", ["sqale_boulder_qpu", "sqale_nqcc_qpu"])
+def test_cq_compile_v3(target: str, service: css.Service[css.JobV3]) -> None:
+    _call_cq_compile_and_validate(target, service)
 
 
 @pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
