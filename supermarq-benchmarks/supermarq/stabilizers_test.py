@@ -33,8 +33,9 @@ def test_prepare_x_matrix() -> None:
     measurement_circuit = mb._get_measurement_circuit()
     stabilizers.prepare_x_matrix(measurement_circuit)
     N = measurement_circuit.num_qubits
-    with patch("numpy.linalg.matrix_rank", return_value=N - 1):
+    with patch("numpy.linalg.matrix_rank", return_value=N - 1) as mock_value:
         stabilizers.prepare_x_matrix(measurement_circuit)
+        mock_value.assert_called()
 
 
 def test_patch_z_matrix() -> None:
@@ -44,5 +45,8 @@ def test_patch_z_matrix() -> None:
     N = measurement_circuit.num_qubits
 
     stabilizers.patch_z_matrix(measurement_circuit)
-    with patch("supermarq.stabilizers.MeasurementCircuit.get_stabilizer", return_value=np.eye(N)):
+    with patch(
+        "supermarq.stabilizers.MeasurementCircuit.get_stabilizer", return_value=np.eye(N)
+    ) as mock_matrix:
         stabilizers.patch_z_matrix(measurement_circuit)
+        mock_matrix.assert_called()
