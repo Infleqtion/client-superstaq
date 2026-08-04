@@ -330,6 +330,7 @@ def test_qscout_compile_swap_mirror(
 def _call_cq_compile_and_validate(
     backend_name: str,
     provider: qss.SuperstaqProvider[qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3],
+    api_version: str = "v0.2.0",
 ) -> None:
     backend = provider.get_backend(backend_name)
     assert backend.target.instruction_supported("gr")
@@ -337,9 +338,10 @@ def _call_cq_compile_and_validate(
     circuit = qiskit.QuantumCircuit(2)
     circuit.h(0)
     circuit.append(qiskit.circuit.library.GR(2, np.pi / 2, 0), [0, 1])
-    _ = _get_validated_single_compiled_circuit(backend.cq_compile(circuit))
-    _ = _get_validated_list_compiled_circuits(backend.cq_compile([circuit]), num_circuits=1)
-    _ = _get_validated_list_compiled_circuits(backend.cq_compile([circuit, circuit]))
+    compile_call = backend.compile if api_version == "v0.3.0" else backend.cq_compile
+    _ = _get_validated_single_compiled_circuit(compile_call(circuit))
+    _ = _get_validated_list_compiled_circuits(compile_call([circuit]), num_circuits=1)
+    _ = _get_validated_list_compiled_circuits(compile_call([circuit, circuit]))
 
 
 @pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
@@ -358,7 +360,7 @@ def test_cq_compile_v3(
     backend_name: str,
     provider: qss.SuperstaqProvider[qss.SuperstaqJobV3],
 ) -> None:
-    _call_cq_compile_and_validate(backend_name, provider)
+    _call_cq_compile_and_validate(backend_name, provider, api_version="v0.3.0")
 
 
 @pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
@@ -471,6 +473,15 @@ def test_submit_dry_run(
     job = provider.get_backend(target).run(qc_list[0], shots=1, method="dry-run")
     multi_job = provider.get_backend(target).run(qc_list, shots=1, method="dry-run")
 
+    if isinstance(job, qss.SuperstaqJob):
+        job.wait_for_final_state()
+        multi_job.wait_for_final_state()
+    else:
+        assert isinstance(job, qss.SuperstaqJobV3)
+        job.wait_until_terminal_state()
+        assert isinstance(multi_job, qss.SuperstaqJobV3)
+        multi_job.wait_until_terminal_state()
+
     assert job.status() == qiskit.providers.JobStatus.DONE
     assert multi_job.status(0) == qiskit.providers.JobStatus.DONE
     assert multi_job.status(1) == qiskit.providers.JobStatus.DONE
@@ -478,6 +489,7 @@ def test_submit_dry_run(
     assert job.result().get_counts() == {"11": 1}
     assert multi_job.result(0).get_counts() == {"11": 1}
     assert multi_job.result(1).get_counts() == {"10": 1}
+    # TODO: have additional, dedicated unit tests to check more things for 'v0.3.0'
 
 
 @pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)

@@ -361,7 +361,10 @@ def test_qscout_compile_swap_mirror(
 
 
 def _call_cq_compile_and_validate(
-    target: str, service: css.Service[css.compiler_output.CompilerOutput | css.JobV3]
+    target: str,
+    service: css.Service[css.compiler_output.CompilerOutput | css.JobV3],
+    *,
+    api_version: str = "v0.2.0",
 ) -> None:
     # We use `cirq.GridQubit`s cause CQ's qubits are laid in a grid
     qubits = cirq.GridQubit.rect(2, 2)
@@ -371,8 +374,10 @@ def _call_cq_compile_and_validate(
         css.ParallelRGate(0.125, 0.125, 2).on(qubits[0], qubits[1]),
         cirq.measure(qubits[0]),
     )
-
-    out = service.cq_compile(circuit, target=target)
+    if api_version == "v0.2.0":
+        out = service.cq_compile(circuit, target=target)
+    else:
+        out = service.compile(circuit, target=target)
     _ = _get_validated_single_compiled_circuit(out)
 
 
@@ -385,9 +390,11 @@ def test_cq_compile_v2(target: str, service: css.Service) -> None:
 @pytest.mark.parametrize(
     "service", [pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))], indirect=True
 )
-@pytest.mark.parametrize("target", ["sqale_boulder_qpu", "sqale_nqcc_qpu"])
+@pytest.mark.parametrize(
+    "target", ["cq_sqale_simulator", "cq_sqale_qpu", "sqale_boulder_qpu", "sqale_nqcc_qpu"]
+)
 def test_cq_compile_v3(target: str, service: css.Service[css.JobV3]) -> None:
-    _call_cq_compile_and_validate(target, service)
+    _call_cq_compile_and_validate(target, service, api_version="v0.3.0")
 
 
 @pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
@@ -484,7 +491,15 @@ def test_job(service: css.Service[css.compiler_output.CompilerOutput | css.JobV3
     assert multi_job.counts(0) == {"0": 10}
     assert multi_job.counts(1) == {"1": 10}
 
-    expected_status = "Done" if api_version == "v0.2.0" else "completed"
+    if service._client.api_version == "v0.2.0":
+        expected_status = "Done"
+    else:
+        assert isinstance(job, css.JobV3)
+        job.wait_until_terminal_state()
+        assert isinstance(multi_job, css.JobV3)
+        multi_job.wait_until_terminal_state()
+        expected_status = "completed"
+
     assert job.status() == expected_status
     assert multi_job.status(0) == expected_status
     assert multi_job.status(1) == expected_status
@@ -492,7 +507,7 @@ def test_job(service: css.Service[css.compiler_output.CompilerOutput | css.JobV3
     assert job.job_id() == job_id
     assert multi_job.job_id() == multi_job_id
 
-    # TODO: have this unit test check more things and have dedicated tests for 'v0.3.0'
+    # TODO: have additional, dedicated unit tests to check more things for 'v0.3.0'
     if isinstance(multi_job, css.Job):
         assert isinstance(multi_job_id, str)
         assert list(multi_job._job.keys()) == multi_job_id.split(",")
