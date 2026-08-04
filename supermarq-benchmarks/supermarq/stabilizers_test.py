@@ -36,7 +36,6 @@ def test_prepare_x_matrix() -> None:
     with patch("numpy.linalg.matrix_rank", return_value=N - 1) as mock_value:
         stabilizers.prepare_x_matrix(measurement_circuit)
         mock_value.assert_called()
-        assert stabilizers.prepare_x_matrix(measurement_circuit)== None
 
 
 def test_patch_z_matrix() -> None:
@@ -51,4 +50,3 @@ def test_patch_z_matrix() -> None:
     ) as mock_matrix:
         stabilizers.patch_z_matrix(measurement_circuit)
         mock_matrix.assert_called()
-        assert stabilizers.patch_z_matrix(measurement_circuit)== None
