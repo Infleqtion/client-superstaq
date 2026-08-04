@@ -85,11 +85,7 @@ def _get_validated_list_compiled_circuits(
     return compiled_circuits
 
 
-@pytest.mark.parametrize(
-    "provider",
-    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
-    indirect=True,
-)
+@pytest.mark.parametrize("provider", ["v0.2.0", "v0.3.0"], indirect=True)
 def test_backends(
     provider: qss.SuperstaqProvider[qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3],
 ) -> None:
@@ -127,11 +123,7 @@ def test_backends(
     )
 
 
-@pytest.mark.parametrize(
-    "provider",
-    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
-    indirect=True,
-)
+@pytest.mark.parametrize("provider", ["v0.2.0", "v0.3.0"], indirect=True)
 def test_ibmq_compile(
     provider: qss.SuperstaqProvider[qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3],
 ) -> None:
@@ -179,11 +171,7 @@ def test_ibmq_compile_with_token() -> None:
         _ = _get_validated_single_compiled_circuit(out)
 
 
-@pytest.mark.parametrize(
-    "provider",
-    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
-    indirect=True,
-)
+@pytest.mark.parametrize("provider", ["v0.2.0", "v0.3.0"], indirect=True)
 def test_aqt_compile(
     provider: qss.SuperstaqProvider[qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3],
 ) -> None:
@@ -237,11 +225,7 @@ def test_aqt_compile_eca_regression(provider: qss.SuperstaqProvider) -> None:
     )
 
 
-@pytest.mark.parametrize(
-    "provider",
-    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
-    indirect=True,
-)
+@pytest.mark.parametrize("provider", ["v0.2.0", "v0.3.0"], indirect=True)
 def test_get_balance(
     provider: qss.SuperstaqProvider[qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3],
 ) -> None:
@@ -275,11 +259,7 @@ def test_get_resource_estimate(
     assert resource_estimates == [resource_estimate, ResourceEstimate(1, 2, 3)]
 
 
-@pytest.mark.parametrize(
-    "provider",
-    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
-    indirect=True,
-)
+@pytest.mark.parametrize("provider", ["v0.2.0", "v0.3.0"], indirect=True)
 def test_qscout_compile(
     provider: qss.SuperstaqProvider[qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3],
 ) -> None:
@@ -297,11 +277,7 @@ def test_qscout_compile(
     ) == 2 * [compiled_circuit]
 
 
-@pytest.mark.parametrize(
-    "provider",
-    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
-    indirect=True,
-)
+@pytest.mark.parametrize("provider", ["v0.2.0", "v0.3.0"], indirect=True)
 def test_qscout_compile_swap_mirror(
     provider: qss.SuperstaqProvider[qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3],
 ) -> None:
@@ -421,11 +397,7 @@ def test_aces(provider: qss.SuperstaqProvider) -> None:
         _ = backend.process_aces("1234")
 
 
-@pytest.mark.parametrize(
-    "provider",
-    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
-    indirect=True,
-)
+@pytest.mark.parametrize("provider", ["v0.2.0", "v0.3.0"], indirect=True)
 @pytest.mark.parametrize("target", ["cq_sqale_simulator", "ss_unconstrained_simulator"])
 def test_submit_to_provider_simulators(
     target: str,
@@ -441,11 +413,7 @@ def test_submit_to_provider_simulators(
     assert job.result().get_counts() == {"11": 1}
 
 
-@pytest.mark.parametrize(
-    "provider",
-    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
-    indirect=True,
-)
+@pytest.mark.parametrize("provider", ["v0.2.0", "v0.3.0"], indirect=True)
 @pytest.mark.parametrize(
     "target", ["qscout_peregrine_qpu", "aqt_keysight_qpu", "ibmq_pittsburgh_qpu"]
 )
@@ -509,11 +477,7 @@ def test_dry_run_submit_to_sqale_with_qubit_sorting(provider: qss.SuperstaqProvi
     assert max(counts, key=counts.__getitem__) == ("0" * (num_qubits - 3)) + "100"
 
 
-@pytest.mark.parametrize(
-    "provider",
-    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
-    indirect=True,
-)
+@pytest.mark.parametrize("provider", ["v0.2.0", "v0.3.0"], indirect=True)
 def test_submit_qubo(
     provider: qss.SuperstaqProvider[qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3],
 ) -> None:

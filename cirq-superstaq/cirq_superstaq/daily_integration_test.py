@@ -86,11 +86,7 @@ def _get_validated_list_compiled_circuits(
     return compiled_circuits
 
 
-@pytest.mark.parametrize(
-    "service",
-    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
-    indirect=True,
-)
+@pytest.mark.parametrize("service", ["v0.2.0", "v0.3.0"], indirect=True)
 def test_ibmq_compile(
     service: css.Service[css.compiler_output.CompilerOutput | css.JobV3],
 ) -> None:
@@ -140,11 +136,7 @@ def test_ibmq_compile_with_token() -> None:
         _ = _get_validated_single_compiled_circuit(out)
 
 
-@pytest.mark.parametrize(
-    "service",
-    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
-    indirect=True,
-)
+@pytest.mark.parametrize("service", ["v0.2.0", "v0.3.0"], indirect=True)
 def test_aqt_compile(service: css.Service[css.compiler_output.CompilerOutput | css.JobV3]) -> None:
     qubits = cirq.LineQubit.range(8)
     circuit = cirq.Circuit(cirq.H(qubits[4]))
@@ -207,11 +199,7 @@ def test_aqt_compile_eca_regression(service: css.Service) -> None:
     )
 
 
-@pytest.mark.parametrize(
-    "service",
-    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
-    indirect=True,
-)
+@pytest.mark.parametrize("service", ["v0.2.0", "v0.3.0"], indirect=True)
 def test_get_balance(service: css.Service[css.compiler_output.CompilerOutput | css.JobV3]) -> None:
     balance_str = service.get_balance()
     assert isinstance(balance_str, str)
@@ -239,11 +227,7 @@ def test_get_resource_estimate(service: css.Service) -> None:
     assert resource_estimates == [ResourceEstimate(1, 1, 3), ResourceEstimate(1, 2, 4)]
 
 
-@pytest.mark.parametrize(
-    "service",
-    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
-    indirect=True,
-)
+@pytest.mark.parametrize("service", ["v0.2.0", "v0.3.0"], indirect=True)
 def test_get_targets(service: css.Service[css.compiler_output.CompilerOutput | css.JobV3]) -> None:
     result = service.get_targets()
     filtered_result = service.get_my_targets()
@@ -280,11 +264,7 @@ def test_get_targets(service: css.Service[css.compiler_output.CompilerOutput | c
             assert service.target_info(target_name).get("target") == target_name
 
 
-@pytest.mark.parametrize(
-    "service",
-    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
-    indirect=True,
-)
+@pytest.mark.parametrize("service", ["v0.2.0", "v0.3.0"], indirect=True)
 def test_qscout_compile(
     service: css.Service[css.compiler_output.CompilerOutput | css.JobV3],
 ) -> None:
@@ -328,11 +308,7 @@ def test_qscout_compile(
         assert "MS allqubits[0] allqubits[1]" in jaqal_program
 
 
-@pytest.mark.parametrize(
-    "service",
-    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
-    indirect=True,
-)
+@pytest.mark.parametrize("service", ["v0.2.0", "v0.3.0"], indirect=True)
 def test_qscout_compile_swap_mirror(
     service: css.Service[css.compiler_output.CompilerOutput | css.JobV3],
 ) -> None:
@@ -383,9 +359,7 @@ def test_cq_compile_v2(target: str, service: css.Service) -> None:
     _call_cq_compile_and_validate(target, service)
 
 
-@pytest.mark.parametrize(
-    "service", [pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))], indirect=True
-)
+@pytest.mark.parametrize("service", ["v0.3.0"], indirect=True)
 @pytest.mark.parametrize(
     "target", ["cq_sqale_simulator", "cq_sqale_qpu", "sqale_boulder_qpu", "sqale_nqcc_qpu"]
 )
@@ -453,11 +427,7 @@ def test_aces(service: css.Service) -> None:
         _ = service.process_aces("1234")
 
 
-@pytest.mark.parametrize(
-    "service",
-    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
-    indirect=True,
-)
+@pytest.mark.parametrize("service", ["v0.2.0", "v0.3.0"], indirect=True)
 def test_job(service: css.Service[css.compiler_output.CompilerOutput | css.JobV3]) -> None:
     api_version = service._client.api_version
     circuit = cirq.Circuit(cirq.measure(cirq.q(0)))
@@ -519,11 +489,7 @@ def test_job(service: css.Service[css.compiler_output.CompilerOutput | css.JobV3
     assert job.job_id() == job_id
 
 
-@pytest.mark.parametrize(
-    "service",
-    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
-    indirect=True,
-)
+@pytest.mark.parametrize("service", ["v0.2.0", "v0.3.0"], indirect=True)
 @pytest.mark.parametrize("target", ["cq_sqale_simulator", "aws_sv1_simulator"])
 def test_submit_to_provider_simulators(
     target: str, service: css.Service[css.compiler_output.CompilerOutput | css.JobV3]
@@ -536,11 +502,7 @@ def test_submit_to_provider_simulators(
     assert job.counts(0) == {"11": 1}
 
 
-@pytest.mark.parametrize(
-    "service",
-    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
-    indirect=True,
-)
+@pytest.mark.parametrize("service", ["v0.2.0", "v0.3.0"], indirect=True)
 def test_dry_run_submit_to_sqale_with_qubit_sorting(
     service: css.Service[css.compiler_output.CompilerOutput | css.JobV3],
 ) -> None:
@@ -567,11 +529,7 @@ def test_dry_run_submit_to_sqale_with_qubit_sorting(
     assert max(counts, key=counts.__getitem__) == "001" + ("0" * (num_qubits - 3))
 
 
-@pytest.mark.parametrize(
-    "service",
-    ["v0.2.0", pytest.param("v0.3.0", marks=pytest.mark.xdist_group("serial_test"))],
-    indirect=True,
-)
+@pytest.mark.parametrize("service", ["v0.2.0", "v0.3.0"], indirect=True)
 def test_submit_qubo(service: css.Service[css.compiler_output.CompilerOutput | css.JobV3]) -> None:
     test_qubo = {
         (0,): -1,
