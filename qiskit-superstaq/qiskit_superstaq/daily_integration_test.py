@@ -43,7 +43,7 @@ def provider(
     Returns:
         A `qiskit_superstaq` provider instance.
     """
-    api_version = request.param
+    api_version = getattr(request, "param", "v0.2.0")
     return qss.SuperstaqProvider(api_version=api_version)
 
 
@@ -203,7 +203,6 @@ def test_aqt_compile(
     ]
 
 
-@pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
 def test_aqt_compile_eca(provider: qss.SuperstaqProvider) -> None:
     circuit = qiskit.QuantumCircuit(8)
     circuit.h(4)
@@ -222,7 +221,6 @@ def test_aqt_compile_eca(provider: qss.SuperstaqProvider) -> None:
 
 
 @pytest.mark.skip(reason="Won't pass until server issue related to this is fixed")
-@pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
 def test_aqt_compile_eca_regression(provider: qss.SuperstaqProvider) -> None:
     circuit = qiskit.QuantumCircuit(8)
     circuit.h(4)
@@ -254,7 +252,6 @@ def test_get_balance(
     assert isinstance(provider.get_balance(pretty_output=False), float)
 
 
-@pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
 def test_get_resource_estimate(
     provider: qss.SuperstaqProvider,
 ) -> None:
@@ -344,7 +341,6 @@ def _call_cq_compile_and_validate(
     _ = _get_validated_list_compiled_circuits(compile_call([circuit, circuit]))
 
 
-@pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
 @pytest.mark.parametrize("backend_name", ["cq_sqale_simulator", "cq_sqale_qpu"])
 def test_cq_compile_v2(backend_name: str, provider: qss.SuperstaqProvider) -> None:
     _call_cq_compile_and_validate(backend_name, provider)
@@ -363,14 +359,12 @@ def test_cq_compile_v3(
     _call_cq_compile_and_validate(backend_name, provider, api_version="v0.3.0")
 
 
-@pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
 def test_get_aqt_configs(provider: qss.SuperstaqProvider) -> None:
     res = provider.aqt_get_configs()
     assert "pulses" in res
     assert "variables" in res
 
 
-@pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
 def test_supercheq(provider: qss.SuperstaqProvider) -> None:
     # fmt: off
     files = [
@@ -392,7 +386,6 @@ def test_supercheq(provider: qss.SuperstaqProvider) -> None:
     assert fidelities.shape == (32, 32)
 
 
-@pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
 def test_dfe(provider: qss.SuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(1)
     qc.h(0)
@@ -410,7 +403,6 @@ def test_dfe(provider: qss.SuperstaqProvider) -> None:
         _ = provider.process_dfe(["1234", "5678"])
 
 
-@pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
 def test_aces(provider: qss.SuperstaqProvider) -> None:
     backend = provider.get_backend("ss_unconstrained_simulator")
     with pytest.raises(gss.SuperstaqException, match=r"disabled"):
@@ -492,7 +484,6 @@ def test_submit_dry_run(
     # TODO: have additional, dedicated unit tests to check more things for 'v0.3.0'
 
 
-@pytest.mark.parametrize("provider", ["v0.2.0"], indirect=True)
 def test_dry_run_submit_to_sqale_with_qubit_sorting(provider: qss.SuperstaqProvider) -> None:
     """Regression test for https://github.com/Infleqtion/client-superstaq/issues/776.
 

@@ -45,7 +45,7 @@ def service(
     Returns:
         A `cirq_superstaq` service instance.
     """
-    api_version = request.param
+    api_version = getattr(request, "param", "v0.2.0")
     return css.Service(api_version=api_version)
 
 
@@ -173,7 +173,6 @@ def test_aqt_compile(service: css.Service[css.compiler_output.CompilerOutput | c
         )
 
 
-@pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
 def test_aqt_compile_eca(service: css.Service) -> None:
     circuit = cirq.Circuit(
         cirq.H(cirq.LineQubit(4)),
@@ -193,7 +192,6 @@ def test_aqt_compile_eca(service: css.Service) -> None:
 
 
 @pytest.mark.skip(reason="Won't pass until server issue related to this is fixed")
-@pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
 def test_aqt_compile_eca_regression(service: css.Service) -> None:
     circuit = cirq.Circuit(
         cirq.H(cirq.LineQubit(4)),
@@ -222,7 +220,6 @@ def test_get_balance(service: css.Service[css.compiler_output.CompilerOutput | c
     assert isinstance(service.get_balance(pretty_output=False), float)
 
 
-@pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
 def test_get_resource_estimate(service: css.Service) -> None:
     q0 = cirq.LineQubit(0)
     q1 = cirq.LineQubit(1)
@@ -381,7 +378,6 @@ def _call_cq_compile_and_validate(
     _ = _get_validated_single_compiled_circuit(out)
 
 
-@pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
 @pytest.mark.parametrize("target", ["cq_sqale_simulator", "cq_sqale_qpu"])
 def test_cq_compile_v2(target: str, service: css.Service) -> None:
     _call_cq_compile_and_validate(target, service)
@@ -397,14 +393,12 @@ def test_cq_compile_v3(target: str, service: css.Service[css.JobV3]) -> None:
     _call_cq_compile_and_validate(target, service, api_version="v0.3.0")
 
 
-@pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
 def test_get_aqt_configs(service: css.Service) -> None:
     res = service.aqt_get_configs()
     assert "pulses" in res
     assert "variables" in res
 
 
-@pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
 def test_supercheq(service: css.Service) -> None:
     # fmt: off
     files = [
@@ -426,7 +420,6 @@ def test_supercheq(service: css.Service) -> None:
     assert fidelities.shape == (32, 32)
 
 
-@pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
 def test_dfe(service: css.Service) -> None:
     circuit = cirq.Circuit(cirq.H(cirq.q(0)))
     target = "ss_unconstrained_simulator"
@@ -442,7 +435,6 @@ def test_dfe(service: css.Service) -> None:
         _ = service.process_dfe(["1234", "5678"])
 
 
-@pytest.mark.parametrize("service", ["v0.2.0"], indirect=True)
 def test_aces(service: css.Service) -> None:
     noise_model = cirq.NoiseModel.from_noise_model_like(cirq.depolarize(0.1))
     with pytest.raises(gss.SuperstaqException, match=r"disabled"):
