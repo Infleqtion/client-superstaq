@@ -278,7 +278,7 @@ def test_get_targets(service: css.Service[css.compiler_output.CompilerOutput | c
 
     for gss_target in result:
         target_name = gss_target.target
-        # Temporary filtering of targets without target info:
+        # TODO: Temporary filtering of targets without target info:
         if target_name not in ("aqt_demo_qpu", "aqt_iqm20q_qpu"):
             assert service.target_info(target_name).get("target") == target_name
 
