@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import os
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import general_superstaq as gss
 import numpy as np
@@ -43,7 +43,7 @@ def provider(
     Returns:
         A `qiskit_superstaq` provider instance.
     """
-    api_version = getattr(request, "param", "v0.2.0")
+    api_version: Literal["v0.2.0", "v0.3.0"] = getattr(request, "param", "v0.2.0")
     return qss.SuperstaqProvider(api_version=api_version)
 
 

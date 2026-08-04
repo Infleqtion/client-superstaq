@@ -18,7 +18,7 @@ from __future__ import annotations
 import os
 import re
 import uuid
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import cirq
 import general_superstaq as gss
@@ -45,7 +45,7 @@ def service(
     Returns:
         A `cirq_superstaq` service instance.
     """
-    api_version = getattr(request, "param", "v0.2.0")
+    api_version: Literal["v0.2.0", "v0.3.0"] = getattr(request, "param", "v0.2.0")
     return css.Service(api_version=api_version)
 
 
