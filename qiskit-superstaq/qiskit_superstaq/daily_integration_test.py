@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import os
 import re
-from collections.abc import Iterable
 from typing import TYPE_CHECKING, Literal
 
 import general_superstaq as gss
@@ -29,6 +28,7 @@ from general_superstaq import ResourceEstimate
 import qiskit_superstaq as qss
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from typing import TypeGuard
 
 
