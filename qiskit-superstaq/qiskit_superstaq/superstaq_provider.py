@@ -28,8 +28,8 @@ from __future__ import annotations
 
 import uuid
 import warnings
-from collections.abc import Callable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Generic, cast, overload
+from collections.abc import Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Generic, overload
 
 import general_superstaq as gss
 import qiskit
@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     import numpy as np
     import numpy.typing as npt
     from _typeshed import SupportsItems
+    from typing_extensions import TypeGuard
 
 
 class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
@@ -179,17 +180,30 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
     def __repr__(self) -> str:
         return f"<SuperstaqProvider(api_key={self._client.api_key}, name={self._name})>"
 
+    def _is_valid_compile_result(
+        self,
+        compile_result: object,
+    ) -> TypeGuard[QssCompileResultT_co]:
+        if isinstance(self._client, _SuperstaqClientV3):
+            return isinstance(compile_result, qss.SuperstaqJobV3)
+        return isinstance(compile_result, qss.compiler_output.CompilerOutput)
+
     def _map_compile_request_to_client_result(
         self,
         json_dict: dict[str, Any],
         *,
-        legacy_parser: Callable[[dict[str, Any]], qss.compiler_output.CompilerOutput],
+        circuits_is_list: bool,
+        num_eca_circuits: int | None = None,
     ) -> QssCompileResultT_co:
         """Maps a compile endpoint's JSON response to the output type expected by the API version.
 
         Args:
              json_dict: The JSON output from a compile endpoint.
-             legacy_parser: The JSON parsing function to use for the v0.2.0 API.
+             circuits_is_list: A boolean flag that controls whether the returned object has a
+                 `.circuits` attribute (if `True`) or a `.circuit` attribute (`False`). Note:
+                 relevant only for the v0.2.0 API.
+             num_eca_circuits: Optional number of logically equivalent random circuits to generate
+                 for each input circuit. Note: relevant only for the v0.2.0 API.
 
         Returns:
              For v0.3.0, compile-like endpoints will return a `qss.SuperstaqJobV3`. For v0.2.0,
@@ -198,14 +212,20 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         Raises:
             TypeError: If `json_dict` is missing a job ID for the v0.3.0 API version.
         """
+        compile_result: qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3
         if isinstance(self._client, gss.superstaq_client._SuperstaqClientV3):
             job_id = json_dict.get("job_id")
             if not isinstance(job_id, str):
                 raise TypeError("No valid job id was found in the compile request.")
-            return cast(
-                "QssCompileResultT_co", qss.SuperstaqJobV3(client=self._client, job_id=job_id)
+            compile_result = qss.SuperstaqJobV3(client=self._client, job_id=job_id)
+        else:
+            compile_result = qss.compiler_output.CompilerOutput.read_json(
+                json_dict=json_dict,
+                circuits_is_list=circuits_is_list,
+                num_eca_circuits=num_eca_circuits,
             )
-        return cast("QssCompileResultT_co", legacy_parser(json_dict))
+        assert self._is_valid_compile_result(compile_result)
+        return compile_result
 
     def get_backend(self, target: str) -> qss.SuperstaqBackend[QssCompileResultT_co]:
         """Returns a Superstaq backend.

@@ -685,4 +685,6 @@ class JaqalService(BaseService):
                 "target": target,
             }
         )
-        return gss.compiler_output.read_json_jaqal(json_dict, num_eca_circuits=num_eca_circuits)
+        return gss.compiler_output.CompilerOutput.read_json_jaqal(
+            json_dict, num_eca_circuits=num_eca_circuits
+        )
