@@ -29,11 +29,12 @@ from __future__ import annotations
 import uuid
 import warnings
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Generic, TypeGuard, overload
+from typing import TYPE_CHECKING, Any, Generic, overload
 
 import general_superstaq as gss
 import qiskit
 from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
+from typing_extensions import TypeGuard
 
 import qiskit_superstaq as qss
 from qiskit_superstaq.superstaq_backend import QssCompileResultT_co

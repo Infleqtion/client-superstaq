@@ -33,7 +33,7 @@ import uuid
 import warnings
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Generic, Literal, TypeGuard, Union, overload
+from typing import TYPE_CHECKING, Any, Generic, Literal, Union, overload
 
 import cirq
 import general_superstaq as gss
@@ -41,7 +41,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 from scipy.optimize import curve_fit
-from typing_extensions import TypeVar
+from typing_extensions import TypeGuard, TypeVar
 
 import cirq_superstaq as css
 
