@@ -29,7 +29,7 @@ from __future__ import annotations
 import uuid
 import warnings
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Generic, cast, overload
+from typing import TYPE_CHECKING, Any, Generic, TypeGuard, overload
 
 import general_superstaq as gss
 import qiskit
@@ -179,6 +179,14 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
     def __repr__(self) -> str:
         return f"<SuperstaqProvider(api_key={self._client.api_key}, name={self._name})>"
 
+    def _is_valid_compile_result(
+        self,
+        compile_result: qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3,
+    ) -> TypeGuard[QssCompileResultT_co]:
+        if isinstance(self._client, _SuperstaqClientV3):
+            return isinstance(compile_result, qss.SuperstaqJobV3)
+        return isinstance(compile_result, qss.compiler_output.CompilerOutput)
+
     def _map_compile_request_to_client_result(
         self,
         json_dict: dict[str, Any],
@@ -203,21 +211,20 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         Raises:
             TypeError: If `json_dict` is missing a job ID for the v0.3.0 API version.
         """
+        compile_result: qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3
         if isinstance(self._client, gss.superstaq_client._SuperstaqClientV3):
             job_id = json_dict.get("job_id")
             if not isinstance(job_id, str):
                 raise TypeError("No valid job id was found in the compile request.")
-            return cast(
-                "QssCompileResultT_co", qss.SuperstaqJobV3(client=self._client, job_id=job_id)
-            )
-        return cast(
-            "QssCompileResultT_co",
-            qss.compiler_output.CompilerOutput.read_json(
+            compile_result = qss.SuperstaqJobV3(client=self._client, job_id=job_id)
+        else:
+            compile_result = qss.compiler_output.CompilerOutput.read_json(
                 json_dict=json_dict,
                 circuits_is_list=circuits_is_list,
                 num_eca_circuits=num_eca_circuits,
-            ),
-        )
+            )
+        assert self._is_valid_compile_result(compile_result)
+        return compile_result
 
     def get_backend(self, target: str) -> qss.SuperstaqBackend[QssCompileResultT_co]:
         """Returns a Superstaq backend.

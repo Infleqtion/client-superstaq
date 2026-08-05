@@ -33,7 +33,7 @@ import uuid
 import warnings
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Generic, Literal, Union, cast, overload
+from typing import TYPE_CHECKING, Any, Generic, Literal, TypeGuard, Union, overload
 
 import cirq
 import general_superstaq as gss
@@ -265,6 +265,14 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             **kwargs,
         )
 
+    def _is_valid_compile_result(
+        self,
+        compile_result: css.compiler_output.CompilerOutput | css.JobV3,
+    ) -> TypeGuard[CssCompileResultT_co]:
+        if isinstance(self._client, _SuperstaqClientV3):
+            return isinstance(compile_result, css.JobV3)
+        return isinstance(compile_result, css.compiler_output.CompilerOutput)
+
     def _map_compile_request_to_client_result(
         self,
         json_dict: dict[str, Any],
@@ -289,19 +297,20 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         Raises:
             TypeError: If `json_dict` is missing a job ID for the v0.3.0 API version.
         """
+        compile_result: css.compiler_output.CompilerOutput | css.JobV3
         if isinstance(self._client, gss.superstaq_client._SuperstaqClientV3):
             job_id = json_dict.get("job_id")
             if not isinstance(job_id, str):
                 raise TypeError("No valid job id was found in the compile request.")
-            return cast("CssCompileResultT_co", css.JobV3(client=self._client, job_id=job_id))
-        return cast(
-            "CssCompileResultT_co",
-            css.compiler_output.CompilerOutput.read_json(
+            compile_result = css.JobV3(client=self._client, job_id=job_id)
+        else:
+            compile_result = css.compiler_output.CompilerOutput.read_json(
                 json_dict=json_dict,
                 circuits_is_list=circuits_is_list,
                 num_eca_circuits=num_eca_circuits,
-            ),
-        )
+            )
+        assert self._is_valid_compile_result(compile_result)
+        return compile_result
 
     def _resolve_target(self, target: str | None) -> str:
         target = target or self.default_target
