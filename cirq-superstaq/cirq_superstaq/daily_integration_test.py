@@ -18,6 +18,7 @@ from __future__ import annotations
 import os
 import re
 import uuid
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Literal
 
 import cirq
@@ -62,8 +63,8 @@ def _get_validated_single_compiled_circuit(
     return out.compiled_circuits(0)
 
 
-def is_exactly_circuit_list(
-    circuits: list[cirq.Circuit] | list[list[cirq.Circuit]],
+def is_exactly_cirq_circuit_list(
+    circuits: Iterable[object],
 ) -> TypeGuard[list[cirq.Circuit]]:
     return all(isinstance(circuit, cirq.Circuit) for circuit in circuits)
 
@@ -82,7 +83,7 @@ def _get_validated_list_compiled_circuits(
 
     assert isinstance(compiled_circuits, list)
     assert len(compiled_circuits) == num_circuits
-    assert is_exactly_circuit_list(compiled_circuits)
+    assert is_exactly_cirq_circuit_list(compiled_circuits)
     return compiled_circuits
 
 

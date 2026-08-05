@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import os
 import re
+from collections.abc import Iterable
 from typing import TYPE_CHECKING, Literal
 
 import general_superstaq as gss
@@ -60,8 +61,8 @@ def _get_validated_single_compiled_circuit(
     return out.compiled_circuits(0)
 
 
-def is_exactly_circuit_list(
-    circuits: list[qiskit.QuantumCircuit] | list[list[qiskit.QuantumCircuit]],
+def is_exactly_qiskit_circuit_list(
+    circuits: Iterable[object],
 ) -> TypeGuard[list[qiskit.QuantumCircuit]]:
     return all(isinstance(circuit, qiskit.QuantumCircuit) for circuit in circuits)
 
@@ -81,7 +82,7 @@ def _get_validated_list_compiled_circuits(
 
     assert isinstance(compiled_circuits, list)
     assert len(compiled_circuits) == num_circuits
-    assert is_exactly_circuit_list(compiled_circuits)
+    assert is_exactly_qiskit_circuit_list(compiled_circuits)
     return compiled_circuits
 
 
