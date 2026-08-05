@@ -41,13 +41,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from general_superstaq.superstaq_client import _SuperstaqClient, _SuperstaqClientV3
 from scipy.optimize import curve_fit
-from typing_extensions import TypeGuard, TypeVar
+from typing_extensions import TypeVar
 
 import cirq_superstaq as css
 
 if TYPE_CHECKING:
     import numpy.typing as npt
     from _typeshed import SupportsItems
+    from typing_extensions import TypeGuard
 
 CssCompileResultT_co = TypeVar(
     "CssCompileResultT_co",
@@ -690,7 +691,6 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             options_dict["random_seed"] = int(random_seed)
         if atol is not None:
             options_dict["atol"] = float(atol)
-
         if gate_defs is not None:
             gate_defs_cirq = {}
             for key, val in gate_defs.items():
