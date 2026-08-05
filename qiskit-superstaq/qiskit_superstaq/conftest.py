@@ -28,6 +28,7 @@ import qiskit_superstaq as qss
 
 @pytest.fixture
 def rng() -> np.random.Generator:
+    """A seed fixed (via `random`) `np.random.default_rng` to use for `pytest` reproducibility."""
     return np.random.default_rng(random.getrandbits(128))
 
 
@@ -182,7 +183,7 @@ def fake_superstaq_provider() -> MockSuperstaqProvider:
 
 
 @pytest.fixture
-def fake_superstaq_providerV3() -> MockSuperstaqProvider:
+def fake_superstaq_provider_v3() -> MockSuperstaqProvider:
     """Fixture that retrieves the `SuperstaqProvider`.
 
     Returns:
