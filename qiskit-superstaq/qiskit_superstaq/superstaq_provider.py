@@ -182,7 +182,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
 
     def _is_valid_compile_result(
         self,
-        compile_result: qss.compiler_output.CompilerOutput | qss.SuperstaqJobV3,
+        compile_result: object,
     ) -> TypeGuard[QssCompileResultT_co]:
         if isinstance(self._client, _SuperstaqClientV3):
             return isinstance(compile_result, qss.SuperstaqJobV3)

@@ -268,7 +268,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
 
     def _is_valid_compile_result(
         self,
-        compile_result: css.compiler_output.CompilerOutput | css.JobV3,
+        compile_result: object,
     ) -> TypeGuard[CssCompileResultT_co]:
         if isinstance(self._client, _SuperstaqClientV3):
             return isinstance(compile_result, css.JobV3)
