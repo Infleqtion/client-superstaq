@@ -387,7 +387,7 @@ class _BaseSuperstaqClient:
 class _AbstractUserClient(_BaseSuperstaqClient, ABC):
     """Abstract base class for V2 and V3 clients."""
 
-    def __init__(  # noqa: PLR0917
+    def __init__(
         self,
         client_name: str,
         api_key: str | None = None,

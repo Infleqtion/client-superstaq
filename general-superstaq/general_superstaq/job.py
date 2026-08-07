@@ -221,7 +221,7 @@ class Job:
         if index is None:
             return self._overall_status
 
-        gss.validation.validate_integer_param(index, min_val=0, parameter_name="index")
+        gss.validation.validate_integer_param(index, min_val=0)
         return self.job_data.statuses[index]
 
     def cancel(self, **kwargs: object) -> None:
