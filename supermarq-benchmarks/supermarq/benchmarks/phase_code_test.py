@@ -24,6 +24,9 @@ def test_phase_code_circuit() -> None:
     pc = PhaseCode(3, 1, [1, 1, 1])
     assert len(pc.circuit().all_qubits()) == 5
 
+    pc = PhaseCode(3, 1, [1, 0, 1])
+    assert len(pc.circuit().all_qubits()) == 5
+
 
 def test_phase_code_score() -> None:
     pc = PhaseCode(4, 2, [0, 1, 1, 0])
