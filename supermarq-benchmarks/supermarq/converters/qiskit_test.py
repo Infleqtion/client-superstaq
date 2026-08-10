@@ -358,6 +358,9 @@ def test_handle_qiskit_instruction() -> None:
             qiskit.circuit.Gate("unknown", 1, []), [cirq.LineQubit(789)], []
         )
 
+    qubits = random_qubits(2)
+    trial_gate = qiskit.circuit.library.CXGate()
+
 
 def test_translate_circuit() -> None:
     q0, q1, q2, q3 = cirq.LineQubit.range(4)
@@ -781,6 +784,7 @@ def test_handle_qiskit_controlled_op_with_unknown_gates() -> None:
 
     qiskit_gate.definition = qiskit.circuit.library.C3XGate().definition
     assert sm.converters.qiskit._handle_qiskit_controlled_op(qiskit_gate, qubits) is None
+    assert sm.converters.qiskit._handle_qiskit_inst(qiskit_gate, qubits, [])[1] == 0.0
 
 
 def test_handle_qiskit_u_gate() -> None:
@@ -1373,6 +1377,24 @@ def test_cirq_to_qiskit_classical_control() -> None:
         qc.z(0)
 
     assert sm.converters.cirq_to_qiskit(cirq_circuit, sorted(cirq_circuit.all_qubits())) == qc
+
+    q0, q1 = sympy.symbols("q0 q1")
+    cr = qiskit.ClassicalRegister(2, "c")
+    with pytest.raises(
+        gss.SuperstaqException,
+        match=re.escape("We don't currently support q0 + q1 in our qiskit classical control flow."),
+    ):
+        sm.converters.qiskit.cirq_classical_control_to_qiskit(
+            cirq.Z(qubits[0]).with_classical_controls(sympy.Add(q0, q1)),
+            {str(sympy_cond2): [q1]},
+            cr,
+        )
+
+    cr = qiskit.ClassicalRegister(2, "cr")
+    condition = (cr[1], 1)
+    sm.converters.qiskit.cirq_classical_control_to_qiskit(
+        cirq.Z(qubits[0]).with_classical_controls(cr[1]), {str(condition): [1]}, cr
+    )
 
 
 def test_cirq_qubits_to_qiskit() -> None:
