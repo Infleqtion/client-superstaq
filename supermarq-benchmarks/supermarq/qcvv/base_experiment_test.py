@@ -365,6 +365,13 @@ def test_results_analyze(mock_print: MagicMock, abc_experiment: ExampleExperimen
         mock_plot.assert_called_once_with(filename="test_name")
         mock_print.assert_called_once_with("This is a test: 3.142")
 
+        mock_print.reset_mock()
+        mock_plot.reset_mock()
+        results.analyze(plot_results=False, print_results=False, plot_filename="test_name")
+        assert results.example_final_result == 3.142
+        mock_plot.assert_not_called()
+        mock_print.assert_not_called()
+
 
 def test_results_ready(abc_experiment: ExampleExperiment) -> None:
     results = ExampleResults(target="target", experiment=abc_experiment, data=pd.DataFrame())
