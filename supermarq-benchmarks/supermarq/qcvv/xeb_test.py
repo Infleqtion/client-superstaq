@@ -416,6 +416,28 @@ def test_results_no_data() -> None:
         results.data = pd.DataFrame()
         results.plot_results()
 
+    xeb_experiment = XEB(num_circuits=2, cycle_depths=[10], single_qubit_gate_set=[cirq.H])
+    results = XEBResults(
+        target="example",
+        experiment=xeb_experiment,
+        data=pd.DataFrame(
+            {
+                "uuid": xeb_experiment.samples[1].uuid,
+                "circuit_realization": 0,
+                "cycle_depth": 1,
+                "circuit_depth": 3,
+                "00": 1.0,
+                "01": 0.0,
+                "10": 0.0,
+                "11": 0.0,
+            },
+            index=[0],
+        ),
+    )
+    results._analyze()
+    results.plot_results()
+    results.plot_speckle()
+
 
 def test_results_not_analyzed() -> None:
     results = XEBResults(target="example", experiment=XEB(1, []), data=None)
