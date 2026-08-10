@@ -1,4 +1,4 @@
-# Copyright 2026 Infleqtion, Inc.
+# Copyright 2026 Infleqtion
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -297,15 +297,7 @@ def get_test_files(
 ####################################################################################################
 # file parsing, incremental checks, and decorator to exit instead of returning a failing exit code
 
-CHECK_LIST = [
-    "configs",
-    "format",
-    "mypy",
-    "pytest",
-    "coverage",
-    "requirements",
-    "build_docs",
-]
+CHECK_LIST = ["configs", "format", "mypy", "pytest", "coverage", "requirements", "build_docs", "ty"]
 
 
 def get_check_parser(no_files: bool = False) -> argparse.ArgumentParser:

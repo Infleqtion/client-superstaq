@@ -1,4 +1,4 @@
-# Copyright 2026 Infleqtion, Inc.
+# Copyright 2026 Infleqtion
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ from . import (
     mypy_,
     pytest_,
     requirements,
+    ty_,
 )
 
 __all__ = [
@@ -41,4 +42,5 @@ __all__ = [
     "mypy_",
     "pytest_",
     "requirements",
+    "ty_",
 ]
