@@ -30,7 +30,7 @@ def run(
     exclude: str | Iterable[str] = (),
     silent: bool = False,
 ) -> int:
-    """Runs ty on the repository (typing check).
+    """Runs `ty` on the repository (typing check).
 
     Args:
         *args: Command line arguments.
@@ -44,7 +44,7 @@ def run(
     parser = check_utils.get_check_parser()
     parser.description = textwrap.dedent(
         """
-        Runs ty on the repository (typing check).
+        Runs `ty` on the repository (typing check).
         """
     )
 
