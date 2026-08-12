@@ -527,7 +527,6 @@ def test_aces(
         == "id1"
     )
 
-    # tests the 'false' noise branch option for submit_aces in service.py
     assert (
         service.submit_aces(
             target="ss_unconstrained_simulator",
@@ -536,7 +535,6 @@ def test_aces(
             num_circuits=10,
             mirror_depth=5,
             extra_depth=5,
-            noise="",
             error_prob=0.1,
         )
         == "id1"
