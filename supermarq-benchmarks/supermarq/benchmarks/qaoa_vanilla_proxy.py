@@ -67,7 +67,7 @@ class QAOAVanillaProxy(Benchmark):
         rng = np.random.default_rng(random.getrandbits(128))
         for i in range(self.num_qubits):
             for j in range(i + 1, self.num_qubits):
-                hamiltonian.append((i, j, rng.choice([-1, 1])))
+                hamiltonian.append((i, j, int(rng.choice([-1, 1]))))
 
         rng.shuffle(hamiltonian)
 
