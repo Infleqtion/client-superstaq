@@ -116,6 +116,7 @@ class CompilerOutput(gss.BaseCompilerOutput[qiskit.QuantumCircuit, int]):
         final_logical_to_physicals: (
             dict[int, int] | list[dict[int, int]] | list[list[dict[int, int]]]
         ),
+        *,
         pulse_gate_circuits: qiskit.QuantumCircuit | list[qiskit.QuantumCircuit] | None = None,
         seq: qtrl.sequencer.Sequence | None = None,
         jaqal_programs: list[str] | None = None,
