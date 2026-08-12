@@ -1280,7 +1280,6 @@ def test_superstaq_client_compile_v3__type_not_found(
         ("qiskit", '["\\"compiled world\\""]'),
     ],
 )
-
 @mock.patch("requests.Session.post")
 def test_superstaq_client_compile_v3(
     mock_post: mock.MagicMock,
@@ -1315,6 +1314,7 @@ def test_superstaq_client_compile_v3(
         verify=False,
     )
     assert job_json == {"job_id": str(job_id)}
+
 
 @pytest.mark.parametrize("client_name", ["client_v2", "client_v3"])
 @mock.patch("requests.Session.post")
