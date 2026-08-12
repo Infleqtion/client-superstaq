@@ -55,20 +55,20 @@ def test_run(fake_superstaq_provider: MockSuperstaqProvider) -> None:
         backend.run(qc, shots=1000)
 
 
-def test_runV3(fake_superstaq_providerV3: MockSuperstaqProvider) -> None:
+def test_runV3(fake_superstaq_provider_v3: MockSuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(2, 2)
     qc.h(0)
     qc.cx(0, 1)
     qc.measure([0, 0], [1, 1])
 
-    backend = fake_superstaq_providerV3.get_backend("ss_example_qpu")
+    backend = fake_superstaq_provider_v3.get_backend("ss_example_qpu")
 
     with patch(
         "general_superstaq.superstaq_client._SuperstaqClientV3.create_job",
         return_value={"job_id": uuid.UUID(int=42), "num_circuits": 1},
     ):
         answer = backend.run(circuits=qc, shots=1000)
-        client = fake_superstaq_providerV3._client
+        client = fake_superstaq_provider_v3._client
         assert isinstance(client, gss.superstaq_client._SuperstaqClientV3)
         expected = qss.SuperstaqJobV3(client, uuid.UUID(int=42))
         assert answer == expected
@@ -130,12 +130,12 @@ def test_retrieve_job(fake_superstaq_provider: MockSuperstaqProvider) -> None:
     assert job == backend.retrieve_job("job_id")
 
 
-def test_retrieve_jobV3(fake_superstaq_providerV3: MockSuperstaqProvider) -> None:
+def test_retrieve_jobV3(fake_superstaq_provider_v3: MockSuperstaqProvider) -> None:
     qc = qiskit.QuantumCircuit(2, 2)
     qc.h(0)
     qc.cx(0, 1)
     qc.measure([0, 0], [1, 1])
-    backend = fake_superstaq_providerV3.get_backend("ibmq_brisbane_qpu")
+    backend = fake_superstaq_provider_v3.get_backend("ibmq_brisbane_qpu")
     with patch(
         "general_superstaq.superstaq_client._SuperstaqClientV3.create_job",
         return_value={"job_id": uuid.UUID(int=42), "num_circuits": 1},

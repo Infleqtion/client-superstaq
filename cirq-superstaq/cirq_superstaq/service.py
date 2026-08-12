@@ -154,6 +154,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
     def __init__(
         self: Service[css.compiler_output.CompilerOutput],
         api_key: str | None = None,
+        *,
         remote_host: str | None = None,
         default_target: str | None = None,
         api_version: gss.typing.ApiV2 = "v0.2.0",
@@ -172,6 +173,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
     def __init__(
         self: Service[css.JobV3],
         api_key: str | None = None,
+        *,
         remote_host: str | None = None,
         default_target: str | None = None,
         api_version: gss.typing.ApiV3 = "v0.3.0",
@@ -189,6 +191,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
     def __init__(
         self,
         api_key: str | None = None,
+        *,
         remote_host: str | None = None,
         default_target: str | None = None,
         api_version: gss.typing.ApiV2 | gss.typing.ApiV3 = gss.API_VERSION,
@@ -368,7 +371,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             The counts from running the circuit(s).
         """
         resolved_circuits = cirq.resolve_parameters(circuits, param_resolver)
-        job = self.create_job(resolved_circuits, int(repetitions), target, method, **kwargs)
+        job = self.create_job(resolved_circuits, int(repetitions), target, method=method, **kwargs)
         if isinstance(circuits, cirq.Circuit):
             return job.counts(0)
         return [job.counts(i) for i in range(len(circuits))]
@@ -421,7 +424,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             The `cirq.ResultDict` object(s) from running the circuit(s).
         """
         resolved_circuits = cirq.resolve_parameters(circuits, param_resolver)
-        job = self.create_job(resolved_circuits, int(repetitions), target, method, **kwargs)
+        job = self.create_job(resolved_circuits, int(repetitions), target, method=method, **kwargs)
 
         if isinstance(circuits, cirq.Circuit):
             return counts_to_results(job.counts(0), circuits, param_resolver)
@@ -447,6 +450,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         circuits: cirq.AbstractCircuit | Sequence[cirq.AbstractCircuit],
         repetitions: int = 1000,
         target: str | None = None,
+        *,
         method: str | None = None,
         verbatim: bool = False,
         tag: Sequence[str] | str = (),
@@ -554,6 +558,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         self,
         circuits: cirq.Circuit | Sequence[cirq.Circuit],
         num_equivalent_circuits: int,
+        *,
         random_seed: int | None = None,
         target: str = "aqt_keysight_qpu",
         atol: float | None = None,
@@ -1102,6 +1107,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         qubits: Sequence[int],
         shots: int,
         num_circuits: int,
+        *,
         mirror_depth: int,
         extra_depth: int,
         method: str | None = None,
@@ -1190,6 +1196,7 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         repetitions: int,
         process_circuit: cirq.Circuit,
         target: str,
+        *,
         n_channels: int,
         n_sequences: int,
         depths: Sequence[int],
@@ -1243,10 +1250,10 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
             self._resolve_target(target),
             repetitions,
             {"cirq_circuits": serialized_circuits},
-            n_channels,
-            n_sequences,
-            depths,
-            method,
+            n_channels=n_channels,
+            n_sequences=n_sequences,
+            depths=depths,
+            method=method,
             noise=noise_dict,
         )
 

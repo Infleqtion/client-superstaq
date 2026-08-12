@@ -41,6 +41,7 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
         circuits: (C | list[C] | list[list[C]]),
         initial_logical_to_physicals: (dict[Q, Q] | list[dict[Q, Q]] | list[list[dict[Q, Q]]]),
         final_logical_to_physicals: (dict[Q, Q] | list[dict[Q, Q]] | list[list[dict[Q, Q]]]),
+        *,
         pulse_gate_circuits: object | None = None,
         seq: object | None = None,
         jaqal_programs: list[str] | None = None,
@@ -358,6 +359,7 @@ class CompilerOutput(BaseCompilerOutput[str, int]):
         final_logical_to_physicals: dict[int, int]
         | list[dict[int, int]]
         | list[list[dict[int, int]]],
+        *,
         pulse_gate_circuits: object | None = None,
         seq: object | None = None,
         jaqal_programs: list[str] | None = None,

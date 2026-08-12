@@ -102,6 +102,7 @@ class CompilerOutput(gss.compiler_output.BaseCompilerOutput[cirq.Circuit, cirq.Q
             | list[dict[cirq.Qid, cirq.Qid]]
             | list[list[dict[cirq.Qid, cirq.Qid]]]
         ),
+        *,
         pulse_gate_circuits: object | None = None,
         seq: qtrl.sequencer.Sequence | None = None,
         jaqal_programs: list[str] | None = None,
