@@ -24,6 +24,9 @@ def test_bit_code_circuit() -> None:
     bc = BitCode(3, 1, [1, 1, 1])
     assert len(bc.circuit().all_qubits()) == 5
 
+    bc = BitCode(3, 1, [1, 0, 1])
+    assert len(bc.circuit().all_qubits()) == 5
+
 
 def test_bit_code_score() -> None:
     bc = BitCode(4, 2, [0, 1, 1, 0])
