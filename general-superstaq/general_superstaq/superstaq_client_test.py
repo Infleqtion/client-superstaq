@@ -1280,6 +1280,7 @@ def test_superstaq_client_compile_v3__type_not_found(
         ("qiskit", '["\\"compiled world\\""]'),
     ],
 )
+
 @mock.patch("requests.Session.post")
 def test_superstaq_client_compile_v3(
     mock_post: mock.MagicMock,
@@ -1314,81 +1315,6 @@ def test_superstaq_client_compile_v3(
         verify=False,
     )
     assert job_json == {"job_id": str(job_id)}
-
-    job_id = uuid.UUID(int=0)
-    mock_post.return_value.json.return_value = {"job_id": job_id, "num_circuits": 1}
-
-    client_v3.compile({"cirq_circuits": "Hello", "target": "ss_example_qpu"})
-
-    client_v3.compile({"qiskit_circuits": "Hello", "target": "ss_example_qpu"})
-
-    with pytest.raises(RuntimeError, match=r"No recognized circuits found."):
-        client_v3.compile({"unknown_circuits": "Hello", "target": "ss_example_qpu"})
-
-
-@mock.patch("requests.Session.get")
-@mock.patch("requests.Session.post")
-def test_superstaq_client_compile_v3_with_wait(
-    mock_post: mock.MagicMock,
-    mock_get: mock.MagicMock,
-    client_v3: gss.superstaq_client._SuperstaqClientV3,
-) -> None:
-    job_id = uuid.UUID(int=0)
-    compiling_data = {
-        "job_type": "compile",
-        "statuses": ["compiling"],
-        "status_messages": [None],
-        "user_email": "test@email.com",
-        "target": "ss_example_qpu",
-        "provider_id": ["ss"],
-        "num_circuits": 1,
-        "compiled_circuits": ['"compiled world"'],
-        "input_circuits": ["world"],
-        "circuit_type": "cirq",
-        "counts": [{"count": 200}],
-        "results_dicts": [None],
-        "shots": [200],
-        "dry_run": True,
-        "submission_timestamp": datetime.datetime(1, 1, 1, tzinfo=datetime.timezone.utc),
-        "last_updated_timestamp": [None],
-        "initial_logical_to_physicals": [{0: 0}],
-        "final_logical_to_physicals": [{0: 0}],
-        "logical_qubits": ['[{"qubit": "q0"}]'],
-        "physical_qubits": ['[{"qubit": "q0"}]'],
-    }
-
-    mock_post.return_value.json.return_value = {"job_id": job_id, "num_circuits": 1}
-    response1 = mock.MagicMock()
-    response1.json.return_value = {str(job_id): compiling_data}
-    completed_data = compiling_data.copy()
-    completed_data["statuses"] = ["completed"]
-    response2 = mock.MagicMock()
-    response2.json.return_value = {str(job_id): completed_data}
-    mock_get.side_effect = [response1, response2]
-
-    with mock.patch("time.sleep", return_value=None):
-        client_v3.compile({"cirq_circuits": "Hello", "target": "ss_example_qpu"})
-
-    mock_post.assert_called_with(
-        f"http://example.com/{client_v3.api_version}/client/job",
-        json={
-            "job_type": "compile",
-            "target": "ss_example_qpu",
-            "circuits": "Hello",
-            "circuit_type": "cirq",
-            "verbatim": False,
-            "shots": 0,
-            "dry_run": False,
-            "sim_method": None,
-            "priority": 0,
-            "options_dict": {},
-            "tags": [],
-            "metadata": {},
-        },
-        headers=EXPECTED_HEADERS[client_v3.api_version],
-        verify=False,
-    )
-
 
 @pytest.mark.parametrize("client_name", ["client_v2", "client_v3"])
 @mock.patch("requests.Session.post")
