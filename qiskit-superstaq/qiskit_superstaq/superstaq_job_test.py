@@ -572,6 +572,7 @@ def test_check_if_stopped(backend: qss.SuperstaqBackend) -> None:
 
         job = qss.SuperstaqJob(backend=backend, job_id="123abc")
         job._overall_status = "Running"
+        job._check_if_stopped()
 
 
 def test_refresh_job(backend: qss.SuperstaqBackend) -> None:
