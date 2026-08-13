@@ -155,6 +155,7 @@ class BaseService:
 
     def get_targets(
         self,
+        *,
         simulator: bool | None = None,
         supports_submit: bool | None = None,
         supports_submit_qubo: bool | None = None,
@@ -198,6 +199,7 @@ class BaseService:
 
     def get_my_targets(
         self,
+        *,
         simulator: bool | None = None,
         supports_submit: bool | None = None,
         supports_submit_qubo: bool | None = None,
@@ -487,6 +489,7 @@ class Service(BaseService):
         qubits: Sequence[int],
         shots: int,
         num_circuits: int,
+        *,
         mirror_depth: int,
         extra_depth: int,
         method: str | None = None,

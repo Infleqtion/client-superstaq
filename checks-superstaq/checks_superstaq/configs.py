@@ -85,7 +85,15 @@ def run(*args: str, silent: bool = False) -> int:
     print(check_utils.styled(f"> {file_copy} (copy)", check_utils.Style.GREEN))  # noqa: T201
     print(check_utils.styled("-" * 70, check_utils.Style.CYAN))  # noqa: T201
     for tag, orig_start, orig_end, copy_start, copy_end in deltas:
-        _announce_diff(tag, orig_offset, orig_start, orig_end, copy_offset, copy_start, copy_end)
+        _announce_diff(
+            tag,
+            orig_offset,
+            orig_start,
+            orig_end,
+            copy_offset,
+            copy_start=copy_start,
+            copy_end=copy_end,
+        )
         if orig_start != orig_end:
             text = "\n".join(f"< {line}" for line in lines_orig[orig_start:orig_end])
             print(check_utils.styled(text, check_utils.Style.RED))  # noqa: T201
@@ -112,6 +120,7 @@ def _announce_diff(
     orig_start: int,
     orig_end: int,
     copy_offset: int,
+    *,
     copy_start: int,
     copy_end: int,
 ) -> None:

@@ -65,6 +65,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
     def __init__(
         self: SuperstaqProvider[qss.compiler_output.CompilerOutput],
         api_key: str | None = None,
+        *,
         remote_host: str | None = None,
         api_version: gss.typing.ApiV2 = "v0.2.0",
         max_retry_seconds: int = 3600,
@@ -82,6 +83,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
     def __init__(
         self: SuperstaqProvider[qss.SuperstaqJobV3],
         api_key: str | None = None,
+        *,
         remote_host: str | None = None,
         api_version: gss.typing.ApiV3 = "v0.3.0",
         max_retry_seconds: int = 3600,
@@ -98,6 +100,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
     def __init__(
         self,
         api_key: str | None = None,
+        *,
         remote_host: str | None = None,
         api_version: gss.typing.ApiV2 | gss.typing.ApiV3 = gss.API_VERSION,
         max_retry_seconds: int = 3600,
@@ -220,6 +223,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
 
     def backends(
         self,
+        *,
         simulator: bool | None = None,
         supports_submit: bool | None = None,
         supports_submit_qubo: bool | None = None,
@@ -380,6 +384,7 @@ class SuperstaqProvider(gss.Service, Generic[QssCompileResultT_co]):
         self,
         circuits: qiskit.QuantumCircuit | Sequence[qiskit.QuantumCircuit],
         num_equivalent_circuits: int,
+        *,
         random_seed: int | None = None,
         target: str = "aqt_keysight_qpu",
         atol: float | None = None,
