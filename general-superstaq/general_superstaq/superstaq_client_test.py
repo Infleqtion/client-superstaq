@@ -407,6 +407,7 @@ def test_superstaq_client_use_stored_ibmq_credential(api_version: str) -> None:
 @mock.patch("requests.Session.post")
 def test_supertstaq_client_create_job(
     mock_post: mock.MagicMock,
+    *,
     client_name: str,
     job_id: str | uuid.UUID,
     target: str,
@@ -878,6 +879,7 @@ def test_update_user_balance_invalid_v3(client_v3: gss.superstaq_client._Superst
     ],
 )
 def test_update_user_role(
+    *,
     client_name: str,
     endpoint: str,
     role: int | str,
