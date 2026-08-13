@@ -527,5 +527,18 @@ def test_aces(
         == "id1"
     )
 
+    assert (
+        service.submit_aces(
+            target="ss_unconstrained_simulator",
+            qubits=[0, 1],
+            shots=100,
+            num_circuits=10,
+            mirror_depth=5,
+            extra_depth=5,
+            error_prob=0.1,
+        )
+        == "id1"
+    )
+
     mock_post.return_value.json = lambda: [1] * 51
     assert service.process_aces("id1") == [1] * 51
