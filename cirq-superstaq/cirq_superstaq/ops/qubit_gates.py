@@ -513,16 +513,15 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
             else:
                 self.component_gates += (gate,)
 
-    def qubit_index_to_gate_and_index(
-        self, index: int
-    ) -> tuple[cirq.Gate, int]:  #  This does not return index
+    def qubit_index_to_gate_and_index(self, index: int) -> tuple[cirq.Gate, int]:
         """Gets gate (and index) for the corresponding index.
 
         Args:
             index: The index into a particular member of the `ParallelGates` operation.
 
         Returns:
-            A tuple of the gate at the given index and the index itself.
+            A tuple of the gate at the given index and the qubit index (of the subgate within the
+            parallel gate) .
 
         Raises:
             ValueError: If index is outside bounds of gate index range.
