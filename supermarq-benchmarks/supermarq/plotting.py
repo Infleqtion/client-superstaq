@@ -71,6 +71,7 @@ def plot_results(
 
 def plot_volumetric_results(
     benchmark_data: Iterable[tuple[int, int, float]],
+    *,
     savefn: str | None = None,
     title: str | None = None,
     show: bool = True,
@@ -135,6 +136,7 @@ def plot_correlations(
     device_scores: dict[str, float] | Iterable[dict[str, float]],
     feature_labels: list[str],
     device_name: str | list[str],
+    *,
     savefn: str | None = None,
     show: bool = True,
 ) -> None:
@@ -201,6 +203,7 @@ def plot_benchmark(
     title: str,
     labels: list[str],
     features: list[list[float]],
+    *,
     show: bool = True,
     savefn: str | None = None,
     spoke_labels: list[str] | None = None,
@@ -259,6 +262,7 @@ def heatmap(
     ax: mpl.axes.Axes,
     row_labels: list[str],
     col_labels: list[str],
+    *,
     cbar_kw: dict[str, Any] | None = None,
     cbarlabel: str = "",
     **kwargs: Any,
