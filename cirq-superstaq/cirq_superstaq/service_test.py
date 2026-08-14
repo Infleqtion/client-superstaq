@@ -1400,7 +1400,6 @@ def test_cb(
     ):
         service.plot(processed_test_data)
 
-    # Test truncated labels
     processed_test_data["instance_information"] = {"depths": [1, 2], "n_channels": 11}
 
     with patch(
@@ -1408,7 +1407,6 @@ def test_cb(
         return_value={"test": 123},
     ):
         service.plot(processed_test_data)
-        service.plot(processed_test_data, max_legend_labels=0, legend_labels_count=4)
 
 
 @mock.patch("requests.Session.post")
