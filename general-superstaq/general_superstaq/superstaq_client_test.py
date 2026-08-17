@@ -1490,6 +1490,39 @@ def test_superstaq_client_aces(
             json=expected_json,
             verify=False,
         )
+        client.submit_aces(
+            target="ss_unconstrained_simulator",
+            qubits=[0, 1],
+            shots=100,
+            num_circuits=10,
+            mirror_depth=6,
+            extra_depth=4,
+            method="dry-run",
+            weights=[1, 2],
+            tag="test-tag",
+            lifespan=10,
+            noise={"params": (0.01,)},
+        )
+
+        expected_json = {
+            "target": "ss_unconstrained_simulator",
+            "qubits": [0, 1],
+            "shots": 100,
+            "num_circuits": 10,
+            "mirror_depth": 6,
+            "extra_depth": 4,
+            "method": "dry-run",
+            "weights": [1, 2],
+            "noise": {"params": (0.01,)},
+            "tag": "test-tag",
+            "lifespan": 10,
+        }
+        mock_post.assert_called_with(
+            f"http://example.com/{api_version}/aces",
+            headers=EXPECTED_HEADERS[api_version],
+            json=expected_json,
+            verify=False,
+        )
 
         client.process_aces("id")
         mock_post.assert_called_with(
@@ -1562,11 +1595,43 @@ def test_superstaq_client_cb(
             verify=False,
         )
 
+        client.submit_cb(
+            target="ss_unconstrained_simulator",
+            shots=100,
+            serialized_circuits={"circuits": "test_circuit_data"},
+            n_channels=6,
+            n_sequences=30,
+            depths=[2, 4, 6],
+        )
+
+        expected_json = {
+            "target": "ss_unconstrained_simulator",
+            "shots": 100,
+            "circuits": "test_circuit_data",
+            "n_channels": 6,
+            "n_sequences": 30,
+            "depths": [2, 4, 6],
+        }
+
+        mock_post.assert_called_with(
+            f"http://example.com/{api_version}/cb_submit",
+            headers=EXPECTED_HEADERS[api_version],
+            json=expected_json,
+            verify=False,
+        )
         client.process_cb("id", counts="[{}]")
         mock_post.assert_called_with(
             f"http://example.com/{api_version}/cb_fetch",
             headers=EXPECTED_HEADERS[api_version],
             json={"job_id": "id", "counts": "[{}]"},
+            verify=False,
+        )
+        #  test to  include `counts==False` branch for `process_cb` func in superstaq_client.py
+        client.process_cb("id")
+        mock_post.assert_called_with(
+            f"http://example.com/{api_version}/cb_fetch",
+            headers=EXPECTED_HEADERS[api_version],
+            json={"job_id": "id"},
             verify=False,
         )
     else:
@@ -1623,6 +1688,28 @@ def test_superstaq_client_dfe(
             "options": json.dumps({"lifespan": 10}),
         }
 
+        mock_post.assert_called_with(
+            f"http://example.com/{api_version}/dfe_post",
+            headers=EXPECTED_HEADERS[api_version],
+            json=expected_json,
+            verify=False,
+        )
+        # test to  include `kwargs == False` branch for `submit_dfe` func in superstaq_client.py
+        client.submit_dfe(
+            circuit_1={"Hello": "World"},
+            target_1="ss_example_qpu",
+            circuit_2={"Hello": "World"},
+            target_2="ss_example_qpu",
+            num_random_bases=5,
+            shots=100,
+        )
+
+        expected_json = {
+            "state_1": state,
+            "state_2": state,
+            "shots": 100,
+            "n_bases": 5,
+        }
         mock_post.assert_called_with(
             f"http://example.com/{api_version}/dfe_post",
             headers=EXPECTED_HEADERS[api_version],
