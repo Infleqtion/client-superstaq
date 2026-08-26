@@ -1339,8 +1339,6 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
         std_devs = circuits_and_metadata["process_fidelity_data"]["std_devs"]
         averages = circuits_and_metadata["process_fidelity_data"]["averages"]
 
-        max_legend_labels = 4
-        legend_labels_count = 0
         legend_labels = []
         custom_handles = []
         legend_colors = []
@@ -1372,11 +1370,10 @@ class Service(gss.Service, Generic[CssCompileResultT_co]):
                 _objective(np.arange(0, x_values[-1] + 4), A, p),
             )
             e_f += p
-            if legend_labels_count < max_legend_labels:
-                truncated_label = "A_" + str(ps) + f"={A:.2f} \np_{ps}={p:.2f}"
-                legend_labels.append(truncated_label)
-                legend_labels_count += 1
-                legend_colors.append(plt.gca().lines[-1].get_color())
+
+            truncated_label = "A_" + str(ps) + f"={A:.2f} \np_{ps}={p:.2f}"
+            legend_labels.append(truncated_label)
+            legend_colors.append(plt.gca().lines[-1].get_color())
             plt.xlabel("Sequence Length")
             plt.ylabel("Expectation Value")
 
