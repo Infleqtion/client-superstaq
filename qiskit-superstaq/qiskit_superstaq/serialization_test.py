@@ -432,6 +432,9 @@ def test_gate_serialization(
 )
 def test_nonstandard_static_gate_serialization(gate: qiskit.circuit.Instruction) -> None:
     gates = [gate]
+    gate2 = gate.copy().to_mutable()
+    gate2.ctrl_state = 1
+    gates.append(gate2)
     _check_serialization(*gates)
 
 
