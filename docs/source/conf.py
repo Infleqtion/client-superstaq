@@ -130,7 +130,7 @@ html_favicon = "_static/logos/Infleqtion-favicon-color.png"
 
 
 # Replace common aliases (gss, css, qss) in docstrings.
-def autodoc_process_docstring(app, what, name, obj, options, lines) -> None:
+def autodoc_process_docstring(app, what, name, obj, options, lines) -> None:  # noqa: PLR0917
     for i in range(len(lines)):
         lines[i] = lines[i].replace("gss.", "general_superstaq.")
         lines[i] = lines[i].replace("css.", "cirq_superstaq.")

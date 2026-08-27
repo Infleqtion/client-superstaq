@@ -101,21 +101,14 @@ _controlled_gate_resolvers: dict[
     qiskit.circuit.library.XGate: lambda gate: qiskit.circuit.library.MCXGate(
         gate.num_ctrl_qubits, ctrl_state=gate.ctrl_state, label=gate.label
     ),
-}
-
-
-if hasattr(qiskit.circuit.library, "QFTGate"):
-    # QFTGate introduced in qiskit 1.2.0
-
-    QFTGate = qiskit.circuit.library.QFTGate
-
-    _controlled_gate_resolvers[QFTGate] = lambda gate: QFTGate(
+    qiskit.circuit.library.QFTGate: lambda gate: qiskit.circuit.library.QFTGate(
         gate.num_qubits - gate.num_ctrl_qubits
     ).control(
         num_ctrl_qubits=gate.num_ctrl_qubits,
         ctrl_state=gate.ctrl_state,
         label=gate.label,
-    )
+    ),
+}
 
 
 def json_encoder(val: object) -> dict[str, object]:
@@ -325,13 +318,18 @@ def _prepare_gate(gate: qiskit.circuit.Instruction) -> qiskit.circuit.Instructio
         return gate
 
     if isinstance(gate, qiskit.circuit.ControlledGate):
+        definition = (
+            qiskit.QuantumCircuit()
+            if gate._definition is None
+            else _prepare_circuit(gate._definition)
+        )
         return qiskit.circuit.ControlledGate(
             name=gate._name,
             num_qubits=gate.num_qubits,
             params=gate.params,
             label=gate.label,
             num_ctrl_qubits=gate.num_ctrl_qubits,
-            definition=_prepare_circuit(gate._definition),
+            definition=definition,
             ctrl_state=gate.ctrl_state,
             base_gate=_prepare_gate(gate.base_gate),
         )
