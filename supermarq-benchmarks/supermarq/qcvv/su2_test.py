@@ -120,6 +120,8 @@ def test_build_circuits(su2_experiment: SU2) -> None:  # pragma: no cover
                 ),
             )
 
+
+def test_no_decomp(su2_experiment: SU2) -> None:
     with patch("cirq.single_qubit_matrix_to_phxz", return_value=None):
         samples = su2_experiment._build_circuits(2, [1, 3])
         assert len(samples) == 4
