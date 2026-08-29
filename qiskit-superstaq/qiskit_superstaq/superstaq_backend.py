@@ -121,8 +121,8 @@ class SuperstaqBackend(qiskit.providers.BackendV2, Generic[QssCompileResultT_co]
 
         gate_durations = []
         if duration_info := target_info.get("gate_durations"):
-            for gate_name, qubit_indicies, duration, unit in duration_info:
-                gate_durations.append((gate_name, tuple(qubit_indicies), duration, unit))
+            for gate_name, qubit_indices, duration, unit in duration_info:
+                gate_durations.append((gate_name, tuple(qubit_indices), duration, unit))
 
         basis_gateset = ["reset", "measure"]
         if native_gate_set := target_info.get("native_gate_set"):
@@ -288,10 +288,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2, Generic[QssCompileResultT_co]
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
         return self._provider._map_compile_request_to_client_result(
-            json_dict,
-            legacy_parser=lambda j_dict: qss.compiler_output.read_json(
-                j_dict, circuits_is_list, api_version=self._provider._client.api_version
-            ),
+            json_dict, circuits_is_list=circuits_is_list
         )
 
     def _get_compile_request_json(
@@ -365,19 +362,15 @@ class SuperstaqBackend(qiskit.providers.BackendV2, Generic[QssCompileResultT_co]
         if not self.name.startswith("aqt_"):
             raise ValueError(f"{self.name!r} is not a valid AQT target.")
 
-        options: dict[str, Any] = {**kwargs}
-        if num_eca_circuits is not None:
-            gss.validation.validate_integer_param(num_eca_circuits)
-            options["num_eca_circuits"] = int(num_eca_circuits)
-        if random_seed is not None:
-            gss.validation.validate_integer_param(random_seed)
-            options["random_seed"] = int(random_seed)
-        if atol is not None:
-            options["atol"] = float(atol)
+        options = gss.validation.get_validated_aqt_options(
+            num_eca_circuits=num_eca_circuits,
+            random_seed=random_seed,
+            atol=atol,
+            gateset=gateset,
+            **kwargs,
+        )
         if gate_defs is not None:
             options["gate_defs"] = gate_defs
-        if gateset is not None:
-            options["gateset"] = gateset
         if pulses or variables:
             options["aqt_configs"] = {
                 "pulses": self._provider._qtrl_config_to_yaml_str(pulses),
@@ -394,9 +387,8 @@ class SuperstaqBackend(qiskit.providers.BackendV2, Generic[QssCompileResultT_co]
         )
         return self._provider._map_compile_request_to_client_result(
             json_dict,
-            legacy_parser=lambda j_dict: qss.compiler_output.read_json_aqt(
-                j_dict, circuits_is_list, num_eca_circuits
-            ),
+            circuits_is_list=circuits_is_list,
+            num_eca_circuits=num_eca_circuits,
         )
 
     def ibmq_compile(
@@ -451,8 +443,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2, Generic[QssCompileResultT_co]
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
         return self._provider._map_compile_request_to_client_result(
-            json_dict,
-            legacy_parser=lambda j_dict: qss.compiler_output.read_json(j_dict, circuits_is_list),
+            json_dict, circuits_is_list=circuits_is_list
         )
 
     def qscout_compile(
@@ -565,9 +556,8 @@ class SuperstaqBackend(qiskit.providers.BackendV2, Generic[QssCompileResultT_co]
         )
         return self._provider._map_compile_request_to_client_result(
             json_dict,
-            legacy_parser=lambda j_dict: qss.compiler_output.read_json_qscout(
-                j_dict, circuits_is_list, num_eca_circuits
-            ),
+            circuits_is_list=circuits_is_list,
+            num_eca_circuits=num_eca_circuits,
         )
 
     def cq_compile(
@@ -611,8 +601,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2, Generic[QssCompileResultT_co]
         circuits_is_list = not isinstance(circuits, qiskit.QuantumCircuit)
         json_dict = self._provider._client.compile(request_json)
         return self._provider._map_compile_request_to_client_result(
-            json_dict,
-            legacy_parser=lambda j_dict: qss.compiler_output.read_json(j_dict, circuits_is_list),
+            json_dict, circuits_is_list=circuits_is_list
         )
 
     def target_info(self) -> dict[str, Any]:
