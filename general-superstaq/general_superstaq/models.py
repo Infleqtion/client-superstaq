@@ -128,7 +128,6 @@ class DefaultPydanticModel(
     """Default pydantic model used across the superstaq server."""
 
     model_config = pydantic.ConfigDict(
-        use_enum_values=True,
         extra="ignore",
         validate_assignment=True,
         validate_default=True,
@@ -515,7 +514,7 @@ class WorkerTaskResults(DefaultPydanticModel):
             CircuitStatus.COMPLETED,
             CircuitStatus.FAILED,
         ):
-            raise ValueError(f"Workers cannot return a status of {self.status}.")
+            raise ValueError(f"Workers cannot return a status of {self.status.value}.")
 
         elif self.successful_shots is not None or self.measurements is not None:
             raise ValueError("Workers cannot return results unless status is COMPLETED")
