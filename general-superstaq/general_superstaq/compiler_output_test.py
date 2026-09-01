@@ -436,7 +436,8 @@ def test_read_json_qscout() -> None:
     ]
     assert out.jaqal_programs == [jaqal_program_as_subcircuits]
 
-    json_dict["jaqal_programs"] = None
+    # Test case for missing jaqal programs
+    json_dict.pop("jaqal_programs")
     out = gss.compiler_output.CompilerOutput.read_json(
         json_dict, circuits_is_list=False, num_eca_circuits=2
     )
