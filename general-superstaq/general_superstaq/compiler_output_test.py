@@ -435,3 +435,15 @@ def test_read_json_qscout() -> None:
         initial_logical_to_physical,
     ]
     assert out.jaqal_programs == [jaqal_program_as_subcircuits]
+
+    json_dict["jaqal_programs"] = None
+    out = gss.compiler_output.CompilerOutput.read_json(
+        json_dict, circuits_is_list=False, num_eca_circuits=2
+    )
+    assert out.circuits == [circuit, circuit]
+    assert out.final_logical_to_physicals == [final_logical_to_physical, final_logical_to_physical]
+    assert out.initial_logical_to_physicals == [
+        initial_logical_to_physical,
+        initial_logical_to_physical,
+    ]
+    assert out.jaqal_programs is None
