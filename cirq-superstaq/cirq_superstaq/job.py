@@ -32,7 +32,7 @@ from __future__ import annotations
 import collections
 import time
 from collections.abc import Mapping, Sequence
-from typing import Any, ClassVar, overload
+from typing import Any, overload
 
 import cirq
 import general_superstaq as gss
@@ -51,27 +51,7 @@ class Job:
     If a job is canceled or deleted, only the job id and the status remain valid.
     """
 
-    # The v0.2 API reports coarse job statuses; normalize them to the v0.3 circuit
-    # status enum so this class exposes a consistent public status type.
-    _LEGACY_STATUS_TO_CIRCUIT_STATUS: ClassVar[dict[str, gss.models.CircuitStatus]] = {
-        "Submitted": gss.models.CircuitStatus.RECEIVED,
-        "Ready": gss.models.CircuitStatus.AWAITING_SUBMISSION,
-        "Running": gss.models.CircuitStatus.RUNNING,
-        "Queued": gss.models.CircuitStatus.PENDING,
-        "Failed": gss.models.CircuitStatus.FAILED,
-        "Canceled": gss.models.CircuitStatus.CANCELLED,
-        "Cancelled": gss.models.CircuitStatus.CANCELLED,
-        "Deleted": gss.models.CircuitStatus.DELETED,
-        "Done": gss.models.CircuitStatus.COMPLETED,
-    }
-
-    TERMINAL_STATES = (
-        gss.models.CircuitStatus.COMPLETED,
-        gss.models.CircuitStatus.CANCELLED,
-        gss.models.CircuitStatus.FAILED,
-        gss.models.CircuitStatus.UNRECOGNIZED,
-        gss.models.CircuitStatus.DELETED,
-    )
+    TERMINAL_STATES = ("Done", "Canceled", "Failed", "Deleted")
     document(
         TERMINAL_STATES,
         "States of the Superstaq API job from which the job cannot transition. "
@@ -79,16 +59,7 @@ class Job:
         "(subsequent calls will return not found).",
     )
 
-    NON_TERMINAL_STATES = (
-        gss.models.CircuitStatus.RECEIVED,
-        gss.models.CircuitStatus.AWAITING_COMPILE,
-        gss.models.CircuitStatus.AWAITING_SUBMISSION,
-        gss.models.CircuitStatus.AWAITING_SIMULATION,
-        gss.models.CircuitStatus.COMPILING,
-        gss.models.CircuitStatus.SIMULATING,
-        gss.models.CircuitStatus.RUNNING,
-        gss.models.CircuitStatus.PENDING,
-    )
+    NON_TERMINAL_STATES = ("Ready", "Submitted", "Running", "Queued")
     document(
         NON_TERMINAL_STATES, "States of the Superstaq API job which can transition to other states."
     )
@@ -96,32 +67,11 @@ class Job:
     ALL_STATES = TERMINAL_STATES + NON_TERMINAL_STATES
     document(ALL_STATES, "All states that an Superstaq API job can exist in.")
 
-    UNSUCCESSFUL_STATES = (
-        gss.models.CircuitStatus.CANCELLED,
-        gss.models.CircuitStatus.FAILED,
-        gss.models.CircuitStatus.UNRECOGNIZED,
-        gss.models.CircuitStatus.DELETED,
-    )
+    UNSUCCESSFUL_STATES = ("Canceled", "Failed", "Deleted")
     document(
         UNSUCCESSFUL_STATES,
         "States of the Superstaq API job when it was not successful and so does not have any "
         "data associated with it beyond an id and a status.",
-    )
-
-    STATUS_PRIORITY_ORDER = (
-        gss.models.CircuitStatus.RECEIVED,
-        gss.models.CircuitStatus.AWAITING_COMPILE,
-        gss.models.CircuitStatus.AWAITING_SUBMISSION,
-        gss.models.CircuitStatus.AWAITING_SIMULATION,
-        gss.models.CircuitStatus.COMPILING,
-        gss.models.CircuitStatus.SIMULATING,
-        gss.models.CircuitStatus.RUNNING,
-        gss.models.CircuitStatus.PENDING,
-        gss.models.CircuitStatus.FAILED,
-        gss.models.CircuitStatus.CANCELLED,
-        gss.models.CircuitStatus.UNRECOGNIZED,
-        gss.models.CircuitStatus.DELETED,
-        gss.models.CircuitStatus.COMPLETED,
     )
 
     def __init__(self, client: gss.superstaq_client._SuperstaqClient, job_id: str) -> None:
@@ -135,42 +85,16 @@ class Job:
             job_id: Unique identifier for the job.
         """
         self._client = client
-        self._overall_status = gss.models.CircuitStatus.RECEIVED
+        self._overall_status = "Submitted"
         self._job: dict[str, Any] = {}
         self._job_id = job_id
-
-    @classmethod
-    def _to_circuit_status(cls, status: object) -> gss.models.CircuitStatus:
-        """Converts API job status values into `gss.models.CircuitStatus`.
-
-        Args:
-            status: A status returned by the API, either as a legacy v0.2.0 status string,
-                a v0.3.0 `CircuitStatus` value string, or an already-normalized enum.
-
-        Returns:
-            The corresponding `CircuitStatus`, or `CircuitStatus.UNRECOGNIZED` when the API
-            returns an unexpected status value.
-        """
-        if isinstance(status, gss.models.CircuitStatus):
-            return status
-        if isinstance(status, str):
-            if status in cls._LEGACY_STATUS_TO_CIRCUIT_STATUS:
-                return cls._LEGACY_STATUS_TO_CIRCUIT_STATUS[status]
-            try:
-                return gss.models.CircuitStatus(status)
-            except ValueError:
-                return gss.models.CircuitStatus.UNRECOGNIZED
-        return gss.models.CircuitStatus.UNRECOGNIZED
 
     def _refresh_job(self) -> None:
         """If the last fetched job is not terminal, gets the job from the API."""
         jobs_to_fetch: list[str] = []
 
         for job_id in self._job_id.split(","):
-            if (
-                job_id not in self._job
-                or self._to_circuit_status(self._job[job_id]["status"]) not in self.TERMINAL_STATES
-            ):
+            if job_id not in self._job or self._job[job_id]["status"] not in self.TERMINAL_STATES:
                 jobs_to_fetch.append(job_id)
 
         if jobs_to_fetch:
@@ -184,17 +108,25 @@ class Job:
 
         Note:
             When we have multiple jobs, we will take the "positive status" among the jobs. The
-            status check sequentially follows the items in `STATUS_PRIORITY_ORDER`. For example,
-            if any of the jobs are still running (even if some are done), we report `RUNNING` as
-            the overall status of the entire batch.
+            status check follows the chain: Submitted -> Ready -> Running -> Queued -> Failed ->
+            Canceled -> Deleted -> Done. For example, if any of the jobs are still running (even
+            if some are done), we report 'Running' as the overall status of the entire batch.
         """
         job_id_list = self._job_id.split(",")  # Separate aggregated job ids
 
-        status_occurrence = {
-            self._to_circuit_status(self._job[job_id]["status"]) for job_id in job_id_list
-        }
+        status_occurrence = {self._job[job_id]["status"] for job_id in job_id_list}
+        status_priority_order = (
+            "Submitted",
+            "Ready",
+            "Running",
+            "Queued",
+            "Failed",
+            "Canceled",
+            "Deleted",
+            "Done",
+        )
 
-        for temp_status in self.STATUS_PRIORITY_ORDER:
+        for temp_status in status_priority_order:
             if temp_status in status_occurrence:
                 self._overall_status = temp_status
                 return
@@ -216,8 +148,8 @@ class Job:
                 if "failure" in self._job[job_id] and "error" in self._job[job_id]["failure"]:
                     # If possible append a message to the failure status, e.g. "Failed (<message>)"
                     error = self._job[job_id]["failure"]["error"]
-                    status_message += f" ({error})"
-                raise gss.SuperstaqUnsuccessfulJobException(job_id, status_message)
+                    status += f" ({error})"
+                raise gss.SuperstaqUnsuccessfulJobException(job_id, status)
 
     def job_id(self) -> str:
         """Gets the job id of this job.
@@ -229,12 +161,11 @@ class Job:
         """
         return self._job_id
 
-    def status(self, index: int | None = None) -> gss.models.CircuitStatus:
+    def status(self, index: int | None = None) -> str:
         """Gets the current status of the job.
 
         If the current job is in a non-terminal state, this will update the job and return the
-        current status as a `gss.models.CircuitStatus`. A full list of states is given in
-        `cirq_superstaq.Job.ALL_STATES`.
+        current status. A full list of states is given in `cirq_superstaq.Job.ALL_STATES`.
 
         Args:
             index: An optional index of the specific sub-job to get the status of.
@@ -256,11 +187,10 @@ class Job:
         requested_job_id = job_ids[index]
         if (
             requested_job_id not in self._job
-            or self._to_circuit_status(self._job[requested_job_id]["status"])
-            not in self.TERMINAL_STATES
+            or self._job[requested_job_id]["status"] not in self.TERMINAL_STATES
         ):
             self._job.update(self._client.fetch_jobs([requested_job_id]))
-        requested_job_status = self._to_circuit_status(self._job[requested_job_id]["status"])
+        requested_job_status = self._job[requested_job_id]["status"]
         return requested_job_status
 
     def cancel(self, index: int | None = None, **kwargs: object) -> None:
@@ -517,7 +447,7 @@ class Job:
             # Status does a refresh.
             if time_waited_seconds > timeout_seconds:
                 raise TimeoutError(
-                    f"Timed out while waiting for results. Final status was '{status.value}'"
+                    f"Timed out while waiting for results. Final status was '{status}'"
                 )
             time.sleep(polling_seconds)
             time_waited_seconds += polling_seconds

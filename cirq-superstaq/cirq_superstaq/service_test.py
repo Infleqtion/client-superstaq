@@ -384,7 +384,7 @@ def test_service_get_job() -> None:
     mock_client.fetch_jobs.assert_not_called()
 
     # ...but it will be called with the initial query of status()
-    assert job.status() == gss.models.CircuitStatus.AWAITING_SUBMISSION
+    assert job.status() == "Ready"
     mock_client.fetch_jobs.assert_called_once_with(["job_id"])
 
 
@@ -441,7 +441,7 @@ def test_service_create_job() -> None:
         method="fake_method",
         fake_data="",
     )
-    assert job.status() == gss.models.CircuitStatus.COMPLETED
+    assert job.status() == "Done"
     create_job_kwargs = mock_client.create_job.call_args[1]
     # Serialization induces a float, so we don't validate full circuit.
     assert create_job_kwargs["repetitions"] == 100
