@@ -16,6 +16,7 @@ from __future__ import annotations
 from unittest import mock
 
 import cirq
+import general_superstaq as gss
 import pytest
 
 import cirq_superstaq as css
@@ -32,12 +33,20 @@ def test_serialization() -> None:
 
     serialized_circuit = css.serialization.serialize_circuits(circuit)
     assert isinstance(serialized_circuit, str)
+    assert gss.serialization.str_to_bytes(serialized_circuit).startswith(b"\x1f\x8b")
     assert css.serialization.deserialize_circuits(serialized_circuit) == [circuit]
+
+    legacy_serialized_circuit = css.serialization.serialize_circuits(circuit, gzip=False)
+    assert legacy_serialized_circuit == cirq.to_json(circuit)
+    assert css.serialization.deserialize_circuits(legacy_serialized_circuit) == [circuit]
 
     circuits = [circuit, circuit]
     serialized_circuits = css.serialization.serialize_circuits(circuits)
     assert isinstance(serialized_circuits, str)
     assert css.serialization.deserialize_circuits(serialized_circuits) == circuits
+
+    legacy_serialized_circuits = cirq.to_json(circuits)
+    assert css.serialization.deserialize_circuits(legacy_serialized_circuits) == circuits
 
 
 def test_serialization_stimcirq() -> None:  # pragma: no cover

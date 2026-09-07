@@ -19,6 +19,7 @@ import warnings
 from collections.abc import Sequence
 
 import cirq
+import general_superstaq as gss
 
 import cirq_superstaq as css
 
@@ -28,23 +29,32 @@ SUPERSTAQ_RESOLVERS = [
 ]
 
 
-def serialize_circuits(circuits: cirq.AbstractCircuit | Sequence[cirq.AbstractCircuit]) -> str:
-    """Serialize circuit(s) into a json string.
+def serialize_circuits(
+    circuits: cirq.AbstractCircuit | Sequence[cirq.AbstractCircuit], *, gzip: bool = True
+) -> str:
+    """Serialize circuit(s) into a JSON string.
 
     Args:
         circuits: A `cirq.Circuit` or list of `cirq.Circuits` to be serialized.
+        gzip: Whether to base64-encode the gzipped JSON output. Defaults to `True`.
 
     Returns:
         A string representing the serialized circuit(s).
     """
-    return cirq.to_json(circuits)
+    if not gzip:
+        return cirq.to_json(circuits)
+
+    serialized_circuits = cirq.to_json_gzip(circuits)
+    assert serialized_circuits is not None
+    return gss.serialization.bytes_to_str(serialized_circuits)
 
 
 def deserialize_circuits(serialized_circuits: str) -> list[cirq.Circuit]:
     """Deserialize serialized circuit(s).
 
     Args:
-        serialized_circuits: A json string generated via `serialization.serialize_circuit()`.
+        serialized_circuits: A base64-encoded gzipped JSON string generated via
+            `serialize_circuits()`, or a legacy uncompressed JSON string.
 
     Returns:
         The circuit or list of circuits that was serialized.
@@ -58,7 +68,16 @@ def deserialize_circuits(serialized_circuits: str) -> list[cirq.Circuit]:
     else:  # pragma: no cover (takes too long to install in CI)
         resolvers.append(JSON_RESOLVER)
 
-    circuits = cirq.read_json(json_text=serialized_circuits, resolvers=resolvers)
+    # Determine if the circuits was serialized as a gzipped JSON string.
+    try:
+        gzip_raw = gss.serialization.str_to_bytes(serialized_circuits)
+    except Exception:
+        gzip_raw = b""
+
+    if gzip_raw.startswith(b"\x1f\x8b"):
+        circuits = cirq.read_json_gzip(gzip_raw=gzip_raw, resolvers=resolvers)
+    else:
+        circuits = cirq.read_json(json_text=serialized_circuits, resolvers=resolvers)
     if isinstance(circuits, cirq.Circuit):
         return [circuits]
     return circuits
