@@ -30,13 +30,13 @@ SUPERSTAQ_RESOLVERS = [
 
 
 def serialize_circuits(
-    circuits: cirq.AbstractCircuit | Sequence[cirq.AbstractCircuit], *, gzip: bool = True
+    circuits: cirq.AbstractCircuit | Sequence[cirq.AbstractCircuit], *, gzip: bool = False
 ) -> str:
     """Serialize circuit(s) into a JSON string.
 
     Args:
         circuits: A `cirq.Circuit` or list of `cirq.Circuits` to be serialized.
-        gzip: Whether to base64-encode the gzipped JSON output. Defaults to `True`.
+        gzip: Whether to base64-encode the gzipped JSON output. Defaults to `False`.
 
     Returns:
         A string representing the serialized circuit(s).
