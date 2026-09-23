@@ -1,4 +1,4 @@
-cirq-superstaq~=0.5.68
-qiskit-superstaq~=0.5.68
+cirq-superstaq~=0.5.69
+qiskit-superstaq~=0.5.69
 scikit-learn>=1.0
 seaborn>=0.13.2
