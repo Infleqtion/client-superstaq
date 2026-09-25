@@ -231,14 +231,14 @@ def test_movement_gate() -> None:
         _ = css.MovementGate({0: 2, 1: 2})
 
 
-def test_movement_op() -> None:
+def test_move() -> None:
     q2, q3, q4 = cirq.LineQubit.range(2, 5)
-    op = css.movement_op({q2: q3, q3: q4})
+    op = css.move({q2: q3, q3: q4})
     assert op.gate == css.MovementGate({0: 1, 1: 2})
     assert op == css.MovementGate({0: 1, 1: 2}).on(q2, q3, q4)
     assert op == op**1
-    assert op**-1 == css.movement_op({q3: q2, q4: q3})
-    assert repr(op).startswith("css.movement_op")  # Confirm we're using `_op_repr_`
+    assert op**-1 == css.move({q3: q2, q4: q3})
+    assert repr(op).startswith("css.move")  # Confirm we're using `_op_repr_`
     cirq.testing.assert_equivalent_repr(op, local_vals={"css": css})
     cirq.testing.assert_has_diagram(
         cirq.Circuit(op),
@@ -268,11 +268,11 @@ def test_movement_op() -> None:
     )
 
     qt5, qt6, qt7 = cirq.LineQid.range(5, 8, dimension=3)
-    op = css.movement_op({qt6: qt5, qt7: qt6})
+    op = css.move({qt6: qt5, qt7: qt6})
     assert op.gate == css.MovementGate({1: 0, 2: 1}, dimension=3)
     assert op == css.MovementGate({1: 0, 2: 1}, dimension=3).on(qt5, qt6, qt7)
     assert op == op**1
-    assert op**-1 == css.movement_op({qt5: qt6, qt6: qt7})
+    assert op**-1 == css.move({qt5: qt6, qt6: qt7})
     cirq.testing.assert_equivalent_repr(op, local_vals={"css": css})
     cirq.testing.assert_has_diagram(
         cirq.Circuit(op),
@@ -288,7 +288,10 @@ def test_movement_op() -> None:
     )
 
     with pytest.raises(ValueError, match=r"same dimension"):
-        _ = css.movement_op({q2: qt6})
+        _ = css.move({q2: qt6})
+
+    with pytest.warns(DeprecationWarning, match=r"use `css.move\(\)` instead"):
+        _ = css.movement_op({q2: q3})
 
 
 def test_bswap_pow_gate() -> None:
