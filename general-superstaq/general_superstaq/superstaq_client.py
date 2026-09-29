@@ -29,6 +29,7 @@
 from __future__ import annotations
 
 import enum
+import gzip
 import http
 import json
 import os
@@ -186,12 +187,20 @@ class _BaseSuperstaqClient:
         response = self._make_request(request)
         return self._handle_response(response)
 
-    def post_request(self, endpoint: str, json_dict: Mapping[str, Any], **credentials: str) -> Any:
+    def post_request(
+        self,
+        endpoint: str,
+        json_dict: Mapping[str, Any],
+        *,
+        gzip_compress: bool = False,
+        **credentials: str,
+    ) -> Any:
         """Performs a POST request on a given endpoint with a given payload.
 
         Args:
             endpoint: The endpoint to perform the POST request on.
             json_dict: The payload to POST.
+            gzip_compress: Whether to gzip the JSON request body.
             credentials: Any credentials that need to be added to the request headers.
 
         Returns:
@@ -204,10 +213,19 @@ class _BaseSuperstaqClient:
             Returns:
                 The Flask GET request object.
             """
+            headers = self._custom_headers(**credentials)
+            if gzip_compress:
+                headers["Content-Encoding"] = "gzip"
+                return self.session.post(
+                    f"{self.url}{endpoint}",
+                    data=gzip.compress(json.dumps(json_dict).encode("utf-8")),
+                    headers=headers,
+                    verify=self.verify_https,
+                )
             return self.session.post(
                 f"{self.url}{endpoint}",
                 json=json_dict,
-                headers=self._custom_headers(**credentials),
+                headers=headers,
                 verify=self.verify_https,
             )
 
@@ -478,6 +496,7 @@ class _AbstractUserClient(_BaseSuperstaqClient, ABC):
         target: str = "ss_unconstrained_simulator",
         *,
         method: str | None = None,
+        gzip_compress: bool = False,
         tag: Sequence[str] | str = (),
         metadata: Mapping[str, object] | None = None,
         **kwargs: Any,
@@ -492,6 +511,7 @@ class _AbstractUserClient(_BaseSuperstaqClient, ABC):
             target: Target to run on.
             method: Which type of method to execute the circuits (noisy simulator,
                 non-noisy simulator, hardware, e.t.c)
+            gzip_compress: Whether to gzip the request body.
             tag: An identifying tag (or list of tags) which can be used to find this job.
             metadata: Optional other data to store alongside the job.
             kwargs: Other optimization and execution parameters.
@@ -997,6 +1017,7 @@ class _SuperstaqClient(_AbstractUserClient):
         target: str = "ss_unconstrained_simulator",
         *,
         method: str | None = None,
+        gzip_compress: bool = False,
         tag: Sequence[str] | str = (),
         metadata: Mapping[str, object] | None = None,
         **kwargs: Any,
@@ -1017,7 +1038,7 @@ class _SuperstaqClient(_AbstractUserClient):
             json_dict["method"] = method
         if kwargs or self.client_kwargs:
             json_dict["options"] = json.dumps({**self.client_kwargs, **kwargs})
-        return self.post_request("/jobs", json_dict)
+        return self.post_request("/jobs", json_dict, gzip_compress=gzip_compress)
 
     def cancel_jobs(
         self,
@@ -1344,6 +1365,7 @@ class _SuperstaqClientV3(_AbstractUserClient):
         target: str = "ss_unconstrained_simulator",
         *,
         method: str | None = None,
+        gzip_compress: bool = True,
         verbatim: bool = False,
         tag: Sequence[str] | str = (),
         metadata: Mapping[str, object] | None = None,
@@ -1386,7 +1408,9 @@ class _SuperstaqClientV3(_AbstractUserClient):
             metadata=metadata or {},
         )
         response = gss.models.NewJobResponse(
-            **self.post_request("/client/job", new_job.model_dump(), **credentials)
+            **self.post_request(
+                "/client/job", new_job.model_dump(), gzip_compress=gzip_compress, **credentials
+            )
         )
         return response.model_dump()
 

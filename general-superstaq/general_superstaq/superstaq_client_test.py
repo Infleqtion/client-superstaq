@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import contextlib
 import datetime
+import gzip
 import http
 import io
 import json
@@ -468,13 +469,15 @@ def test_supertstaq_client_create_job(
             **EXPECTED_HEADERS[api_version],
             "cq_token": '{"@type": "RefreshFlowState", "access_token": "123"}',
         }
+    expected_headers["Content-Encoding"] = "gzip"
 
     mock_post.assert_called_with(
         f"http://example.com/{api_version}{endpoint}",
-        json=expected_json,
+        data=mock.ANY,
         headers=expected_headers,
         verify=False,
     )
+    assert json.loads(gzip.decompress(mock_post.call_args.kwargs["data"])) == expected_json
 
 
 @pytest.mark.parametrize("client_name", ["client_v2", "client_v3"])
