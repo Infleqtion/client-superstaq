@@ -61,6 +61,7 @@ class CircuitType(str, Enum):
     CIRQ = "cirq"
     QISKIT = "qiskit"
     QASM = "qasm"
+    JAQAL = "jaqal"
 
 
 class CircuitStatus(str, Enum):
