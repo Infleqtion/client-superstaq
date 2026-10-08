@@ -215,25 +215,8 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
         )
 
     @staticmethod
-    def _format_eca_content(
-        deserialized_circuits: list[C],
-        initial_logical_to_physicals_list: list[dict[Q, Q]],
-        final_logical_to_physicals_list: list[dict[Q, Q]],
-        num_eca_circuits: int,
-    ) -> tuple[list[list[C]], list[list[dict[Q, Q]]], list[list[dict[Q, Q]]]]:
-        compiled_circuits = [
-            deserialized_circuits[i : i + num_eca_circuits]
-            for i in range(0, len(deserialized_circuits), num_eca_circuits)
-        ]
-        initial_logical_to_physicals = [
-            initial_logical_to_physicals_list[i : i + num_eca_circuits]
-            for i in range(0, len(initial_logical_to_physicals_list), num_eca_circuits)
-        ]
-        final_logical_to_physicals = [
-            final_logical_to_physicals_list[i : i + num_eca_circuits]
-            for i in range(0, len(final_logical_to_physicals_list), num_eca_circuits)
-        ]
-        return compiled_circuits, initial_logical_to_physicals, final_logical_to_physicals
+    def _format_eca_content(content: list[C], num_eca_circuits: int) -> list[list[C]]:
+        return [content[i : i + num_eca_circuits] for i in range(0, len(content), num_eca_circuits)]
 
     @classmethod
     def read_json(
