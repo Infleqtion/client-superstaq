@@ -168,13 +168,12 @@ class BaseCompilerOutput(Generic[C, Q]):  # noqa: PLW1641
 
         jaqal_programs: list[str] = json_dict.get("jaqal_programs", compiled_circuits)
         if num_eca_circuits is not None:
-            compiled_circuits, initial_logical_to_physicals, final_logical_to_physicals = (
-                cls._format_eca_content(
-                    compiled_circuits,
-                    initial_logical_to_physicals_list,
-                    final_logical_to_physicals_list,
-                    num_eca_circuits,
-                )
+            compiled_circuits = cls._format_eca_content(compiled_circuits, num_eca_circuits)
+            initial_logical_to_physicals = cls._format_eca_content(
+                initial_logical_to_physicals, num_eca_circuits
+            )
+            final_logical_to_physicals = cls._format_eca_content(
+                final_logical_to_physicals, num_eca_circuits
             )
             jaqal_programs = [
                 _jaqal_programs_to_subcircuits(jaqal_programs[i : i + num_eca_circuits])
