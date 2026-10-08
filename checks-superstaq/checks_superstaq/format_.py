@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import subprocess
 import sys
@@ -30,14 +31,16 @@ os.environ["FORCE_COLOR"] = "1"
 def run(
     *args: str,
     include: str | Iterable[str] = ("*.py", "*.ipynb"),
+    include_pyproject: str | Iterable[str] = "*pyproject.toml",
     exclude: str | Iterable[str] = (),
     silent: bool = False,
 ) -> int:
-    """Runs 'ruff format' on the repository (formatting check).
+    """Runs 'ruff format' and 'pyproject-fmt' on the repository (formatting check).
 
     Args:
         *args: Command line arguments.
-        include: Glob(s) indicating which tracked files to consider (e.g. "*.py").
+        include: Glob(s) indicating which tracked files to format with 'ruff format' (e.g. "*.py").
+        include_pyproject: Glob(s) indicating which tracked files to format with 'pyproject-fmt'.
         exclude: Glob(s) indicating which tracked files to skip (e.g. "*integration_test.py").
         silent: If True, restrict printing to warning and error messages.
 
@@ -47,7 +50,8 @@ def run(
     parser = check_utils.get_check_parser()
     parser.description = textwrap.dedent(
         """
-        Runs 'ruff format' on the repository (formatting check).
+        Runs 'ruff format' on python files and notebooks, and 'pyproject-fmt' on pyproject.toml
+        files (formatting check).
         """
     )
 
@@ -60,21 +64,72 @@ def run(
     if not parsed_args.fix:
         args_to_pass.append("--diff")
 
-    files = check_utils.extract_files(parsed_args, include, exclude, silent)
+    include_pyproject = (
+        [include_pyproject] if isinstance(include_pyproject, str) else list(include_pyproject)
+    )
 
+    files = check_utils.extract_files(parsed_args, include, exclude, silent)
+    pyproject_files = []
+    if include_pyproject:
+        files = check_utils.exclude_files(files, include_pyproject)
+        pyproject_files = check_utils.extract_files(
+            parsed_args, include_pyproject, exclude, silent=True
+        )
+        # Files passed directly as arguments are always extracted, so filter them again here
+        pyproject_files = check_utils.select_files(pyproject_files, include_pyproject)
+
+    returncode = 0
     if files:
-        returncode_ruff_format = subprocess.call(
+        returncode = subprocess.call(
             [sys.executable, "-m", "ruff", "format", *files, *args_to_pass],
             cwd=check_utils.root_dir,
         )
-        if returncode_ruff_format == 1:
-            command = "./checks/format_.py --fix"
-            text = f"Run '{command}' (from the repo root directory) to format files."
-            print(check_utils.warning(text))  # noqa: T201
-            return 1
-        return returncode_ruff_format
+    if pyproject_files:
+        # Avoid formatting the same file twice (e.g. via a symlink to another tracked file)
+        real_paths = {
+            os.path.realpath(os.path.join(check_utils.root_dir, file)): file
+            for file in reversed(pyproject_files)
+        }
+        pyproject_files = sorted(real_paths.values())
+        returncode = max(returncode, _run_pyproject_fmt(pyproject_files, fix=parsed_args.fix))
 
-    return 0
+    if returncode == 1:
+        command = "./checks/format_.py --fix"
+        text = f"Run '{command}' (from the repo root directory) to format files."
+        print(check_utils.warning(text))  # noqa: T201
+
+    return returncode
+
+
+def _run_pyproject_fmt(files: list[str], *, fix: bool) -> int:
+    """Runs 'pyproject-fmt' on the given files.
+
+    Args:
+        files: The pyproject.toml files to check or format.
+        fix: If True, format files in place. Otherwise only report formatting issues.
+
+    Returns:
+        Terminal exit code. 0 indicates that all files are (now) formatted correctly.
+    """
+    if importlib.util.find_spec("pyproject_fmt") is None:
+        text = (
+            "Skipping pyproject.toml formatting because 'pyproject-fmt' is not installed "
+            "(it requires Python 3.10 or later)."
+        )
+        print(check_utils.warning(text))  # noqa: T201
+        return 0
+
+    # Ignore runpy's (benign) RuntimeWarning about pyproject_fmt.__main__ being imported twice
+    command = [sys.executable, "-W", "ignore::RuntimeWarning:runpy", "-m", "pyproject_fmt"]
+
+    if fix:
+        # pyproject-fmt exits with 1 whenever it changes a file, so re-check to get the final status
+        subprocess.call([*command, *files], cwd=check_utils.root_dir)
+        return subprocess.call(
+            [*command, "--check", "--no-print-diff", *files], cwd=check_utils.root_dir
+        )
+
+    return subprocess.call([*command, "--check", *files], cwd=check_utils.root_dir)
 
 
 if __name__ == "__main__":

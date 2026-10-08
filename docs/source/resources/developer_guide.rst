@@ -71,8 +71,8 @@ A high-level description of key Superstaq tests are as follows:
 
 .. code-block:: bash
 
-    checks/format_.py  # Enforces basic formatting rules (e.g. line length, spacing, etc) for python files and notebooks.
-    checks/format_.py --fix # Automatically update files to conform to `ruff` formatting rules.
+    checks/format_.py  # Enforces basic formatting rules (e.g. line length, spacing, etc) for python files and notebooks (via `ruff`), and for `pyproject.toml` files (via `pyproject-fmt`).
+    checks/format_.py --fix # Automatically update files to conform to `ruff` and `pyproject-fmt` formatting rules.
     checks/lint_.py  # Further style guide enforcement, including docstrings style.
     checks/lint_.py --fix # Automatically apply safe fixes to the linting issues raised (e.g., package import ordering).
     checks/lint_.py --fix --unsafe-fixes # Automatically apply potentially unsafe fixes that should be further reviewed.
