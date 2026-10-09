@@ -140,6 +140,9 @@ no_implicit_optional = true
 non_interactive = true
 show_error_codes = true
 
+[tool.pyproject-fmt]
+column_width = 100
+
 [tool.pytest]
 addopts = [ "--disable-socket" ]
 filterwarnings = [
