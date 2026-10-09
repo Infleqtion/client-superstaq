@@ -13,7 +13,7 @@
 # limitations under the License.
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import json
 import os
 import textwrap
@@ -363,8 +363,8 @@ def test_provider_compile_jobV3(
             "results_dicts": [None],
             "shots": [0],
             "dry_run": False,
-            "submission_timestamp": datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc),
-            "last_updated_timestamp": [datetime.datetime(2026, 1, 2, tzinfo=datetime.timezone.utc)],
+            "submission_timestamp": dt.datetime(2026, 1, 1, tzinfo=dt.timezone.utc),
+            "last_updated_timestamp": [dt.datetime(2026, 1, 2, tzinfo=dt.timezone.utc)],
             "initial_logical_to_physicals": [{0: 5}],
             "final_logical_to_physicals": [{0: 5}],
             "logical_qubits": [None],
