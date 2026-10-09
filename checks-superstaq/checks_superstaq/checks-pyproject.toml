@@ -128,7 +128,7 @@ lint.future-annotations = true
 
 [tool.pyproject-fmt]
 column_width = 100
-max_supported_python = "3.14
+max_supported_python = "3.14"
 
 [tool.mypy]
 ignore_missing_imports = true
