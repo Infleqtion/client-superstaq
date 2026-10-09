@@ -64,14 +64,15 @@ def run(
     if not parsed_args.fix:
         args_to_pass.append("--diff")
 
+    # Identify files for ruff
+    files = check_utils.extract_files(parsed_args, include, exclude, silent)
+
+    # Identify files for pyproject-fmt
+    pyproject_files = []
     include_pyproject = (
         [include_pyproject] if isinstance(include_pyproject, str) else list(include_pyproject)
     )
-
-    files = check_utils.extract_files(parsed_args, include, exclude, silent)
-    pyproject_files = []
     if include_pyproject:
-        files = check_utils.exclude_files(files, include_pyproject)
         pyproject_files = check_utils.extract_files(
             parsed_args, include_pyproject, exclude, silent=True
         )
