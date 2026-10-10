@@ -1,19 +1,9 @@
 # Check script configuration:
-
-[tool.pytest]
-addopts = ["--disable-socket"]
-filterwarnings = [
-  "ignore::UserWarning:qtrl.*",
-  "ignore::PendingDeprecationWarning:qtrl.utils.config",
-  "ignore::PendingDeprecationWarning:ruamel.yaml.main",
-  "ignore:Version v0.3.0",
-]
-
 [tool.ruff]
-line-length = 100
 target-version = "py39"
+line-length = 100
 show-fixes = true
-
+format.docstring-code-format = true
 # Specific linting rules to enable in `ruff`
 lint.select = [
   "A",      # flake8-builtins
@@ -75,11 +65,18 @@ lint.ignore = [
   "B905",    # zip without explicit strict
   "C409",    # unnecessary-literal-within-tuple-call (see https://github.com/astral-sh/ruff/issues/12912)
   "C416",    # Unnecessary comprehension (see https://docs.astral.sh/ruff/rules/unnecessary-comprehension/#known-problems)
+  "COM812",  # Missing trailing comma (conflicts with `ruff format`)
+  "COM819",  # Prohibited trailing comma (conflicts with `ruff format`)
   "D100",    # Undocumented public module
   "D104",    # Undocumented public package
   "D105",    # Undocumented magic method
   "D107",    # Undocumented public init
   "D205",    # Missing blank line after summary
+  "D206",    # Docstring tab indentation (conflicts with `ruff format`)
+  "D300",    # Triple single quotes (conflicts with `ruff format`)
+  "E111",    # Indentation with invalid multiple (conflicts with `ruff format`)
+  "E114",    # Indentation with invalid multiple comment (conflicts with `ruff format`)
+  "E117",    # Over-indented (conflicts with `ruff format`)
   "FAST002", # FastAPI non-annotated dependency
   "N806",    # Non-lowercase variable in function
   "PERF401", # Manual list comprehension
@@ -93,6 +90,10 @@ lint.ignore = [
   "PT019",   # Pytest fixture param without value
   "PT022",   # Pytest useless yield fixture
   "PYI041",  # Redundant numeric union
+  "Q000",    # Bad quotes inline string (conflicts with `ruff format`)
+  "Q001",    # Bad quotes multiline string (conflicts with `ruff format`)
+  "Q002",    # Bad quotes docstring (conflicts with `ruff format`)
+  "Q003",    # Avoidable escaped quote (conflicts with `ruff format`)
   "RET504",  # Unnecessary assign
   "RUF001",  # Ambiguous Unicode character string
   "RUF002",  # Ambiguous Unicode character docstring
@@ -108,80 +109,62 @@ lint.ignore = [
   "TD002",   # Missing todo author
   "TD003",   # Missing todo link
   "TRY003",  # Raise vanilla args
-  # The following are excluded to not conflict with `ruff format`:
-  "COM812",  # Missing trailing comma
-  "COM819",  # Prohibited trailing comma
-  "D206",    # Docstring tab indentation
-  "D300",    # Triple single quotes
-  "E111",    # Indentation with invalid multiple
-  "E114",    # Indentation with invalid multiple comment
-  "E117",    # Over-indented
-  "Q000",    # Bad quotes inline string
-  "Q001",    # Bad quotes multiline string
-  "Q002",    # Bad quotes docstring
-  "Q003",    # Avoidable escaped quote
-  "W191",    # Tab indentation
+  "W191",    # Tab indentation (conflicts with `ruff format`)
 ]
-
+lint.per-file-ignores."*.ipynb" = [ "CPY", "D101", "D102", "D103", "E501", "ERA001", "T201" ]
+lint.per-file-ignores."*_test.py" = [ "D101", "D102", "D103", "N802", "N803", "S105", "S106" ]
 # Allow autofix for all enabled rules (when `--fix` is passed)
-lint.fixable = ["ALL"]
+lint.fixable = [ "ALL" ]
 lint.unfixable = []
-
 # Allow unused variables when underscore-prefixed
 lint.dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
-
+lint.flake8-type-checking.exempt-modules = [ "collections.abc" ]
+lint.isort.case-sensitive = false
+lint.mccabe.max-complexity = 10
+lint.pydocstyle.convention = "google"
+lint.pydocstyle.ignore-decorators = [ "classmethod", "property", "staticmethod" ]
 # Enable `from __future__ import annotations` simplification for rules
 lint.future-annotations = true
 
-[tool.ruff.lint.flake8-type-checking]
-exempt-modules = ["collections.abc"]
-
-[tool.ruff.format]
-docstring-code-format = true
-
-[tool.ruff.lint.per-file-ignores]
-"*.ipynb" = ["CPY", "D101", "D102", "D103", "E501", "ERA001", "T201"]
-"*_test.py" = ["D101", "D102", "D103", "N802", "N803", "S105", "S106"]
-
-[tool.ruff.lint.pydocstyle]
-convention = "google"
-ignore-decorators = ["property", "classmethod", "staticmethod"]
-
-[tool.ruff.lint.mccabe]
-max-complexity = 10
-
-[tool.ruff.lint.isort]
-case-sensitive = false
-
+[tool.pyproject-fmt]
+column_width = 100
+max_supported_python = "3.14"
 
 [tool.mypy]
-pretty = true
 ignore_missing_imports = true
-warn_redundant_casts = true
-show_error_codes = true
 disallow_any_generics = true
-disallow_incomplete_defs = true
 disallow_untyped_defs = true
+disallow_incomplete_defs = true
+warn_redundant_casts = true
 warn_unused_ignores = true
+pretty = true
+plugins = [ "pydantic.mypy" ]
 install_types = true
-non_interactive = true
 no_implicit_optional = true
-plugins = ["pydantic.mypy"]
+non_interactive = true
+show_error_codes = true
 
-[tool.coverage.report]
-fail_under = 100
-show_missing = true
-skip_covered = true
-exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "@overload"]
+[tool.pytest]
+addopts = [ "--disable-socket" ]
+filterwarnings = [
+  "ignore::UserWarning:qtrl.*",
+  "ignore::PendingDeprecationWarning:qtrl.utils.config",
+  "ignore::PendingDeprecationWarning:ruamel.yaml.main",
+  "ignore:Version v0.3.0",
+]
 
-[tool.coverage.run]
-include = ["./*"]
-concurrency = ["thread"]
-parallel = true
-patch = ["subprocess"]
+[tool.coverage]
+run.include = [ "./*" ]
+run.concurrency = [ "thread" ]
+run.parallel = true
+run.patch = [ "subprocess" ]
+report.fail_under = 100
+report.exclude_lines = [ "@overload", "if TYPE_CHECKING:", "pragma: no cover" ]
+report.skip_covered = true
+report.show_missing = true
 
 [tool.licensepy]
-license_header_template = """Copyright {year} {licensee}
+license_header_template = '''Copyright {year} {licensee}
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -194,5 +177,5 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-"""
+'''
 licensee = "Infleqtion, Inc."
