@@ -34,3 +34,7 @@ profile = "black"
 color_output = true
 line_length = 100
 known_first_party = "checks_superstaq"
+
+[tool.pyproject-fmt]
+column_width = 100
+max_supported_python = "3.14"
