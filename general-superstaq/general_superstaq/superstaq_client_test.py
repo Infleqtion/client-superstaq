@@ -27,7 +27,7 @@
 from __future__ import annotations
 
 import contextlib
-import datetime
+import datetime as dt
 import http
 import io
 import json
@@ -708,7 +708,7 @@ def test_superstaq_client_fetch_jobs(
                 "results_dicts": [None],
                 "shots": [200],
                 "dry_run": True,
-                "submission_timestamp": datetime.datetime(1, 1, 1, tzinfo=datetime.timezone.utc),
+                "submission_timestamp": dt.datetime(1, 1, 1, tzinfo=dt.timezone.utc),
                 "last_updated_timestamp": [None],
                 "initial_logical_to_physicals": [{0: 0}],
                 "final_logical_to_physicals": [{0: 0}],

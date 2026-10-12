@@ -13,7 +13,7 @@
 # limitations under the License.
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import http
 import json
 import textwrap
@@ -121,9 +121,8 @@ def job_dictV3(n_circuits: int = 1) -> dict[str, object]:
         "results_dicts": [] * n_circuits,
         "shots": [1] * n_circuits,
         "dry_run": True,
-        "submission_timestamp": str(datetime.datetime.now(tz=datetime.timezone.utc)),
-        "last_updated_timestamp": [str(datetime.datetime.now(tz=datetime.timezone.utc))]
-        * n_circuits,
+        "submission_timestamp": str(dt.datetime.now(tz=dt.timezone.utc)),
+        "last_updated_timestamp": [str(dt.datetime.now(tz=dt.timezone.utc))] * n_circuits,
         "initial_logical_to_physicals": [{0: 0, 1: 1}] * n_circuits,
         "final_logical_to_physicals": [{0: 0, 1: 1}] * n_circuits,
         "logical_qubits": ["0", "1"],
