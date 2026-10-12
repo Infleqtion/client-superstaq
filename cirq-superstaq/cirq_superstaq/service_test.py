@@ -27,7 +27,7 @@
 from __future__ import annotations
 
 import collections
-import datetime
+import datetime as dt
 import json
 import os
 import textwrap
@@ -215,8 +215,8 @@ def test_service_run_and_get_countsV3() -> None:
         "results_dicts": [],
         "shots": [1],
         "dry_run": True,
-        "submission_timestamp": datetime.datetime.now(tz=datetime.timezone.utc),
-        "last_updated_timestamp": [datetime.datetime.now(tz=datetime.timezone.utc)],
+        "submission_timestamp": dt.datetime.now(tz=dt.timezone.utc),
+        "last_updated_timestamp": [dt.datetime.now(tz=dt.timezone.utc)],
         "initial_logical_to_physicals": [{0: 0}],
         "final_logical_to_physicals": [{0: 0}],
         "logical_qubits": ["0"],
@@ -263,8 +263,8 @@ def test_service_run_and_get_countsV3() -> None:
         "results_dicts": [],
         "shots": [1] * 2,
         "dry_run": True,
-        "submission_timestamp": datetime.datetime.now(tz=datetime.timezone.utc),
-        "last_updated_timestamp": [datetime.datetime.now(tz=datetime.timezone.utc)] * 2,
+        "submission_timestamp": dt.datetime.now(tz=dt.timezone.utc),
+        "last_updated_timestamp": [dt.datetime.now(tz=dt.timezone.utc)] * 2,
         "initial_logical_to_physicals": [{0: 0}] * 2,
         "final_logical_to_physicals": [{0: 0}] * 2,
         "logical_qubits": ["0"] * 2,
@@ -349,8 +349,8 @@ def test_service_samplerV3() -> None:
         "results_dicts": [],
         "shots": [1],
         "dry_run": True,
-        "submission_timestamp": datetime.datetime.now(tz=datetime.timezone.utc),
-        "last_updated_timestamp": [datetime.datetime.now(tz=datetime.timezone.utc)],
+        "submission_timestamp": dt.datetime.now(tz=dt.timezone.utc),
+        "last_updated_timestamp": [dt.datetime.now(tz=dt.timezone.utc)],
         "initial_logical_to_physicals": [{0: 0}],
         "final_logical_to_physicals": [{0: 0}],
         "logical_qubits": ["0"],
@@ -407,8 +407,8 @@ def test_service_get_jobV3() -> None:
         "results_dicts": [],
         "shots": [1],
         "dry_run": True,
-        "submission_timestamp": datetime.datetime.now(tz=datetime.timezone.utc),
-        "last_updated_timestamp": [datetime.datetime.now(tz=datetime.timezone.utc)],
+        "submission_timestamp": dt.datetime.now(tz=dt.timezone.utc),
+        "last_updated_timestamp": [dt.datetime.now(tz=dt.timezone.utc)],
         "initial_logical_to_physicals": [{0: 0}],
         "final_logical_to_physicals": [{0: 0}],
         "logical_qubits": ["0"],
@@ -471,8 +471,8 @@ def test_service_create_jobV3() -> None:
         "results_dicts": [],
         "shots": [1],
         "dry_run": True,
-        "submission_timestamp": datetime.datetime.now(tz=datetime.timezone.utc),
-        "last_updated_timestamp": [datetime.datetime.now(tz=datetime.timezone.utc)],
+        "submission_timestamp": dt.datetime.now(tz=dt.timezone.utc),
+        "last_updated_timestamp": [dt.datetime.now(tz=dt.timezone.utc)],
         "initial_logical_to_physicals": [{0: 0}],
         "final_logical_to_physicals": [{0: 0}],
         "logical_qubits": ["0"],
@@ -1101,8 +1101,8 @@ def test_service_compile_jobV3(
             "results_dicts": [None],
             "shots": [0],
             "dry_run": True,
-            "submission_timestamp": datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc),
-            "last_updated_timestamp": [datetime.datetime(2026, 1, 2, tzinfo=datetime.timezone.utc)],
+            "submission_timestamp": dt.datetime(2026, 1, 1, tzinfo=dt.timezone.utc),
+            "last_updated_timestamp": [dt.datetime(2026, 1, 2, tzinfo=dt.timezone.utc)],
             "initial_logical_to_physicals": [{0: 0}],
             "final_logical_to_physicals": [{0: 0}],
             "logical_qubits": [cirq.to_json([q0])],
