@@ -18,7 +18,7 @@ from general_superstaq._version import __version__
 from general_superstaq.compiler_output import BaseCompilerOutput
 from general_superstaq.job import Job
 from general_superstaq.resource_estimate import ResourceEstimate
-from general_superstaq.service import JaqalService, Service
+from general_superstaq.service import JaqalService, QasmService, Service
 from general_superstaq.superstaq_exceptions import (
     SuperstaqException,
     SuperstaqServerException,
@@ -45,6 +45,7 @@ __all__ = [
     "BaseCompilerOutput",
     "JaqalService",
     "Job",
+    "QasmService",
     "ResourceEstimate",
     "Service",
     "SuperstaqException",
