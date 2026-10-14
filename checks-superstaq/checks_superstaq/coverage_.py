@@ -22,6 +22,8 @@ import sys
 import textwrap
 from collections.abc import Iterable
 
+import coverage
+
 from checks_superstaq import check_utils
 
 
@@ -94,6 +96,8 @@ def run(
         and "-s" not in pytest_args
         else "0"
     )
+    if default_threads != "0" and not _subprocess_coverage_is_configured():
+        default_threads = "0"
     pytest_args = [f"-n={default_threads}", *pytest_args]
 
     coverage_args = []
@@ -125,6 +129,17 @@ def run(
         return 1
 
     return _report(returncode)
+
+
+def _subprocess_coverage_is_configured() -> bool:
+    """Whether the repository's coverage configuration can trace xdist workers."""
+    original_dir = os.getcwd()
+    try:
+        os.chdir(check_utils.root_dir)
+        config = coverage.Coverage().config
+    finally:
+        os.chdir(original_dir)
+    return config.parallel and "subprocess" in config.patch
 
 
 def _run_modular(
