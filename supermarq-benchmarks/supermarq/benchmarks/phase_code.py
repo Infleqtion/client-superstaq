@@ -107,7 +107,7 @@ class PhaseCode(Benchmark):
         state in the X-basis, the final state is a single product state in the noiseless case.
 
         Returns:
-            Dictionary with measurement results as keys and probabilites as values.
+            Dictionary with measurement results as keys and probabilities as values.
         """
         ancilla_state, final_state = "", ""
         for i in range(self.num_data_qubits - 1):

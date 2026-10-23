@@ -165,8 +165,8 @@ class HamiltonianSimulation(Benchmark):
 
         Args:
             counts: Dictionary of the experimental results. The keys are bitstrings
-                represented the measured qubit state, and the values are the number
-                of times that state of observed.
+                representing the measured qubit state, and the values are the number
+                of times that state was observed.
 
         Returns:
             The Hamiltonian simulation benchmark score.
