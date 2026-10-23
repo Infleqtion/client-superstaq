@@ -40,7 +40,7 @@ class QAOAVanillaProxy(Benchmark):
     The ansatz for this QAOA problem follows the typical structure obtained when directly
     translating the objective Hamiltonian to the quantum circuit. Since the SK model is
     completely connected there are O(N^2) interactions that need to take place. These
-    are implementation by pairs of CNOTs and Rz rotations between the participating qubits.
+    are implemented by pairs of CNOTs and Rz rotations between the participating qubits.
     This ansatz is well-suited to QPU architectures which support all-to-all connectivity.
 
     When a new instance of this benchmark is created, the ansatz parameters will

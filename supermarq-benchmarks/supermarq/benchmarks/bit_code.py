@@ -99,7 +99,7 @@ class BitCode(Benchmark):
         is a single bitstring that should be measured in the noiseless case.
 
         Returns:
-            Dictionary with measurement results as keys and probabilites as values.
+            Dictionary with measurement results as keys and probabilities as values.
         """
         ancilla_state, final_state = "", ""
         for i in range(self.num_data_qubits - 1):
