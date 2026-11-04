@@ -37,8 +37,8 @@ another test file imported it first.
 To make a test file run as it would in a fresh process, the plugin also undoes the state that a
 test file leaves behind for the next one on the same worker: after the last test of a test file, it
 tears down the session- and package-scoped fixtures that the file used, so that the next test file
-sets them up anew, and it empties every ``functools`` cache of the modules of the repository other
-than test modules.  Other state that a test file leaves in modules is not reset.
+sets them up anew, and it empties every ``functools`` cache of the modules of the repository,
+including test modules.  Other state that a test file leaves in modules is not reset.
 
 Collection is restricted to the selected test files, so that other test files are not imported.
 Lines are measured with coverage's C tracer, because ``sys.monitoring`` reports each line only once
@@ -172,9 +172,10 @@ class _ImportLabeler(importlib.abc.MetaPathFinder):
     """Label the lines that run while a module of the repository is first imported.
 
     It finds modules with the finders that follow it, and labels only modules of the repository (see
-    ``_is_repository_module``), whose ``exec_module`` it replaces for one import.  Such modules
-    include those that are not measured, such as ``__init__.py`` files, since their imports can run
-    measured lines.  A module that runs again, as when it is reloaded
+    ``_is_repository_file``) other than test modules, that are loaded from source files by the
+    standard loader, whose ``exec_module`` it replaces for one import.  Such modules include those
+    that are not measured, such as ``__init__.py`` files, since their imports can run measured
+    lines.  A module that runs again, as when it is reloaded
     or imported after its removal from ``sys.modules``, is not labeled again, since in a process of
     its own, a test file would not run it again either.
     """
@@ -199,7 +200,7 @@ class _ImportLabeler(importlib.abc.MetaPathFinder):
         if not isinstance(loader, importlib.machinery.SourceFileLoader) or spec.origin is None:
             return spec
         file = normalize_path(spec.origin)
-        if not _is_repository_module(file, loader):
+        if not _is_repository_file(file) or _is_test_file(file):
             return spec
         exec_module = loader.exec_module
 
@@ -274,30 +275,29 @@ def _finish_shared_fixtures(request: pytest.FixtureRequest | None) -> None:
         fixturedef.finish(request)  # type: ignore[arg-type]
 
 
-def _is_repository_module(file: str, loader: object) -> bool:
-    """Whether a module is a module of the repository, other than a test module.
+def _is_repository_file(file: str) -> bool:
+    """Whether a normalized file is in the repository: in the current directory, not installed."""
+    parts = set(pathlib.PurePath(file).parts)
+    return file.startswith(_root_directory) and not {"site-packages", "dist-packages"} & parts
 
-    The modules of the repository are in the current directory, outside installed packages, and are
-    loaded from source files by the standard loader.  Pytest loads test modules and ``conftest.py``
-    files with its own loader.
-    """
-    return (
-        isinstance(loader, importlib.machinery.SourceFileLoader)
-        and file.startswith(_root_directory)
-        and not {"site-packages", "dist-packages"} & set(pathlib.PurePath(file).parts)
-    )
+
+def _is_test_file(file: str) -> bool:
+    """Whether a file is a test module or a ``conftest.py`` file, by the names that checks use."""
+    name = os.path.basename(file)
+    return name == "conftest.py" or name.endswith("_test.py") or name.startswith("test_")
 
 
 def _clear_caches() -> None:
     """Empty every functools cache of a function or method of a module of the repository.
 
     Modules that are not measured are included, since their caches can keep measured lines from
-    running, and they do not depend on the selected files, as in an incremental check.
+    running, and they do not depend on the selected files, as in an incremental check.  Test modules
+    are included, since another test file can fill the cache of a function that a test module
+    defines.
     """
     for module in list(sys.modules.values()):
         file = getattr(module, "__file__", None)
-        loader = getattr(getattr(module, "__spec__", None), "loader", None)
-        if not isinstance(file, str) or not _is_repository_module(normalize_path(file), loader):
+        if not isinstance(file, str) or not _is_repository_file(normalize_path(file)):
             continue
         for value in list(vars(module).values()):
             candidates = [value]
