@@ -15,11 +15,11 @@
 """A pytest plugin that records the coverage contexts of ``coverage_.py --modular --single-run``.
 
 ``coverage_.py --modular --single-run`` runs the selected test files in one pytest run, instead of
-one process for each test file, and loads this plugin in every pytest process, including each
-pytest-xdist worker.  The plugin starts coverage before pytest loads any ``conftest.py`` file, and
-labels the lines that run with coverage contexts, from which ``coverage_.py`` approximates the
-coverage that each test file would have in a process of its own (see ``_credited_context_regexes``
-in ``coverage_.py``).  The contexts are:
+one process for each file and its test files, and loads this plugin in every pytest process,
+including each pytest-xdist worker.  The plugin starts coverage before pytest loads any
+``conftest.py`` file, and labels the lines that run with coverage contexts, from which
+``coverage_.py`` approximates the coverage that each file would have from its test files in a
+process of their own (see ``_credited_context_regexes`` in ``coverage_.py``).  The contexts are:
 
 * ``checks-superstaq:startup`` while pytest starts, which includes loading the ``conftest.py`` files
   of the directory that contains every selected test file, and of its parents,
@@ -36,10 +36,11 @@ package-scoped fixtures that the file's tests used, and calls ``cache_clear`` on
 functions that it finds in the modules of the repository.  This does not reproduce a fresh process:
 other module state, and side effects that fixture finalizers do not undo, remain.
 
-The plugin sets coverage's run options itself.  It measures exactly the files to check, uses
-coverage's C tracer, because coverage's ``sysmon`` core does not support dynamic contexts, and does
-not measure subprocesses, whose lines cannot be attributed to a test file.  It also restricts
-collection to the selected test files, so that other test files are not imported.
+The plugin sets coverage's run options itself.  It limits measurement to the files to check
+(subject to the configured ``omit`` patterns), uses coverage's C tracer, because coverage's
+``sysmon`` core does not support dynamic contexts, and does not enable coverage in subprocesses of
+tests, whose lines could not be attributed to a test file.  It also restricts collection to the
+selected test files, so that other test files are not imported.
 """
 
 from __future__ import annotations
@@ -158,7 +159,7 @@ class _SharedImportLoader(importlib.machinery.SourceFileLoader):
 
     Modules that first run while pytest starts keep the startup context.  A module that runs again,
     as when it is reloaded or imported after its removal from ``sys.modules``, keeps the current
-    context, since in a process of its own, a test file would not run it again either.
+    context: that run belongs to whatever ran it, such as a test, not to the shared first import.
     """
 
     def exec_module(self, module: types.ModuleType) -> None:

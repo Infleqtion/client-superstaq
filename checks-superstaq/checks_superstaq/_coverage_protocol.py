@@ -22,6 +22,9 @@ module names both.  It has no side effects, so that importing it does not activa
 from __future__ import annotations
 
 import os
+from typing import Literal
+
+TestPhase = Literal["setup", "run", "teardown"]
 
 # Environment variables that coverage_.py sets for the plugin.
 DATA_FILE_ENV = "CHECKS_SUPERSTAQ_COVERAGE_DATA_FILE"  # the coverage data file to write
@@ -36,7 +39,7 @@ SHARED_IMPORT_CONTEXT = "checks-superstaq:shared-import"
 IGNORED_CONTEXT = "checks-superstaq:ignored"
 
 # The phases of a test, each with its own coverage context.
-TEST_PHASES = ("setup", "run", "teardown")
+TEST_PHASES: tuple[TestPhase, ...] = ("setup", "run", "teardown")
 
 
 def get_collection_context(node_id: str) -> str:
@@ -44,8 +47,8 @@ def get_collection_context(node_id: str) -> str:
     return f"{node_id}|collect"
 
 
-def get_test_context(node_id: str, phase: str) -> str:
-    """Return the coverage context of a phase (in `TEST_PHASES`) of a pytest test."""
+def get_test_context(node_id: str, phase: TestPhase) -> str:
+    """Return the coverage context of a phase of a pytest test."""
     return f"{node_id}|{phase}"
 
 

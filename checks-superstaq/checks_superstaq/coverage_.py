@@ -53,7 +53,8 @@ def run(
         silent: If True, restrict printing to warning and error messages.
 
     Returns:
-        Terminal exit code. 0 indicates success, while any other integer indicates a test failure.
+        Terminal exit code. 0 indicates success, while any other integer indicates a test or
+        coverage failure.
     """
     parser = check_utils.get_check_parser()
     parser.add_argument(
@@ -65,20 +66,21 @@ def run(
         "--single-run",
         action="store_true",
         help="With --modular, run the selected test files in one pytest run instead of one process"
-        " per test file, and approximate the coverage of each file by its own test files with"
-        " coverage contexts. Lines that run while pytest starts or a module is first imported are"
-        " credited to every test file, and lines that only subprocesses of tests run are not"
-        " credited.",
+        " for each file and its test files, and approximate the coverage of each file by its test"
+        " files with coverage contexts. Lines that run while pytest starts or a module is first"
+        " imported are credited to every test file, and lines that only subprocesses of tests run"
+        " are not credited. Only files below the coverage threshold are reported.",
     )
     parser.add_argument(
         "-j",
         "--jobs",
         type=int,
         default=None,
-        help="The number of parallel jobs: without --modular, pytest-xdist workers; with --modular,"
-        " test files checked concurrently, each in its own process; with --modular --single-run,"
-        " pytest-xdist workers. 0 runs everything in one process. Default with --modular:"
-        " min((os.cpu_count() or 2) // 2, number of test files).",
+        help="The number of parallel jobs: without --modular, or with --modular --single-run, the"
+        " number of pytest-xdist workers; with --modular, the number of files checked concurrently,"
+        " each with its test files in its own process. 0 disables parallelism. Default with"
+        " --modular: min((os.cpu_count() or 2) // 2, number of files to check), or of test files"
+        " with --single-run.",
     )
     parser.add_argument(
         "--branch",
@@ -194,7 +196,7 @@ def _run_modular(
     exclude: str | Iterable[str],
     num_jobs: int | None,
 ) -> int:
-    """Run modular coverage checks.  If num_workers != 1, these checks are run concurrently."""
+    """Run a coverage process for each file and its test files, in parallel unless num_jobs is 0."""
     subprocess.check_call([sys.executable, "-m", "coverage", "erase"], cwd=check_utils.root_dir)
     test_pairs = _get_test_pairs(files, exclude)
 
@@ -328,15 +330,16 @@ def _get_single_run_environment(
 
 
 def _report_single_run(test_pairs: _TestPairs, data_file: str) -> int:
-    """Report the files of `test_pairs` that the contexts of their test files do not fully cover.
+    """Report the files of `test_pairs` whose coverage by their test files is below the threshold.
 
-    Each pair is reported separately, with only the contexts credited to its test files (see
-    `_credited_context_regexes`).  As in a modular check with one process per test file, files that
-    are not measured, such as files that no test imports or that the configuration omits, are not
-    reported.
+    The coverage of each pair is computed separately, from only the contexts credited to its test
+    files (see `_credited_context_regexes`), and compared with ``fail_under`` in the coverage
+    configuration.  As in a modular check with a process for each pair, files that are not
+    measured, such as files that no test imports or that the configuration omits, are not reported.
 
     Returns:
-        2 if a file is not fully covered (as ``coverage report`` returns), and 0 otherwise.
+        2 if the coverage of any file is below the threshold (as ``coverage report`` returns), and
+        0 otherwise.
     """
     measurement = coverage.Coverage(data_file=data_file)
     measurement.combine(keep=False)
@@ -344,33 +347,33 @@ def _report_single_run(test_pairs: _TestPairs, data_file: str) -> int:
     measured_files = {
         protocol.normalize_path(file) for file in measurement.get_data().measured_files()
     }
-    is_fully_covered = True
+    meets_threshold = True
     for files, test_files in test_pairs:
         measured = [file for file in files if protocol.normalize_path(file) in measured_files]
         source_files = [file for file in measured if file not in test_files]
         own_test_files = [file for file in measured if file in test_files]
         if source_files:
-            is_fully_covered &= _report_if_not_fully_covered(
+            meets_threshold &= _report_if_below_threshold(
                 measurement, source_files, test_files, include_all_collection_contexts=False
             )
         if own_test_files:
-            is_fully_covered &= _report_if_not_fully_covered(
+            meets_threshold &= _report_if_below_threshold(
                 measurement, own_test_files, test_files, include_all_collection_contexts=True
             )
-    return 0 if is_fully_covered else 2
+    return 0 if meets_threshold else 2
 
 
-def _report_if_not_fully_covered(
+def _report_if_below_threshold(
     measurement: coverage.Coverage,
     files: list[str],
     test_files: list[str],
     *,
     include_all_collection_contexts: bool,
 ) -> bool:
-    """Print a coverage report of `files` if the contexts credited to `test_files` miss lines.
+    """Print a coverage report of `files` if their coverage by `test_files` is below the threshold.
 
     Returns:
-        Whether the contexts credited to `test_files` fully cover `files`.
+        Whether the coverage of `files` by the contexts of `test_files` meets the threshold.
     """
     report = io.StringIO()
     contexts = _credited_context_regexes(
