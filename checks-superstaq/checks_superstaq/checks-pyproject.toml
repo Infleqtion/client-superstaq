@@ -153,6 +153,10 @@ max-complexity = 10
 [tool.ruff.lint.isort]
 case-sensitive = false
 
+[tool.ruff.lint.flake8-import-conventions.extend-aliases]
+"cirq_superstaq" = "css"
+"qiskit_superstaq" = "qss"
+"general_superstaq" = "gss"
 
 [tool.mypy]
 pretty = true

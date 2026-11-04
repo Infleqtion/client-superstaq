@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import abc
+import warnings
 from collections.abc import Iterator, Mapping, Sequence
 from collections.abc import Set as AbstractSet
 from typing import TYPE_CHECKING, Any
@@ -267,7 +268,7 @@ class MovementGate(PermutationGate):
 
     def _op_repr_(self, qubits: Sequence[cirq.Qid]) -> str:
         moves = {qubits[i]: qubits[j] for i, j in self._moves.items()}
-        return f"css.movement_op({moves})"
+        return f"css.move({moves})"
 
 
 class BSwapPowGate(cirq.EigenGate, cirq.InterchangeableQubitsGate):
@@ -898,7 +899,7 @@ def qudit_swap_op(qudit0: cirq.Qid, qudit1: cirq.Qid) -> cirq.Operation:
     return QuditSwapGate(dimension=qudit0.dimension).on(qudit0, qudit1)
 
 
-def movement_op(moves: Mapping[cirq.Qid, cirq.Qid]) -> cirq.Operation:
+def move(moves: Mapping[cirq.Qid, cirq.Qid]) -> cirq.Operation:
     """Construct a `MovementGate` operation implementing the given moves.
 
     Args:
@@ -918,6 +919,19 @@ def movement_op(moves: Mapping[cirq.Qid, cirq.Qid]) -> cirq.Operation:
 
     move_indices = {all_qubits.index(qi): all_qubits.index(qf) for qi, qf in moves.items()}
     return MovementGate(move_indices, dimension=dimension).on(*all_qubits)
+
+
+def movement_op(moves: Mapping[cirq.Qid, cirq.Qid]) -> cirq.Operation:
+    """Construct a `MovementGate` operation implementing the given moves.
+
+    Deprecated; use `css.move()` instead.
+    """
+    warnings.warn(
+        "The `css.movement_op()` function is deprecated; use `css.move()` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return move(moves)
 
 
 def qubit_subspace_op(

@@ -13,7 +13,7 @@
 # limitations under the License.
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import http
 import json
 import textwrap
@@ -59,8 +59,8 @@ def _job_dict() -> dict[str, object]:
         "results_dicts": [],
         "shots": [1],
         "dry_run": True,
-        "submission_timestamp": str(datetime.datetime.now(tz=datetime.timezone.utc)),
-        "last_updated_timestamp": [str(datetime.datetime.now(tz=datetime.timezone.utc))],
+        "submission_timestamp": str(dt.datetime.now(tz=dt.timezone.utc)),
+        "last_updated_timestamp": [str(dt.datetime.now(tz=dt.timezone.utc))],
         "initial_logical_to_physicals": [{0: 0, 1: 1}],
         "final_logical_to_physicals": [{0: 0, 1: 1}],
         "logical_qubits": ["0", "1"],
@@ -142,7 +142,6 @@ def test_equality(mock_client: gss.superstaq_client._SuperstaqClientV3) -> None:
 def test_refresh_job(
     mock_get: mock.MagicMock, mock_client: gss.superstaq_client._SuperstaqClientV3
 ) -> None:
-
     job_dict = _job_dict()
     job_dict["num_circuits"] = 3
     job_dict["statuses"] = ["running", "awaiting_submission", "completed"]
@@ -243,7 +242,7 @@ def test_wait_until_terminal_state_no_poll(
         assert mock_get.call_count == 2
         mock_sleep.assert_called_once()
 
-    assert job.job_data.statuses == ["completed"]
+    assert job.job_data.statuses[0] is gss.models.CircuitStatus.COMPLETED
 
 
 @mock.patch("time.sleep", return_value=None)
@@ -257,12 +256,17 @@ def test_wait_until_terminal_state_poll_timeout(
     with mock.patch("requests.Session.get") as mock_get:
         mock_get.return_value = _mocked_response({str(uuid.UUID(int=123)): job_dict})
         with pytest.raises(
-            TimeoutError, match=r"Timed out while waiting for results. Final status was 'running'."
+            TimeoutError,
+            match=r"Timed out while waiting for results. Final status",
         ):
-            job.wait_until_terminal_state(index=0, timeout_seconds=5, polling_seconds=10)
-
-        mock_sleep.assert_called_once()
-        assert mock_get.call_count == 2
+            job.wait_until_terminal_state(index=0, timeout_seconds=0.5, polling_seconds=1)
+        job_zero_status = job._status(index=0)
+        overall_status = job._status()
+        assert isinstance(job_zero_status, gss.models.CircuitStatus)
+        assert isinstance(overall_status, gss.models.CircuitStatus)
+        assert job_zero_status == overall_status == "running"
+    mock_sleep.assert_called_once()
+    assert mock_get.call_count == 4
 
 
 @mock.patch("requests.Session.get")
@@ -304,6 +308,11 @@ def test_update_status_queue_info(mock_client: gss.superstaq_client._SuperstaqCl
     assert job._overall_status == "awaiting_submission"
 
     job_dict["statuses"] = ["completed", "completed", "failed"]
+    job._job_data = gss.models.JobData(**job_dict)
+    job._update_status_queue_info()
+    assert job._overall_status == "failed"
+
+    job_dict["statuses"] = []
     job._job_data = gss.models.JobData(**job_dict)
     job._update_status_queue_info()
     assert job._overall_status == "failed"

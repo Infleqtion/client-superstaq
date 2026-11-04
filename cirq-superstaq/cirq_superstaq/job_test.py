@@ -27,9 +27,10 @@
 # limitations under the License.
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import http
 import json
+import re
 import textwrap
 import uuid
 from unittest import mock
@@ -115,8 +116,8 @@ def job_dictV3() -> dict[str, object]:
         "results_dicts": [],
         "shots": [1],
         "dry_run": True,
-        "submission_timestamp": datetime.datetime.now(tz=datetime.timezone.utc),
-        "last_updated_timestamp": [datetime.datetime.now(tz=datetime.timezone.utc)],
+        "submission_timestamp": dt.datetime.now(tz=dt.timezone.utc),
+        "last_updated_timestamp": [dt.datetime.now(tz=dt.timezone.utc)],
         "initial_logical_to_physicals": [{0: 0, 1: 1}],
         "final_logical_to_physicals": [{0: 0, 1: 1}],
         "logical_qubits": [cirq.to_json(cirq.LineQubit.range(4))],
@@ -753,6 +754,15 @@ def test_job_counts_poll_timeout(
     assert mock_sleep.call_count == 11
 
 
+def test_jobv3_status(jobV3: css.JobV3, job_dictV3: dict[str, object]) -> None:
+    # Update `_job_data` to a failed job
+    jobV3._job_data = gss.models.JobData(
+        **modifiy_job_result(job_dictV3, statuses=["failed", "failed"], counts=[None, None])
+    )
+    assert all(isinstance(jobV3.status(index=i), gss.models.CircuitStatus) for i in range(2))
+    assert all(jobV3.status(index=i) == "failed" for i in range(2))
+
+
 def test_job_counts_poll_timeoutV3(jobV3: css.JobV3, job_dictV3: dict[str, object]) -> None:
     # Update `_job_data` to a still running job
     jobV3._job_data = gss.models.JobData(
@@ -830,6 +840,44 @@ def test_multijob_overall_status(multi_circuit_job: css.Job) -> None:
     # Test that overall status is running since 1/4 of the job is not queued
     with patched_requests(job_info):
         assert multi_circuit_job.status() == "Running"
+
+    job_info = {
+        "job_id1": {
+            "status": "Submitted",
+        }
+    }
+    job_info |= {
+        f"job_id{i}": {
+            "status": "Done",
+        }
+        for i in range(2, 5)
+    }
+    multi_circuit_job._job = job_info
+    job_id_list = multi_circuit_job._job_id.split(",")  # Separate aggregated job ids
+
+    status_occurrence = {multi_circuit_job._job[job_id]["status"] for job_id in job_id_list}
+    assert status_occurrence == {"Submitted", "Done"}
+    multi_circuit_job._update_status_queue_info()
+    assert multi_circuit_job._overall_status == "Submitted"
+
+    job_info = {
+        "job_id1": {
+            "status": "Queued",
+        }
+    }
+    job_info |= {
+        f"job_id{i}": {
+            "status": "Failed",
+        }
+        for i in range(2, 5)
+    }
+    multi_circuit_job._job = job_info
+    job_id_list = multi_circuit_job._job_id.split(",")  # Separate aggregated job ids
+
+    status_occurrence = {multi_circuit_job._job[job_id]["status"] for job_id in job_id_list}
+    assert status_occurrence == {"Queued", "Failed"}
+    multi_circuit_job._update_status_queue_info()
+    assert multi_circuit_job._overall_status == "Queued"
 
 
 def test_job_getitem(multi_circuit_job: css.Job) -> None:
@@ -912,3 +960,62 @@ def test_set_counts_jaqal(
     )
     with pytest.raises(ValueError, match=r"only supported for circuits with terminal measurements"):
         jobV3.set_counts(result)
+
+
+def test_update_status_queue_info() -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="cirq-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    job = css.Job(client, "job_id1,job_id2,job_id3")
+    job._job = {
+        "job_id1": {"status": "Done"},
+        "job_id2": {"status": "Running"},
+        "job_id3": {"status": "Queued"},
+    }
+    job._update_status_queue_info()
+    assert job._overall_status == "Running"
+
+    job = css.Job(client, "job_id1,job_id2,job_id3")
+    job._job = {
+        "job_id1": {"status": " "},
+        "job_id2": {"status": " "},
+        "job_id3": {"status": " "},
+    }
+    job._update_status_queue_info()
+    assert job._overall_status == "Submitted"
+
+
+def test_check_if_unsuccessful() -> None:
+    client = gss.superstaq_client._SuperstaqClient(
+        client_name="cirq-superstaq",
+        remote_host="http://example.com",
+        api_key="to_my_heart",
+    )
+    job = css.Job(client, "job_id1, job_id2, job_id3")
+    job._job = {
+        "job_id1, job_id2, job_id3": {"status": "Done"},
+        "job_id2": {"status": "Running"},
+        "job_id3": {"status": "Canceled"},
+    }
+
+    job = css.Job(client, "job_id1,job_id2,job_id3")
+    job._job = {
+        "job_id1": {"status": "Failed", "failure": {"error": "error"}},
+        "job_id2": {"status": "Failed", "failure": {None: 1}},
+        "": {"status": "Failed", "failure": {"error": "error"}},
+    }
+
+    with pytest.raises(
+        gss.SuperstaqUnsuccessfulJobException,
+        match=re.escape("Job job_id1 terminated with status Failed (error)."),
+    ):
+        css.job.Job._check_if_unsuccessful(job, 0)
+
+    with pytest.raises(
+        gss.SuperstaqUnsuccessfulJobException, match=r"Job job_id2 terminated with status Failed"
+    ):
+        css.job.Job._check_if_unsuccessful(job, 1)
+
+    css.job.Job.__getitem__(job, 2)

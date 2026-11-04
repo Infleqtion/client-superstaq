@@ -143,6 +143,7 @@ class SuperstaqBackend(qiskit.providers.BackendV2, Generic[QssCompileResultT_co]
             "cc_prx": qiskit.circuit.library.RGate,  # Classically controlled 'prx' gate
             "MS": qiskit.circuit.library.MSGate,
             "ZZ": qiskit.circuit.library.RZZGate,
+            "xslow": qiskit.circuit.library.XGate,  # A bit-flip gate with extended duration
             "xx": qiskit.circuit.library.RXXGate,
             "measure_ff": qiskit.circuit.Measure(
                 label="measure_ff"

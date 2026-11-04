@@ -16,7 +16,7 @@
 # pragma: no cover
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import itertools
 import uuid
 from collections.abc import Mapping, Sequence
@@ -61,6 +61,7 @@ class CircuitType(str, Enum):
     CIRQ = "cirq"
     QISKIT = "qiskit"
     QASM = "qasm"
+    JAQAL = "jaqal"
 
 
 class CircuitStatus(str, Enum):
@@ -128,7 +129,6 @@ class DefaultPydanticModel(
     """Default pydantic model used across the superstaq server."""
 
     model_config = pydantic.ConfigDict(
-        use_enum_values=True,
         extra="ignore",
         validate_assignment=True,
         validate_default=True,
@@ -197,9 +197,9 @@ class JobData(DefaultPydanticModel):
     """Number of shots for each circuit."""
     dry_run: bool
     """Flag to indicate a dry-run job."""
-    submission_timestamp: datetime.datetime
+    submission_timestamp: dt.datetime
     """Timestamp when the job was submitted."""
-    last_updated_timestamp: list[datetime.datetime | None]
+    last_updated_timestamp: list[dt.datetime | None]
     """Timestamp for when each circuit was last updated."""
     initial_logical_to_physicals: list[dict[int, int] | None]
     """Serialized initial logical-to-physical mapping for each circuit."""
@@ -282,9 +282,9 @@ class JobQuery(DefaultPydanticModel):
     """Minimum priority to include."""
     max_priority: int | None = pydantic.Field(None)
     """Maximum priority to include."""
-    submitted_before: datetime.datetime | None = pydantic.Field(None)
+    submitted_before: dt.datetime | None = pydantic.Field(None)
     """Filter for jobs submitted before this date."""
-    submitted_after: datetime.datetime | None = pydantic.Field(None)
+    submitted_after: dt.datetime | None = pydantic.Field(None)
     """Filter for jobs submitted after this date."""
 
 
@@ -515,7 +515,7 @@ class WorkerTaskResults(DefaultPydanticModel):
             CircuitStatus.COMPLETED,
             CircuitStatus.FAILED,
         ):
-            raise ValueError(f"Workers cannot return a status of {self.status}.")
+            raise ValueError(f"Workers cannot return a status of {self.status.value}.")
 
         elif self.successful_shots is not None or self.measurements is not None:
             raise ValueError("Workers cannot return results unless status is COMPLETED")

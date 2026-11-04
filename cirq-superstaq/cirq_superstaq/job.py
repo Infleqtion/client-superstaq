@@ -144,7 +144,7 @@ class Job:
         if status in self.UNSUCCESSFUL_STATES:
             job_ids = self._job_id.split(",")
             ids_to_check = [job_ids[index]] if index else job_ids
-            for job_id in ids_to_check:
+            for job_id in ids_to_check:  # pragma: no branch
                 if "failure" in self._job[job_id] and "error" in self._job[job_id]["failure"]:
                     # If possible append a message to the failure status, e.g. "Failed (<message>)"
                     error = self._job[job_id]["failure"]["error"]

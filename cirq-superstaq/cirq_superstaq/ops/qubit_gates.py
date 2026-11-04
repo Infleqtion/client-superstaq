@@ -520,7 +520,8 @@ class ParallelGates(cirq.Gate, cirq.InterchangeableQubitsGate):
             index: The index into a particular member of the `ParallelGates` operation.
 
         Returns:
-            A tuple of the gate at the given index and the index itself.
+            A tuple of the gate at the given index and the qubit index (of the subgate within the
+            parallel gate) .
 
         Raises:
             ValueError: If index is outside bounds of gate index range.
