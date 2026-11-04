@@ -121,6 +121,8 @@ def run(
         coverage_args.append("--branch")
 
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
+    if parsed_args.single_run and any("::" in file for file in files):
+        parser.error("--single-run checks whole test files, not test node IDs")
     silent = silent or not (parsed_args.files or parsed_args.revisions)
 
     test_files = check_utils.get_test_files(files, exclude=exclude, silent=silent)
@@ -237,9 +239,7 @@ def _run_single_modular(
     together, keeping the tests of each test file on one worker.  The ``_coverage_contexts`` plugin
     labels each line that runs with the test file responsible for it, and resets shared state
     between test files (see that module).  A file is credited only with the lines that its own test
-    file ran: in its tests, while it and the ``conftest.py`` files of its directories were
-    collected, while the file itself was imported, or while pytest started, which every test file
-    needs.
+    file would run in a process of its own (see ``_get_context_patterns``).
     """
     test_pairs = _get_test_pairs(files, exclude)
     test_files = sorted({file for _, pair_test_files in test_pairs for file in pair_test_files})
@@ -272,27 +272,35 @@ def _run_single_modular(
     measurement = coverage.Coverage(data_file=data_file)
     measurement.combine(keep=False)
     measurement.save()
+    # As in a modular check with a process for each test file, files that are not measured, such as
+    # those that no test imports or that the configuration omits, are not reported.
+    measured = set(map(_coverage_contexts.normalize_path, measurement.get_data().measured_files()))
     fail_under = cast("float", measurement.get_option("report:fail_under"))
     coverage_failed = False
     for files_requiring_coverage, pair_test_files in test_pairs:
-        report = io.StringIO()
-        contexts = _get_context_patterns(files_requiring_coverage, pair_test_files)
-        description = f"{', '.join(files_requiring_coverage)} by {', '.join(pair_test_files)}"
-        try:
-            percentage = measurement.report(
-                morfs=files_requiring_coverage,
-                contexts=contexts,
-                show_missing=True,
-                precision=2,
-                file=report,
-            )
-        except coverage.exceptions.NoDataError:
-            print(f"\nNo coverage data for {description}.")  # noqa: T201
-            coverage_failed = True
-            continue
-        if percentage < fail_under:
-            print(f"\nCoverage of {description}:\n{report.getvalue()}", end="")  # noqa: T201
-            coverage_failed = True
+        for is_test_file in (False, True):
+            morfs = [
+                file
+                for file in files_requiring_coverage
+                if (file in pair_test_files) == is_test_file
+                and _coverage_contexts.normalize_path(file) in measured
+            ]
+            if not morfs:
+                continue
+            report = io.StringIO()
+            contexts = _get_context_patterns(pair_test_files, is_test_file)
+            try:
+                percentage = measurement.report(
+                    morfs=morfs, contexts=contexts, show_missing=True, precision=2, file=report
+                )
+            except (
+                coverage.exceptions.NoDataError
+            ):  # the configuration omits the files from reports
+                continue
+            if percentage < fail_under:
+                description = f"{', '.join(morfs)} by {', '.join(pair_test_files)}"
+                print(f"\nCoverage of {description}:\n{report.getvalue()}", end="")  # noqa: T201
+                coverage_failed = True
 
     if test_returncode:
         print(check_utils.failure("TEST FAILURE!"))  # noqa: T201
@@ -306,10 +314,16 @@ def _run_single_modular(
     return 0
 
 
-def _get_context_patterns(files: list[str], test_files: list[str]) -> list[str]:
-    """Regular expressions that match the coverage contexts credited to test files for files."""
-    contexts = {"", *map(_coverage_contexts.get_import_context, files)}
-    patterns = []
+def _get_context_patterns(test_files: list[str], for_test_files: bool) -> list[str]:
+    """Regular expressions that match the coverage contexts credited to test files.
+
+    Test files are credited with the lines that ran while pytest started, while they or the
+    ``conftest.py`` files of their directories were collected, in their tests, and while a module
+    was first imported.  The lines of test files themselves are also credited if they ran while any
+    test file was collected, since a test file can first be imported by another one.
+    """
+    contexts = {"", _coverage_contexts.IMPORT}
+    patterns = [r"^.*\|collect$"] if for_test_files else []
     for test_file in test_files:
         # Pytest node IDs, which name the contexts, separate directories with "/" on every platform.
         path = pathlib.PurePath(test_file)
