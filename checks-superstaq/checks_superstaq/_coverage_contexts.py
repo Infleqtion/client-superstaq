@@ -12,38 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""A pytest plugin that measures coverage, labeled by the test file responsible for each line.
+"""A pytest plugin that records the coverage contexts of ``coverage_.py --modular --single-run``.
 
-``coverage_.py --modular --single-run`` loads this plugin in every pytest process, including each
-pytest-xdist worker.  It starts coverage before any ``conftest.py`` file imports the code under
-test, and labels every line that runs with a coverage context:
+``coverage_.py --modular --single-run`` runs the selected test files in one pytest run, instead of
+one process for each test file, and loads this plugin in every pytest process, including each
+pytest-xdist worker.  The plugin starts coverage before pytest loads any ``conftest.py`` file, and
+labels the lines that run with coverage contexts, from which ``coverage_.py`` approximates the
+coverage that each test file would have in a process of its own (see ``_credited_context_regexes``
+in ``coverage_.py``).  The contexts are:
 
-* the empty context while pytest starts, which loads the ``conftest.py`` files of the directory
-  that contains every selected test file and of its parents,
-* ``<collector node ID>|collect`` while a test file or a directory, with its ``conftest.py``, is
-  collected,
-* ``<test node ID>|setup``, ``|run``, or ``|teardown`` while a test runs,
-* ``import`` while a module of the repository that is not a test module runs for the first time in
-  this process, after pytest has started, and
-* ``unattributed`` at other times, such as between tests and after the last one.
+* ``checks-superstaq:startup`` while pytest starts, which includes loading the ``conftest.py`` files
+  of the directory that contains every selected test file, and of its parents,
+* ``<collector node ID>|collect`` while a pytest collector, such as a directory or a test file,
+  collects,
+* ``<test node ID>|setup``, ``|run``, or ``|teardown`` during the phases of a test,
+* ``checks-superstaq:shared-import`` while a module of the repository, other than a test module,
+  runs for the first time in the process after startup, and
+* ``checks-superstaq:ignored`` at other times, such as between tests.
 
-``coverage_.py`` credits a file with the lines that its own test file ran in these contexts, and
-with the lines that ran while pytest started or a module was first imported.  A module is imported
-once per process, by whichever test file needs it first, but in a process of its own, a test file
-would import the modules that it needs too.  For the same reason, a test file is credited with its
-own lines that ran while any test file was collected, which include its module-level lines if
-another test file imported it first.
+Since the test files share processes, the plugin also reduces the state that a test file leaves for
+the next one on the same worker.  After the last test of a test file, it finalizes the session- and
+package-scoped fixtures that the file's tests used, and calls ``cache_clear`` on the cached
+functions that it finds in the modules of the repository.  This does not reproduce a fresh process:
+other module state, and side effects that fixture finalizers do not undo, remain.
 
-To make a test file run as it would in a fresh process, the plugin also undoes the state that a
-test file leaves behind for the next one on the same worker: after the last test of a test file, it
-tears down the session- and package-scoped fixtures that the file used, so that the next test file
-sets them up anew, and it empties every ``functools`` cache of the modules of the repository,
-including test modules.  Other state that a test file leaves in modules is not reset.
-
-Collection is restricted to the selected test files, so that other test files are not imported.
-Lines are measured with coverage's C tracer, because ``sys.monitoring`` reports each line only once
-and so cannot credit a line to a second test file.  Lines that only a subprocess of a test runs are
-not measured.
+The plugin sets coverage's run options itself.  It measures exactly the files to check, uses
+coverage's C tracer, because coverage's ``sysmon`` core does not support dynamic contexts, and does
+not measure subprocesses, whose lines cannot be attributed to a test file.  It also restricts
+collection to the selected test files, so that other test files are not imported.
 """
 
 from __future__ import annotations
@@ -53,37 +49,21 @@ import importlib.machinery
 import os
 import pathlib
 import sys
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 from typing import TYPE_CHECKING
 
 import coverage
 import pytest
 
+from checks_superstaq import _coverage_protocol as protocol
+
 if TYPE_CHECKING:
     import types
-    from collections.abc import Sequence
 
     from _pytest.fixtures import FixtureDef
 
-# Environment variables set by coverage_.py.
-DATA_FILE_VARIABLE = "CHECKS_SUPERSTAQ_COVERAGE_DATA_FILE"
-INCLUDE_VARIABLE = "CHECKS_SUPERSTAQ_COVERAGE_INCLUDE"
-TEST_FILES_VARIABLE = "CHECKS_SUPERSTAQ_COVERAGE_TEST_FILES"
-BRANCH_VARIABLE = "CHECKS_SUPERSTAQ_COVERAGE_BRANCH"
-
-# The context of lines that run while a measured module is first imported after pytest started.
-IMPORT = "import"
-
-# The context of lines that run outside of the collection and the tests of any one test file.
-UNATTRIBUTED = "unattributed"
-
 # Fixtures of these scopes can outlive the test file that set them up.
-SHARED_SCOPES = ("session", "package")
-
-
-def normalize_path(path: str) -> str:
-    """A path in a canonical form, to compare it with others."""
-    return os.path.normcase(os.path.realpath(path))
+_SHARED_SCOPES = ("session", "package")
 
 
 ####################################################################################################
@@ -91,57 +71,62 @@ def normalize_path(path: str) -> str:
 
 
 def pytest_ignore_collect(collection_path: pathlib.Path) -> bool | None:
-    """Collect only the selected test files, and the directories that contain them."""
+    """Ignore paths that are neither selected test files nor directories that contain them."""
     if _selected_test_files is None:
         return None
-    path = normalize_path(str(collection_path))
+    path = protocol.normalize_path(str(collection_path))
     if collection_path.is_dir():
         prefix = path + os.sep
-        return None if any(file.startswith(prefix) for file in _selected_test_files) else True
-    return None if path in _selected_test_files else True
+        is_selected = any(file.startswith(prefix) for file in _selected_test_files)
+    else:
+        is_selected = path in _selected_test_files
+    return None if is_selected else True
 
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_collectstart(collector: pytest.Collector) -> None:
-    """Label the lines that run while a test file or directory is collected."""
-    _context_stack.append(_current_context[0])
-    _switch_context(f"{collector.nodeid}|collect" if collector.nodeid else "")
+    """Switch to the collection context of a collector (the startup context for the session)."""
+    _context_stack.append(_current_context)
+    if collector.nodeid:
+        _switch_context(protocol.get_collection_context(collector.nodeid))
+    else:
+        _switch_context(protocol.STARTUP_CONTEXT)
 
 
 @pytest.hookimpl(trylast=True)
 def pytest_collectreport() -> None:
-    """Restore the label of the enclosing collector."""
+    """Switch back to the context of the enclosing collector."""
     if _context_stack:
         _switch_context(_context_stack.pop())
 
 
 def pytest_collection_finish() -> None:
-    """Stop crediting lines to the startup of pytest."""
-    _switch_context(UNATTRIBUTED)
+    """Switch to the ignored context once collection has finished."""
+    _switch_context(protocol.IGNORED_CONTEXT)
 
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_runtest_setup(item: pytest.Item) -> None:
-    """Label the setup of a test."""
-    _switch_context(f"{item.nodeid}|setup")
+    """Switch to the setup context of a test before its fixtures are set up."""
+    _switch_context(protocol.get_test_context(item.nodeid, "setup"))
 
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_runtest_call(item: pytest.Item) -> None:
-    """Label the body of a test."""
-    _switch_context(f"{item.nodeid}|run")
+    """Switch to the run context of a test before its body runs."""
+    _switch_context(protocol.get_test_context(item.nodeid, "run"))
 
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_teardown(
     item: pytest.Item, nextitem: pytest.Item | None
 ) -> Generator[None, object, None]:
-    """Label the teardown of a test, and reset shared state after the last test of a test file."""
-    _switch_context(f"{item.nodeid}|teardown")
-    # The fixtures that a test used, including those that it or its fixtures requested by name.
+    """Switch to the teardown context of a test, and reduce shared state after its test file."""
+    _switch_context(protocol.get_test_context(item.nodeid, "teardown"))
+    # The fixtures that the test used, including those that it or its fixtures requested by name.
     request = getattr(item, "_request", None)
     for fixturedef in getattr(request, "_fixture_defs", {}).values():
-        if fixturedef.scope in SHARED_SCOPES:
+        if fixturedef.scope in _SHARED_SCOPES:
             _shared_fixtures[id(fixturedef)] = fixturedef
     yield
     try:
@@ -149,7 +134,7 @@ def pytest_runtest_teardown(
             _finish_shared_fixtures(request)
             _clear_caches()
     finally:
-        _switch_context(UNATTRIBUTED)
+        _switch_context(protocol.IGNORED_CONTEXT)
 
 
 @pytest.hookimpl(trylast=True)
@@ -165,19 +150,38 @@ def pytest_sessionfinish() -> None:
 
 
 ####################################################################################################
-# labels of imports
+# shared imports
 
 
-class _ImportLabeler(importlib.abc.MetaPathFinder):
-    """Label the lines that run while a module of the repository is first imported.
+class _SharedImportLoader(importlib.machinery.SourceFileLoader):
+    """A source loader that runs a module in the shared-import context the first time it runs.
 
-    It finds modules with the finders that follow it, and labels only modules of the repository (see
-    ``_is_repository_file``) other than test modules, that are loaded from source files by the
-    standard loader, whose ``exec_module`` it replaces for one import.  Such modules include those
-    that are not measured, such as ``__init__.py`` files, since their imports can run measured
-    lines.  A module that runs again, as when it is reloaded
-    or imported after its removal from ``sys.modules``, is not labeled again, since in a process of
-    its own, a test file would not run it again either.
+    Modules that first run while pytest starts keep the startup context.  A module that runs again,
+    as when it is reloaded or imported after its removal from ``sys.modules``, keeps the current
+    context, since in a process of its own, a test file would not run it again either.
+    """
+
+    def exec_module(self, module: types.ModuleType) -> None:
+        """Run a module, in the shared-import context if this is its first run after startup."""
+        file = protocol.normalize_path(self.path)
+        is_first_run = file not in _executed_files
+        _executed_files.add(file)
+        if not is_first_run or _current_context == protocol.STARTUP_CONTEXT:
+            super().exec_module(module)
+            return
+        previous_context = _current_context
+        _switch_context(protocol.SHARED_IMPORT_CONTEXT)
+        try:
+            super().exec_module(module)
+        finally:
+            _switch_context(previous_context)
+
+
+class _SharedImportFinder(importlib.abc.MetaPathFinder):
+    """Load the modules of the repository, other than test modules, with `_SharedImportLoader`.
+
+    Such modules include those that are not measured, such as ``__init__.py`` files, since their
+    imports can run measured lines.
     """
 
     def find_spec(
@@ -186,7 +190,7 @@ class _ImportLabeler(importlib.abc.MetaPathFinder):
         path: Sequence[str] | None,
         target: types.ModuleType | None = None,
     ) -> importlib.machinery.ModuleSpec | None:
-        """Find a module with the following finders, and label its import if it is measured."""
+        """Find a module with the finders after this one, and replace its loader if eligible."""
         finders = sys.meta_path
         start = finders.index(self) + 1 if self in finders else len(finders)
         for finder in finders[start:]:
@@ -197,27 +201,12 @@ class _ImportLabeler(importlib.abc.MetaPathFinder):
         else:
             return None
         loader = spec.loader
-        if not isinstance(loader, importlib.machinery.SourceFileLoader) or spec.origin is None:
-            return spec
-        file = normalize_path(spec.origin)
-        if not _is_repository_file(file) or _is_test_file(file):
-            return spec
-        exec_module = loader.exec_module
-
-        def exec_labeled_module(module: types.ModuleType) -> None:
-            previous_context = _current_context[0]
-            first_execution = file not in _executed_files
-            _executed_files.add(file)
-            # Every test file needs the modules that are imported while pytest starts.
-            if previous_context and first_execution:
-                _switch_context(IMPORT)
-            try:
-                exec_module(module)
-            finally:
-                _switch_context(previous_context)
-
-        # The standard finders create a loader for each module, so this affects one module only.
-        loader.exec_module = exec_labeled_module  # type: ignore[method-assign]
+        if (
+            type(loader) is importlib.machinery.SourceFileLoader
+            and _is_repository_file(protocol.normalize_path(loader.path))
+            and not _is_test_file(loader.path)
+        ):
+            spec.loader = _SharedImportLoader(loader.name, loader.path)
         return spec
 
 
@@ -226,45 +215,44 @@ class _ImportLabeler(importlib.abc.MetaPathFinder):
 
 
 def _start_coverage() -> coverage.Coverage | None:
-    """Start measuring coverage in this process, if coverage_.py asked for it."""
-    data_file = os.environ.get(DATA_FILE_VARIABLE)
+    """Start coverage in this process, if ``coverage_.py`` configured the plugin."""
+    data_file = os.environ.get(protocol.DATA_FILE_ENV)
     if not data_file:
         return None
     measurement = coverage.Coverage(data_file=data_file, data_suffix=True)
     measurement.set_option("run:core", "ctrace")
-    # The plugin sets the only contexts.
     measurement.set_option("run:context", None)
     measurement.set_option("run:dynamic_context", None)
-    # Measure exactly the files that the check covers, whatever the configuration selects.
     measurement.set_option("run:source", None)
     measurement.set_option("run:source_pkgs", [])
     measurement.set_option("run:include", sorted(_measured_files))
-    # Lines that only subprocesses run are not attributed to a test, so they are not measured.
     measurement.set_option("run:patch", [])
-    if os.environ.get(BRANCH_VARIABLE):
+    if os.environ.get(protocol.BRANCH_ENV):
         measurement.set_option("run:branch", value=True)
     # A pytest-xdist controller runs no tests, so it may measure nothing.
     measurement.set_option("run:disable_warnings", ["no-data-collected"])
     measurement.start()
+    measurement.switch_context(protocol.STARTUP_CONTEXT)
     return measurement
 
 
 def _switch_context(context: str) -> None:
-    """Label the lines that run from now on."""
+    """Switch the coverage context of the lines that run from now on."""
+    global _current_context  # noqa: PLW0603
     if _coverage is not None:
         _coverage.switch_context(context)
-    _current_context[0] = context
+    _current_context = context
 
 
 def _get_test_file(item: pytest.Item) -> str:
-    """The test file of a test."""
+    """Return the file part of the node ID of a test."""
     return item.nodeid.split("::")[0]
 
 
 def _finish_shared_fixtures(request: pytest.FixtureRequest | None) -> None:
-    """Tear down the shared fixtures that a test file used, so that the next one sets them up anew.
+    """Finalize the shared fixtures that a test file used, so that the next one sets them up anew.
 
-    Tearing down a fixture first tears down the fixtures that depend on it.
+    Finalizing a fixture first finalizes the fixtures that depend on it.
     """
     fixturedefs = list(_shared_fixtures.values())
     _shared_fixtures.clear()
@@ -275,29 +263,17 @@ def _finish_shared_fixtures(request: pytest.FixtureRequest | None) -> None:
         fixturedef.finish(request)  # type: ignore[arg-type]
 
 
-def _is_repository_file(file: str) -> bool:
-    """Whether a normalized file is in the repository: in the current directory, not installed."""
-    parts = set(pathlib.PurePath(file).parts)
-    return file.startswith(_root_directory) and not {"site-packages", "dist-packages"} & parts
-
-
-def _is_test_file(file: str) -> bool:
-    """Whether a file is a test module or a ``conftest.py`` file, by the names that checks use."""
-    name = os.path.basename(file)
-    return name == "conftest.py" or name.endswith("_test.py") or name.startswith("test_")
-
-
 def _clear_caches() -> None:
-    """Empty every functools cache of a function or method of a module of the repository.
+    """Call ``cache_clear`` on the cached functions in the modules of the repository.
 
-    Modules that are not measured are included, since their caches can keep measured lines from
-    running, and they do not depend on the selected files, as in an incremental check.  Test modules
-    are included, since another test file can fill the cache of a function that a test module
-    defines.
+    The functions are found among the attributes of the modules, and the members of the classes
+    that the modules define.  Modules that are not measured are included, since their caches can
+    keep measured lines from running, and so are test modules, since another test file can fill the
+    cache of a function that a test module defines.
     """
     for module in list(sys.modules.values()):
         file = getattr(module, "__file__", None)
-        if not isinstance(file, str) or not _is_repository_file(normalize_path(file)):
+        if not isinstance(file, str) or not _is_repository_file(protocol.normalize_path(file)):
             continue
         for value in list(vars(module).values()):
             candidates = [value]
@@ -311,20 +287,36 @@ def _clear_caches() -> None:
                     candidate.cache_clear()
 
 
+def _is_repository_file(file: str) -> bool:
+    """Whether a normalized path is in the repository and outside ``site-/dist-packages``."""
+    parts = set(pathlib.PurePath(file).parts)
+    return file.startswith(_root_directory) and not {"site-packages", "dist-packages"} & parts
+
+
+def _is_test_file(file: str) -> bool:
+    """Whether a file is named as a test module or a ``conftest.py`` file."""
+    name = os.path.basename(file)
+    return name == "conftest.py" or name.endswith("_test.py") or name.startswith("test_")
+
+
 def _read_paths(variable: str) -> set[str] | None:
-    """The normalized paths in an environment variable, or None if it is not set."""
+    """Return the normalized paths in an environment variable, or None if it is not set."""
     paths = os.environ.get(variable)
-    return None if paths is None else {normalize_path(path) for path in paths.split(os.pathsep)}
+    if paths is None:
+        return None
+    return {protocol.normalize_path(path) for path in paths.split(os.pathsep)}
 
 
 # This module is imported as a pytest plugin before pytest loads any conftest.py file.
-_measured_files = _read_paths(INCLUDE_VARIABLE) or set()
-_selected_test_files = _read_paths(TEST_FILES_VARIABLE)
+_root_directory = (
+    protocol.normalize_path(os.environ.get(protocol.ROOT_DIR_ENV) or os.getcwd()) + os.sep
+)
+_measured_files = _read_paths(protocol.MEASURED_FILES_ENV) or set()
+_selected_test_files = _read_paths(protocol.SELECTED_TEST_FILES_ENV)
 _executed_files: set[str] = set()
-_root_directory = normalize_path(os.getcwd()) + os.sep
-_coverage = _start_coverage()
-_current_context = [""]
-_context_stack: list[str] = []
 _shared_fixtures: dict[int, FixtureDef[object]] = {}
+_context_stack: list[str] = []
+_current_context = protocol.STARTUP_CONTEXT
+_coverage = _start_coverage()
 if _coverage is not None:
-    sys.meta_path.insert(0, _ImportLabeler())
+    sys.meta_path.insert(0, _SharedImportFinder())
