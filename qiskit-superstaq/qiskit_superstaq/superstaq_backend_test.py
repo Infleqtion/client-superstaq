@@ -13,7 +13,7 @@
 # limitations under the License.
 from __future__ import annotations
 
-import datetime
+import datetime as dt
 import json
 import textwrap
 import uuid
@@ -433,8 +433,8 @@ def test_compileV3(mock_post: MagicMock, mock_get: MagicMock) -> None:
         results_dicts=[None],
         shots=[0],
         dry_run=True,
-        submission_timestamp=datetime.datetime.now(tz=datetime.timezone.utc),
-        last_updated_timestamp=[datetime.datetime.now(tz=datetime.timezone.utc)],
+        submission_timestamp=dt.datetime.now(tz=dt.timezone.utc),
+        last_updated_timestamp=[dt.datetime.now(tz=dt.timezone.utc)],
         initial_logical_to_physicals=[{0: 0}],
         final_logical_to_physicals=[{0: 0}],
         logical_qubits=["0", "1"],

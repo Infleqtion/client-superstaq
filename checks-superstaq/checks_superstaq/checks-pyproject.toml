@@ -118,6 +118,9 @@ lint.fixable = [ "ALL" ]
 lint.unfixable = []
 # Allow unused variables when underscore-prefixed
 lint.dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+lint.flake8-import-conventions.extend-aliases.cirq_superstaq = "css"
+lint.flake8-import-conventions.extend-aliases.general_superstaq = "gss"
+lint.flake8-import-conventions.extend-aliases.qiskit_superstaq = "qss"
 lint.flake8-type-checking.exempt-modules = [ "collections.abc" ]
 lint.isort.case-sensitive = false
 lint.mccabe.max-complexity = 10
