@@ -30,7 +30,10 @@ from typing import Any
 try:
     main_file_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
     root_dir = subprocess.check_output(
-        ["git", "rev-parse", "--show-toplevel"], cwd=main_file_dir, text=True
+        ["git", "rev-parse", "--show-toplevel"],
+        cwd=main_file_dir,
+        text=True,
+        stderr=subprocess.DEVNULL,
     ).strip()
 except subprocess.CalledProcessError:
     root_dir = subprocess.check_output(["git", "rev-parse", "--show-toplevel"], text=True).strip()

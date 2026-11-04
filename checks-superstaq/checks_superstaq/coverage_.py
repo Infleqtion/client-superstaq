@@ -16,13 +16,19 @@
 from __future__ import annotations
 
 import concurrent.futures
+import io
 import os
+import pathlib
+import re
 import subprocess
 import sys
 import textwrap
 from collections.abc import Iterable
+from typing import cast
 
-from checks_superstaq import check_utils
+import coverage
+
+from checks_superstaq import _coverage_contexts, check_utils
 
 
 @check_utils.enable_exit_on_failure
@@ -50,13 +56,20 @@ def run(
         help="Check that each file is covered by its own test file.",
     )
     parser.add_argument(
+        "--single-run",
+        action="store_true",
+        help="With --modular, run every test file in one pytest-xdist run instead of one process"
+        " per test file, and credit each file only with the lines that its own test file runs."
+        " Lines that only subprocesses of tests run are not credited.",
+    )
+    parser.add_argument(
         "-j",
         "--jobs",
         type=int,
         default=None,
-        help="Parallelize modular coverage test across this many concurrent threads. This argument"
-        " is ignored for non-modular coverage tests."
-        " Default: min((os.cpu_count() or 2) // 2, len(files_being_tested))",
+        help="Parallelize modular coverage test across this many concurrent threads (with"
+        " --single-run, pytest-xdist workers). This argument is ignored for non-modular coverage"
+        " tests. Default: min((os.cpu_count() or 2) // 2, len(files_being_tested))",
     )
     parser.add_argument(
         "--branch",
@@ -68,7 +81,8 @@ def run(
         action="store_true",
         help="Enable the `COVERAGE_CORE=sysmon` env variable for faster coverage (requires "
         "Python 3.12 or higher). Note: using the `--branch` option alongside `--sysmon` may require"
-        " additional configuration for efficient execution.",
+        " additional configuration for efficient execution. Ignored with --single-run, which needs"
+        " the C tracer.",
     )
     parser.description = textwrap.dedent(
         """
@@ -82,6 +96,9 @@ def run(
     parsed_args, pytest_args = parser.parse_known_intermixed_args(args)
     if "coverage" in parsed_args.skip:
         return 0
+    if parsed_args.single_run and not parsed_args.modular:
+        parser.error("--single-run requires --modular")
+    requested_pytest_args = pytest_args
 
     # Enable threading setting before other args so -n can be overwritten
     default_threads = (
@@ -112,6 +129,10 @@ def run(
         return 0
 
     try:
+        if parsed_args.single_run:
+            return _run_single_modular(
+                files, requested_pytest_args, exclude, parsed_args.jobs, parsed_args.branch
+            )
         if parsed_args.modular:
             returncode = _run_modular(files, coverage_args, pytest_args, exclude, parsed_args.jobs)
         else:
@@ -127,20 +148,15 @@ def run(
     return _report(returncode)
 
 
-def _run_modular(
-    files: list[str],
-    coverage_args: list[str],
-    pytest_args: list[str],
-    exclude: str | Iterable[str],
-    num_jobs: int | None,
-) -> int:
-    """Run modular coverage checks.  If num_workers != 1, these checks are run concurrently."""
-    subprocess.check_call([sys.executable, "-m", "coverage", "erase"], cwd=check_utils.root_dir)
-
+def _get_test_pairs(
+    files: list[str], exclude: str | Iterable[str]
+) -> list[tuple[list[str], list[str]]]:
+    """Pair the files that require coverage with the test files that must cover them."""
     # Move test files to the end of the file list, so if both "x.py" and "x_test.py" are in `files`
     # both will be included in the coverage report
-    files.sort(
-        key=lambda file: file.endswith("_test.py") or os.path.basename(file).startswith("test_")
+    files = sorted(
+        files,
+        key=lambda file: file.endswith("_test.py") or os.path.basename(file).startswith("test_"),
     )
 
     # Build (files_requiring_coverage, test_files) pairs
@@ -164,6 +180,19 @@ def _run_modular(
                 files.remove(test_file)
 
         test_pairs.append((files_requiring_coverage, test_files))
+    return test_pairs
+
+
+def _run_modular(
+    files: list[str],
+    coverage_args: list[str],
+    pytest_args: list[str],
+    exclude: str | Iterable[str],
+    num_jobs: int | None,
+) -> int:
+    """Run modular coverage checks.  If num_workers != 1, these checks are run concurrently."""
+    subprocess.check_call([sys.executable, "-m", "coverage", "erase"], cwd=check_utils.root_dir)
+    test_pairs = _get_test_pairs(files, exclude)
 
     test_returncode = 0
     if num_jobs == 0:
@@ -192,6 +221,103 @@ def _run_modular(
             print(result.stdout, end="")  # noqa: T201
             test_returncode |= result.returncode
     return test_returncode
+
+
+def _run_single_modular(
+    files: list[str],
+    pytest_args: list[str],
+    exclude: str | Iterable[str],
+    num_jobs: int | None,
+    branch: bool,
+) -> int:
+    """Run modular coverage checks in one pytest(-xdist) run, and report test and coverage results.
+
+    Running each test file in its own process repeats the startup of a process, including the
+    imports of the code under test, for every test file.  This instead runs the test files
+    together, keeping the tests of each test file on one worker.  The ``_coverage_contexts`` plugin
+    labels each line that runs with the test file responsible for it, and resets shared state
+    between test files (see that module).  A file is credited only with the lines that its own test
+    file ran: in its tests, while it and the ``conftest.py`` files of its directories were
+    collected, while the file itself was imported, or while pytest started, which every test file
+    needs.
+    """
+    test_pairs = _get_test_pairs(files, exclude)
+    test_files = sorted({file for _, pair_test_files in test_pairs for file in pair_test_files})
+    measured_files = sorted({file for pair_files, _ in test_pairs for file in pair_files})
+    num_jobs = min((os.cpu_count() or 2) // 2, len(test_files)) if num_jobs is None else num_jobs
+
+    data_file = os.path.abspath(cast("str", coverage.Coverage().get_option("run:data_file")))
+    previous_data = coverage.Coverage(data_file=data_file)
+    previous_data.set_option("run:parallel", value=True)
+    previous_data.erase()
+
+    environment = {
+        **os.environ,
+        _coverage_contexts.DATA_FILE_VARIABLE: data_file,
+        _coverage_contexts.INCLUDE_VARIABLE: os.pathsep.join(map(os.path.abspath, measured_files)),
+        _coverage_contexts.TEST_FILES_VARIABLE: os.pathsep.join(map(os.path.abspath, test_files)),
+        _coverage_contexts.BRANCH_VARIABLE: "1" if branch else "",
+    }
+    # Pytest loads the conftest.py files of the paths that it is given before it collects tests, so
+    # it is given only the directory that contains every test file, whose conftest.py files every
+    # test file needs.  The plugin restricts collection to the test files.  The root directory of
+    # pytest sets the paths in node IDs, which name the coverage contexts.
+    common_directory = os.path.commonpath([os.path.dirname(file) for file in test_files])
+    command = [sys.executable, "-m", "pytest", common_directory or os.curdir]
+    command += [f"--rootdir={os.getcwd()}", f"-n={num_jobs}"]
+    command += ["--dist=loadfile"] if num_jobs else []
+    command += ["-p", "checks_superstaq._coverage_contexts", *pytest_args]
+    test_returncode = subprocess.call(command, env=environment)
+
+    measurement = coverage.Coverage(data_file=data_file)
+    measurement.combine(keep=False)
+    measurement.save()
+    fail_under = cast("float", measurement.get_option("report:fail_under"))
+    coverage_failed = False
+    for files_requiring_coverage, pair_test_files in test_pairs:
+        report = io.StringIO()
+        contexts = _get_context_patterns(files_requiring_coverage, pair_test_files)
+        description = f"{', '.join(files_requiring_coverage)} by {', '.join(pair_test_files)}"
+        try:
+            percentage = measurement.report(
+                morfs=files_requiring_coverage,
+                contexts=contexts,
+                show_missing=True,
+                precision=2,
+                file=report,
+            )
+        except coverage.exceptions.NoDataError:
+            print(f"\nNo coverage data for {description}.")  # noqa: T201
+            coverage_failed = True
+            continue
+        if percentage < fail_under:
+            print(f"\nCoverage of {description}:\n{report.getvalue()}", end="")  # noqa: T201
+            coverage_failed = True
+
+    if test_returncode:
+        print(check_utils.failure("TEST FAILURE!"))  # noqa: T201
+        return test_returncode
+
+    if coverage_failed:
+        print(check_utils.failure("COVERAGE FAILURE!"))  # noqa: T201
+        return 2  # as `coverage report` returns
+
+    print(check_utils.success("TEST AND COVERAGE SUCCESS!"))  # noqa: T201
+    return 0
+
+
+def _get_context_patterns(files: list[str], test_files: list[str]) -> list[str]:
+    """Regular expressions that match the coverage contexts credited to test files for files."""
+    contexts = {"", *map(_coverage_contexts.get_import_context, files)}
+    patterns = []
+    for test_file in test_files:
+        # Pytest node IDs, which name the contexts, separate directories with "/" on every platform.
+        path = pathlib.PurePath(test_file)
+        node_id = path.as_posix()
+        directories = [parent.as_posix() for parent in reversed(path.parents)]
+        contexts.update(f"{directory}|collect" for directory in [*directories[1:], node_id])
+        patterns.append(rf"^{re.escape(node_id)}::.*\|(setup|run|teardown)$")
+    return [f"^({'|'.join(map(re.escape, sorted(contexts)))})$", *patterns]
 
 
 def _run_on_files(
