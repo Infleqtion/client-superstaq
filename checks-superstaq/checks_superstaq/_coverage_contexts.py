@@ -23,8 +23,8 @@ test, and labels every line that runs with a coverage context:
 * ``<collector node ID>|collect`` while a test file or a directory, with its ``conftest.py``, is
   collected,
 * ``<test node ID>|setup``, ``|run``, or ``|teardown`` while a test runs,
-* ``import`` while a measured module that is not a test module runs for the first time in this
-  process, after pytest has started, and
+* ``import`` while a module of the repository that is not a test module runs for the first time in
+  this process, after pytest has started, and
 * ``unattributed`` at other times, such as between tests and after the last one.
 
 ``coverage_.py`` credits a file with the lines that its own test file ran in these contexts, and
@@ -169,10 +169,12 @@ def pytest_sessionfinish() -> None:
 
 
 class _ImportLabeler(importlib.abc.MetaPathFinder):
-    """Label the lines that run while a measured module is first imported after pytest started.
+    """Label the lines that run while a module of the repository is first imported.
 
-    It finds modules with the finders that follow it, and labels only modules that are loaded from
-    source files by the standard loader, whose ``exec_module`` it replaces for one import.  Test
+    It finds modules with the finders that follow it, and labels only modules in the current
+    directory, outside installed packages, that are loaded from source files by the standard loader,
+    whose ``exec_module`` it replaces for one import.  Such modules include those that are not
+    measured, such as ``__init__.py`` files, since their imports can run measured lines.  Test
     modules, which pytest loads, are not labeled.  A module that runs again, as when it is reloaded
     or imported after its removal from ``sys.modules``, is not labeled again, since in a process of
     its own, a test file would not run it again either.
@@ -198,15 +200,17 @@ class _ImportLabeler(importlib.abc.MetaPathFinder):
         if not isinstance(loader, importlib.machinery.SourceFileLoader) or spec.origin is None:
             return spec
         file = normalize_path(spec.origin)
-        if file not in _measured_files or file in _executed_files:
+        parts = pathlib.PurePath(file).parts
+        if not file.startswith(_root_directory) or {"site-packages", "dist-packages"} & set(parts):
             return spec
-        _executed_files.add(file)
         exec_module = loader.exec_module
 
         def exec_labeled_module(module: types.ModuleType) -> None:
             previous_context = _current_context[0]
+            first_execution = file not in _executed_files
+            _executed_files.add(file)
             # Every test file needs the modules that are imported while pytest starts.
-            if previous_context:
+            if previous_context and first_execution:
                 _switch_context(IMPORT)
             try:
                 exec_module(module)
@@ -300,6 +304,7 @@ def _read_paths(variable: str) -> set[str] | None:
 _measured_files = _read_paths(INCLUDE_VARIABLE) or set()
 _selected_test_files = _read_paths(TEST_FILES_VARIABLE)
 _executed_files: set[str] = set()
+_root_directory = normalize_path(os.getcwd()) + os.sep
 _coverage = _start_coverage()
 _current_context = [""]
 _context_stack: list[str] = []
