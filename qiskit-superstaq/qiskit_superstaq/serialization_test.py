@@ -13,7 +13,6 @@
 # limitations under the License.
 from __future__ import annotations
 
-import io
 import json
 import warnings
 from unittest import mock
@@ -134,16 +133,12 @@ def test_warning_suppression() -> None:
     newer_version = f"{major}.{minor}.{int(patch) + 1}"
 
     # QPY encodes qiskit.__version__ into the serialized circuit, so mocking a newer version string
-    # during serialization will cause a QPY version UserWarning during deserialization
+    # during serialization makes the circuit look as if a newer Qiskit serialized it
     with mock.patch("qiskit.qpy.interface.__version__", newer_version):
         serialized_circuit = qss.serialization.serialize_circuits(circuit)
 
-    # Check that a warning would normally be thrown
-    buf = io.BytesIO(gss.serialization.str_to_bytes(serialized_circuit))
-    with pytest.warns(UserWarning, match=r"This may result in an error if the QPY file"):
-        _ = qiskit.qpy.load(buf)
-
-    # Check that it is suppressed by deserialize_circuits
+    # Qiskit versions before 2.6 warn when loading such a circuit; check that deserialize_circuits
+    # suppresses the warning
     with warnings.catch_warnings():
         warnings.filterwarnings("error")
         _ = qss.serialization.deserialize_circuits(serialized_circuit)
