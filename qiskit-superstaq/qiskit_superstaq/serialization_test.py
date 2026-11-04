@@ -137,6 +137,10 @@ def test_warning_suppression() -> None:
     with mock.patch("qiskit.qpy.interface.__version__", newer_version):
         serialized_circuit = qss.serialization.serialize_circuits(circuit)
 
+    # The QPY header records the version of Qiskit that wrote it after b"QISKIT" and the QPY version
+    qpy_bytes = gss.serialization.str_to_bytes(serialized_circuit)
+    assert tuple(qpy_bytes[7:10]) == (int(major), int(minor), int(patch) + 1)
+
     # Qiskit versions before 2.6 warn when loading such a circuit; check that deserialize_circuits
     # suppresses the warning
     with warnings.catch_warnings():
