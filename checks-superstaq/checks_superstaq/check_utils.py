@@ -265,9 +265,10 @@ def get_test_files(
     """For the given files, identify all associated test files.
 
     I.e. test files are those with the same name, but with a "_test.py" suffix or "test_" prefix.
+    Only Python files have test files.
 
     Args:
-        files: The list of files to search for associated test files of.
+        files: The list of files to search for associated test files of, relative to `root_dir`.
         exclude: The files to exclude in the search.
         silent: An indicator of whether or not to add additional prints.
 
@@ -277,11 +278,17 @@ def get_test_files(
     test_files = []
     for file in files:
         basename = os.path.basename(file).split("::")[0]
+        is_python_file = basename.endswith(".py")
 
-        if basename.endswith("_test.py") or basename.startswith("test_"):
+        if is_python_file and (basename.endswith("_test.py") or basename.startswith("test_")):
             test_files.append(file)
-        elif os.path.isfile(test_file := re.sub(r"\.py$", "_test.py", file)) or os.path.isfile(
-            test_file := re.sub(rf"{basename}$", f"test_{basename}", file)
+        elif is_python_file and (
+            os.path.isfile(os.path.join(root_dir, test_file := re.sub(r"\.py$", "_test.py", file)))
+            or os.path.isfile(
+                os.path.join(
+                    root_dir, test_file := re.sub(rf"{basename}$", f"test_{basename}", file)
+                )
+            )
         ):
             test_files.append(test_file)
 
@@ -300,6 +307,27 @@ def get_test_files(
 CHECK_LIST = ["configs", "format", "mypy", "pytest", "coverage", "requirements", "build_docs", "ty"]
 
 
+class _CheckParser(argparse.ArgumentParser):
+    """Argument parser that reads the arguments after "--" as files (see `get_check_parser`)."""
+
+    def parse_known_intermixed_args(
+        self, args: Iterable[str] | None = None, namespace: Any = None
+    ) -> tuple[Any, list[str]]:
+        args = list(sys.argv[1:] if args is None else args)
+        files_action = next((action for action in self._actions if action.dest == "files"), None)
+        if files_action is None or "--" not in args:
+            return super().parse_known_intermixed_args(args, namespace)
+
+        # Without `files`, the arguments before "--" that the parser doesn't consume are unknown
+        separator_index = args.index("--")
+        files_index = self._actions.index(files_action)
+        del self._actions[files_index]
+        parsed_args, unknown_args = self.parse_known_args(args[:separator_index], namespace)
+        self._actions.insert(files_index, files_action)
+        parsed_args.files = args[separator_index + 1 :]
+        return parsed_args, unknown_args
+
+
 def get_check_parser(no_files: bool = False) -> argparse.ArgumentParser:
     """Construct a command-line argument parser common to all check scripts.
 
@@ -310,15 +338,18 @@ def get_check_parser(no_files: bool = False) -> argparse.ArgumentParser:
     - run incremental checks, i.e., on the files that have changed since a specified git revision,
     - exclude files matching a specified glob.
 
+    With "--", the arguments after it are files, and the arguments before it that the parser doesn't
+    consume are returned as unknown, in order.  A wrapper that adds options must put them before the
+    user's arguments, each written as --option=value if it takes values, since a separate value can
+    consume the user's files.
+
     Args:
         no_files: Ignore file-related arguments.
 
     Returns:
         A console argument parser.
     """
-    parser = argparse.ArgumentParser(
-        allow_abbrev=False, formatter_class=argparse.RawDescriptionHelpFormatter
-    )
+    parser = _CheckParser(allow_abbrev=False, formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument(
         "--skip",
@@ -332,7 +363,10 @@ def get_check_parser(no_files: bool = False) -> argparse.ArgumentParser:
     if no_files:
         return parser
 
-    help_text = "The files to check. If not passed any files, inspects the entire repo."
+    help_text = (
+        "The files to check. If not passed any files, inspects the entire repo. Put them after --"
+        " so that no option value is read as a file."
+    )
     parser.add_argument("files", nargs="*", help=help_text)
 
     help_text = (

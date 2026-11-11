@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import argparse
 import concurrent.futures
 import os
 import subprocess
@@ -54,9 +55,10 @@ def run(
         "--jobs",
         type=int,
         default=None,
-        help="Parallelize modular coverage test across this many concurrent threads. This argument"
-        " is ignored for non-modular coverage tests."
-        " Default: min((os.cpu_count() or 2) // 2, len(files_being_tested))",
+        help="With --modular, the number of concurrent coverage runs (default: max(1,"
+        " min((os.cpu_count() or 2) // 2, number of runs))), or 0 to run them one at a time."
+        " Without --modular, passed to pytest-xdist as -n (default: auto if no files, -i, or -s are"
+        ' passed, else 0). Ignored unless the coverage configuration sets patch = ["subprocess"].',
     )
     parser.add_argument(
         "--branch",
@@ -73,9 +75,9 @@ def run(
     parser.description = textwrap.dedent(
         """
         Checks to make sure that all code is covered by unit tests.
-        Fails if any pytest fails or if coverage is not 100%.
-        Ignores integration tests and files in the [repo_root]/examples directory.
-        Passes --disable-socket to coverage, unless running with --enable-socket.
+        Fails if any test fails or coverage is below the coverage configuration's `fail_under`.
+        By default, ignores *_integration_test.py files.
+        Passes unrecognized options to pytest, which runs in the repository root.
         """
     )
 
@@ -83,18 +85,9 @@ def run(
     if "coverage" in parsed_args.skip:
         return 0
 
-    # Enable threading setting before other args so -n can be overwritten
-    default_threads = (
-        parsed_args.jobs
-        if not parsed_args.modular and parsed_args.jobs is not None
-        else "auto"
-        if not parsed_args.files
-        and not parsed_args.modular
-        and parsed_args.revisions is None
-        and "-s" not in pytest_args
-        else "0"
-    )
-    pytest_args = [f"-n={default_threads}", *pytest_args]
+    if any("::" in file for file in parsed_args.files):
+        print(check_utils.failure("File arguments must be paths, not test node IDs."))  # noqa: T201
+        return 2
 
     coverage_args = []
     if parsed_args.sysmon and sys.version_info.minor >= 12:
@@ -103,7 +96,21 @@ def run(
     if parsed_args.branch:
         coverage_args.append("--branch")
 
+    exclude = [exclude] if isinstance(exclude, str) else list(exclude)
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
+    exclude += parsed_args.exclude or []  # also skip test files matching --exclude
+
+    # Fail if the file arguments match no file, regardless of `include` and `exclude`
+    if parsed_args.files and not files:
+        tracked_files = check_utils.get_tracked_files(())
+        if not any(
+            os.path.exists(file) or check_utils.select_files(tracked_files, file)
+            for file in parsed_args.files
+        ):
+            error = f"No files match {', '.join(map(repr, parsed_args.files))}."
+            print(check_utils.failure(error))  # noqa: T201
+            return 2
+
     silent = silent or not (parsed_args.files or parsed_args.revisions)
 
     test_files = check_utils.get_test_files(files, exclude=exclude, silent=silent)
@@ -111,6 +118,11 @@ def run(
         print("No test files to check for pytest and coverage.")  # noqa: T201
         return 0
 
+    # Prepend -n, so that a pytest -n overrides it
+    pytest_args = [f"-n={_num_workers(parsed_args, pytest_args)}", *pytest_args]
+
+    # Erase stale data, e.g. of an interrupted run
+    _erase_data()
     try:
         if parsed_args.modular:
             returncode = _run_modular(files, coverage_args, pytest_args, exclude, parsed_args.jobs)
@@ -120,7 +132,7 @@ def run(
 
     except BaseException as e:
         # Clean up any temporary files if the check didn't complete
-        subprocess.check_call([sys.executable, "-m", "coverage", "erase"], cwd=check_utils.root_dir)
+        _erase_data()
         print(check_utils.failure(f"\nCoverage failed to complete ({e!r})."))  # noqa: T201
         return 1
 
@@ -131,11 +143,12 @@ def _run_modular(
     files: list[str],
     coverage_args: list[str],
     pytest_args: list[str],
-    exclude: str | Iterable[str],
+    exclude: list[str],
     num_jobs: int | None,
 ) -> int:
-    """Run modular coverage checks.  If num_workers != 1, these checks are run concurrently."""
-    subprocess.check_call([sys.executable, "-m", "coverage", "erase"], cwd=check_utils.root_dir)
+    """Run modular coverage checks.  Unless num_jobs == 0, these checks are run concurrently."""
+    # Each run writes its own data file, for `coverage combine` to combine
+    coverage_args = ["--parallel-mode", *coverage_args]
 
     # Move test files to the end of the file list, so if both "x.py" and "x_test.py" are in `files`
     # both will be included in the coverage report
@@ -165,16 +178,17 @@ def _run_modular(
 
         test_pairs.append((files_requiring_coverage, test_files))
 
-    test_returncode = 0
+    # Return the smallest nonzero exit code: a test failure (1) outranks "no tests collected" (5)
+    returncodes = []
     if num_jobs == 0:
         # Run modular checks one at a time
         for files_requiring_coverage, test_files in test_pairs:
             result = _run_on_files(files_requiring_coverage, test_files, coverage_args, pytest_args)
-            test_returncode |= result.returncode
-        return test_returncode
+            returncodes.append(result.returncode)
+        return min(filter(None, returncodes), default=0)
 
     # Run modular checks concurrently
-    max_workers = num_jobs or min((os.cpu_count() or 2) // 2, len(test_pairs))
+    max_workers = num_jobs or max(1, min((os.cpu_count() or 2) // 2, len(test_pairs)))
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         jobs = [
             executor.submit(
@@ -187,11 +201,16 @@ def _run_modular(
             )
             for files_requiring_coverage, test_files in test_pairs
         ]
-        for future in concurrent.futures.as_completed(jobs):
-            result = future.result()
-            print(result.stdout, end="")  # noqa: T201
-            test_returncode |= result.returncode
-    return test_returncode
+        try:
+            for future in concurrent.futures.as_completed(jobs):
+                result = future.result()
+                print(result.stdout, end="")  # noqa: T201
+                returncodes.append(result.returncode)
+        except BaseException:
+            # Don't start the queued runs (e.g. after Ctrl-C)
+            executor.shutdown(cancel_futures=True)
+            raise
+    return min(filter(None, returncodes), default=0)
 
 
 def _run_on_files(
@@ -217,9 +236,52 @@ def _run_on_files(
             *pytest_args,
         ],
         check=False,
+        cwd=check_utils.root_dir,
         text=True,
         stdout=subprocess.PIPE if capture_output else None,
         stderr=subprocess.STDOUT if capture_output else None,
+    )
+
+
+def _num_workers(parsed_args: argparse.Namespace, pytest_args: list[str]) -> str:
+    """The value of pytest's -n, which is "0" unless coverage measures subprocesses."""
+    if parsed_args.modular:
+        num_workers = "0"
+    elif parsed_args.jobs is not None:
+        num_workers = str(parsed_args.jobs)
+    elif not parsed_args.files and parsed_args.revisions is None and "-s" not in pytest_args:
+        num_workers = "auto"
+    else:
+        num_workers = "0"
+    if num_workers == "0":
+        return num_workers
+
+    # Coverage measures subprocesses, such as pytest-xdist workers, only if it patches "subprocess"
+    code = "import coverage; print('subprocess' in coverage.Coverage().get_option('run:patch'))"
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        check=False,
+        cwd=check_utils.root_dir,
+        text=True,
+    )
+    if result.stdout.strip() == "True":
+        return num_workers
+
+    if parsed_args.jobs is not None and not any(
+        arg.startswith(("-n", "--numprocesses")) for arg in pytest_args
+    ):
+        warning = '-j ignored: coverage measures subprocesses only with patch = ["subprocess"]'
+        print(check_utils.warning(warning), flush=True)  # noqa: T201
+    return "0"
+
+
+def _erase_data() -> None:
+    """Erase all coverage data, including the data files of parallel runs."""
+    subprocess.call(
+        [sys.executable, "-c", "import coverage; coverage.Coverage(data_suffix=True).erase()"],
+        cwd=check_utils.root_dir,
+        stderr=subprocess.DEVNULL,
     )
 
 

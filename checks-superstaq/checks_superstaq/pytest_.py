@@ -51,7 +51,7 @@ def run(
         """
         Runs pytest on the repository.
         By default, checks only *_test.py files, ignoring *_integration_test.py files.
-        Passes --disable-socket to pytest, unless running with --integration or --enable-socket.
+        With --integration or --notebook, passes --force-enable-socket to pytest.
         """
     )
 
@@ -87,6 +87,7 @@ def run(
         exclude.append("*_integration_test.py")
 
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
+    exclude += parsed_args.exclude or []  # also skip test files matching --exclude
 
     if parsed_args.notebook:
         args_to_pass += [
