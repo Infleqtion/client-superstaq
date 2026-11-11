@@ -113,6 +113,8 @@ def run(
         print("No test files to check for pytest and coverage.")  # noqa: T201
         return 0
 
+    # Erase stale data, e.g. of an interrupted run
+    _erase_data()
     try:
         if parsed_args.modular:
             returncode = _run_modular(files, coverage_args, pytest_args, exclude, parsed_args.jobs)
@@ -122,7 +124,7 @@ def run(
 
     except BaseException as e:
         # Clean up any temporary files if the check didn't complete
-        subprocess.check_call([sys.executable, "-m", "coverage", "erase"], cwd=check_utils.root_dir)
+        _erase_data()
         print(check_utils.failure(f"\nCoverage failed to complete ({e!r})."))  # noqa: T201
         return 1
 
@@ -137,7 +139,8 @@ def _run_modular(
     num_jobs: int | None,
 ) -> int:
     """Run modular coverage checks.  Unless num_jobs == 0, these checks are run concurrently."""
-    subprocess.check_call([sys.executable, "-m", "coverage", "erase"], cwd=check_utils.root_dir)
+    # Each run writes its own data file, for `coverage combine` to combine
+    coverage_args = ["--parallel-mode", *coverage_args]
 
     # Move test files to the end of the file list, so if both "x.py" and "x_test.py" are in `files`
     # both will be included in the coverage report
@@ -229,6 +232,15 @@ def _run_on_files(
         text=True,
         stdout=subprocess.PIPE if capture_output else None,
         stderr=subprocess.STDOUT if capture_output else None,
+    )
+
+
+def _erase_data() -> None:
+    """Erase all coverage data, including the data files of parallel runs."""
+    subprocess.call(
+        [sys.executable, "-c", "import coverage; coverage.Coverage(data_suffix=True).erase()"],
+        cwd=check_utils.root_dir,
+        stderr=subprocess.DEVNULL,
     )
 
 
