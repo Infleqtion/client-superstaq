@@ -187,10 +187,15 @@ def _run_modular(
             )
             for files_requiring_coverage, test_files in test_pairs
         ]
-        for future in concurrent.futures.as_completed(jobs):
-            result = future.result()
-            print(result.stdout, end="")  # noqa: T201
-            test_returncode |= result.returncode
+        try:
+            for future in concurrent.futures.as_completed(jobs):
+                result = future.result()
+                print(result.stdout, end="")  # noqa: T201
+                test_returncode |= result.returncode
+        except BaseException:
+            # Don't start the queued runs (e.g. after Ctrl-C)
+            executor.shutdown(cancel_futures=True)
+            raise
     return test_returncode
 
 
