@@ -83,6 +83,10 @@ def run(
     if "coverage" in parsed_args.skip:
         return 0
 
+    if any("::" in file for file in parsed_args.files):
+        print(check_utils.failure("File arguments must be paths, not test node IDs."))  # noqa: T201
+        return 2
+
     # Enable threading setting before other args so -n can be overwritten
     default_threads = (
         parsed_args.jobs
