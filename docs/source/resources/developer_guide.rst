@@ -89,7 +89,7 @@ A high-level description of key Superstaq tests are as follows:
     checks/all_.py  # Runs all the non-integration checks described above on the whole repo.
     checks/all_.py -i # Runs all the non-integration checks described above but just on locally modified files.
 
-By default, all test scripts will consider any tracked file in the current repository (meaning that new files will not be checked until they've been added to the repo via ``git add``). Passing ``-i`` or ``--incremental`` to any check will limit its scope to just locally modified files. Test scripts can also be passed individual files or subdirectories or prevented from checking specific files using ``-x <path>`` or ``--exclude <path>``.
+By default, all test scripts will consider any tracked file in the current repository (meaning that new files will not be checked until they've been added to the repo via ``git add``). Passing ``-i`` or ``--incremental`` to any check will limit its scope to just locally modified files. Test scripts can also be passed individual files or subdirectories or prevented from checking specific files using ``-x <path>`` or ``--exclude <path>``. To pass an option with a value to the tool that a check runs, put the files after ``--``, e.g. ``checks/pytest_.py -W error -- <file>``.
 
 
 Style Guide

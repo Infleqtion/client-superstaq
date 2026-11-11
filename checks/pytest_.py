@@ -20,12 +20,13 @@ import sys
 import checks_superstaq as checks
 
 if __name__ == "__main__":
-    args = sys.argv[1:]
-    args += ["--exclude", "docs/source/apps/aces/*"]
-    args += ["--exclude", "docs/source/apps/dfe/*"]
-    args += ["--exclude", "docs/source/apps/supermarq/examples/qre-challenge/*"]
-    args += ["--exclude", "docs/source/apps/max_sharpe_ratio_optimization.ipynb"]
-    args += ["--exclude", "docs/source/apps/cudaq_logical_aim.ipynb"]
-    args += ["--exclude", "docs/source/optimizations/ibm/ibmq_dd.ipynb"]
-    args += ["--exclude", "docs/source/optimizations/ibm/ibmq_dd_strategies_qss.ipynb"]
-    sys.exit(checks.pytest_.run(*args))
+    exclude = [
+        "docs/source/apps/aces/*",
+        "docs/source/apps/dfe/*",
+        "docs/source/apps/supermarq/examples/qre-challenge/*",
+        "docs/source/apps/max_sharpe_ratio_optimization.ipynb",
+        "docs/source/apps/cudaq_logical_aim.ipynb",
+        "docs/source/optimizations/ibm/ibmq_dd.ipynb",
+        "docs/source/optimizations/ibm/ibmq_dd_strategies_qss.ipynb",
+    ]
+    sys.exit(checks.pytest_.run(*sys.argv[1:], exclude=exclude))
