@@ -267,7 +267,7 @@ def get_test_files(
     I.e. test files are those with the same name, but with a "_test.py" suffix or "test_" prefix.
 
     Args:
-        files: The list of files to search for associated test files of.
+        files: The list of files to search for associated test files of, relative to `root_dir`.
         exclude: The files to exclude in the search.
         silent: An indicator of whether or not to add additional prints.
 
@@ -280,8 +280,10 @@ def get_test_files(
 
         if basename.endswith("_test.py") or basename.startswith("test_"):
             test_files.append(file)
-        elif os.path.isfile(test_file := re.sub(r"\.py$", "_test.py", file)) or os.path.isfile(
-            test_file := re.sub(rf"{basename}$", f"test_{basename}", file)
+        elif os.path.isfile(
+            os.path.join(root_dir, test_file := re.sub(r"\.py$", "_test.py", file))
+        ) or os.path.isfile(
+            os.path.join(root_dir, test_file := re.sub(rf"{basename}$", f"test_{basename}", file))
         ):
             test_files.append(test_file)
 

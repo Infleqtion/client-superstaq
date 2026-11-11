@@ -217,6 +217,7 @@ def _run_on_files(
             *pytest_args,
         ],
         check=False,
+        cwd=check_utils.root_dir,
         text=True,
         stdout=subprocess.PIPE if capture_output else None,
         stderr=subprocess.STDOUT if capture_output else None,
