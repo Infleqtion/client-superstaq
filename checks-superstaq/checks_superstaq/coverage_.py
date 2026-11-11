@@ -110,6 +110,18 @@ def run(
     exclude = [exclude] if isinstance(exclude, str) else list(exclude)
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
     exclude += parsed_args.exclude or []  # also skip test files matching --exclude
+
+    # Fail if the file arguments match no file, regardless of `include` and `exclude`
+    if parsed_args.files and not files:
+        tracked_files = check_utils.get_tracked_files(())
+        if not any(
+            os.path.exists(file) or check_utils.select_files(tracked_files, file)
+            for file in parsed_args.files
+        ):
+            error = f"No files match {', '.join(map(repr, parsed_args.files))}."
+            print(check_utils.failure(error))  # noqa: T201
+            return 2
+
     silent = silent or not (parsed_args.files or parsed_args.revisions)
 
     test_files = check_utils.get_test_files(files, exclude=exclude, silent=silent)
