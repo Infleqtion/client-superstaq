@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import argparse
 import concurrent.futures
 import os
 import subprocess
@@ -56,7 +57,8 @@ def run(
         default=None,
         help="With --modular, the number of concurrent coverage runs (default: max(1,"
         " min((os.cpu_count() or 2) // 2, number of runs))), or 0 to run them one at a time."
-        " Without --modular, passed to pytest-xdist as -n.",
+        " Without --modular, passed to pytest-xdist as -n (default: auto if no files, -i, or -s are"
+        ' passed, else 0). Ignored unless the coverage configuration sets patch = ["subprocess"].',
     )
     parser.add_argument(
         "--branch",
@@ -87,19 +89,6 @@ def run(
         print(check_utils.failure("File arguments must be paths, not test node IDs."))  # noqa: T201
         return 2
 
-    # Enable threading setting before other args so -n can be overwritten
-    default_threads = (
-        parsed_args.jobs
-        if not parsed_args.modular and parsed_args.jobs is not None
-        else "auto"
-        if not parsed_args.files
-        and not parsed_args.modular
-        and parsed_args.revisions is None
-        and "-s" not in pytest_args
-        else "0"
-    )
-    pytest_args = [f"-n={default_threads}", *pytest_args]
-
     coverage_args = []
     if parsed_args.sysmon and sys.version_info.minor >= 12:
         os.environ["COVERAGE_CORE"] = "sysmon"
@@ -128,6 +117,9 @@ def run(
     if not test_files:
         print("No test files to check for pytest and coverage.")  # noqa: T201
         return 0
+
+    # Prepend -n, so that a pytest -n overrides it
+    pytest_args = [f"-n={_num_workers(parsed_args, pytest_args)}", *pytest_args]
 
     # Erase stale data, e.g. of an interrupted run
     _erase_data()
@@ -249,6 +241,39 @@ def _run_on_files(
         stdout=subprocess.PIPE if capture_output else None,
         stderr=subprocess.STDOUT if capture_output else None,
     )
+
+
+def _num_workers(parsed_args: argparse.Namespace, pytest_args: list[str]) -> str:
+    """The value of pytest's -n, which is "0" unless coverage measures subprocesses."""
+    if parsed_args.modular:
+        num_workers = "0"
+    elif parsed_args.jobs is not None:
+        num_workers = str(parsed_args.jobs)
+    elif not parsed_args.files and parsed_args.revisions is None and "-s" not in pytest_args:
+        num_workers = "auto"
+    else:
+        num_workers = "0"
+    if num_workers == "0":
+        return num_workers
+
+    # Coverage measures subprocesses, such as pytest-xdist workers, only if it patches "subprocess"
+    code = "import coverage; print('subprocess' in coverage.Coverage().get_option('run:patch'))"
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        check=False,
+        cwd=check_utils.root_dir,
+        text=True,
+    )
+    if result.stdout.strip() == "True":
+        return num_workers
+
+    if parsed_args.jobs is not None and not any(
+        arg.startswith(("-n", "--numprocesses")) for arg in pytest_args
+    ):
+        warning = '-j ignored: coverage measures subprocesses only with patch = ["subprocess"]'
+        print(check_utils.warning(warning), flush=True)  # noqa: T201
+    return "0"
 
 
 def _erase_data() -> None:
