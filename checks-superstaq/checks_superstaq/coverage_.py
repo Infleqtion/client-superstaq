@@ -56,7 +56,7 @@ def run(
         default=None,
         help="Parallelize modular coverage test across this many concurrent threads. This argument"
         " is ignored for non-modular coverage tests."
-        " Default: min((os.cpu_count() or 2) // 2, len(files_being_tested))",
+        " Default: max(1, min((os.cpu_count() or 2) // 2, len(files_being_tested)))",
     )
     parser.add_argument(
         "--branch",
@@ -174,7 +174,7 @@ def _run_modular(
         return test_returncode
 
     # Run modular checks concurrently
-    max_workers = num_jobs or min((os.cpu_count() or 2) // 2, len(test_pairs))
+    max_workers = num_jobs or max(1, min((os.cpu_count() or 2) // 2, len(test_pairs)))
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
         jobs = [
             executor.submit(
