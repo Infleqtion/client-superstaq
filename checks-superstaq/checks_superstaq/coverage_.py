@@ -167,13 +167,14 @@ def _run_modular(
 
         test_pairs.append((files_requiring_coverage, test_files))
 
-    test_returncode = 0
+    # Return the smallest nonzero exit code: a test failure (1) outranks "no tests collected" (5)
+    returncodes = []
     if num_jobs == 0:
         # Run modular checks one at a time
         for files_requiring_coverage, test_files in test_pairs:
             result = _run_on_files(files_requiring_coverage, test_files, coverage_args, pytest_args)
-            test_returncode |= result.returncode
-        return test_returncode
+            returncodes.append(result.returncode)
+        return min(filter(None, returncodes), default=0)
 
     # Run modular checks concurrently
     max_workers = num_jobs or max(1, min((os.cpu_count() or 2) // 2, len(test_pairs)))
@@ -193,12 +194,12 @@ def _run_modular(
             for future in concurrent.futures.as_completed(jobs):
                 result = future.result()
                 print(result.stdout, end="")  # noqa: T201
-                test_returncode |= result.returncode
+                returncodes.append(result.returncode)
         except BaseException:
             # Don't start the queued runs (e.g. after Ctrl-C)
             executor.shutdown(cancel_futures=True)
             raise
-    return test_returncode
+    return min(filter(None, returncodes), default=0)
 
 
 def _run_on_files(
