@@ -54,9 +54,9 @@ def run(
         "--jobs",
         type=int,
         default=None,
-        help="Parallelize modular coverage test across this many concurrent threads. This argument"
-        " is ignored for non-modular coverage tests."
-        " Default: max(1, min((os.cpu_count() or 2) // 2, len(files_being_tested)))",
+        help="With --modular, the number of concurrent coverage runs (default: max(1,"
+        " min((os.cpu_count() or 2) // 2, number of runs))), or 0 to run them one at a time."
+        " Without --modular, passed to pytest-xdist as -n.",
     )
     parser.add_argument(
         "--branch",
@@ -73,9 +73,9 @@ def run(
     parser.description = textwrap.dedent(
         """
         Checks to make sure that all code is covered by unit tests.
-        Fails if any pytest fails or if coverage is not 100%.
-        Ignores integration tests and files in the [repo_root]/examples directory.
-        Passes --disable-socket to coverage, unless running with --enable-socket.
+        Fails if any test fails or coverage is below the coverage configuration's `fail_under`.
+        By default, ignores *_integration_test.py files.
+        Passes unrecognized options to pytest, which runs in the repository root.
         """
     )
 
@@ -134,7 +134,7 @@ def _run_modular(
     exclude: str | Iterable[str],
     num_jobs: int | None,
 ) -> int:
-    """Run modular coverage checks.  If num_workers != 1, these checks are run concurrently."""
+    """Run modular coverage checks.  Unless num_jobs == 0, these checks are run concurrently."""
     subprocess.check_call([sys.executable, "-m", "coverage", "erase"], cwd=check_utils.root_dir)
 
     # Move test files to the end of the file list, so if both "x.py" and "x_test.py" are in `files`
