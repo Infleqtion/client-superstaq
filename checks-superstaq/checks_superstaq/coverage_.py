@@ -103,6 +103,7 @@ def run(
     if parsed_args.branch:
         coverage_args.append("--branch")
 
+    exclude = [exclude] if isinstance(exclude, str) else list(exclude)
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
     silent = silent or not (parsed_args.files or parsed_args.revisions)
 
@@ -131,7 +132,7 @@ def _run_modular(
     files: list[str],
     coverage_args: list[str],
     pytest_args: list[str],
-    exclude: str | Iterable[str],
+    exclude: list[str],
     num_jobs: int | None,
 ) -> int:
     """Run modular coverage checks.  Unless num_jobs == 0, these checks are run concurrently."""
