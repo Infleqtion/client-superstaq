@@ -87,6 +87,7 @@ def run(
         exclude.append("*_integration_test.py")
 
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
+    exclude += parsed_args.exclude or []  # also skip test files matching --exclude
 
     if parsed_args.notebook:
         args_to_pass += [

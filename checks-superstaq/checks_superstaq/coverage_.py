@@ -105,6 +105,7 @@ def run(
 
     exclude = [exclude] if isinstance(exclude, str) else list(exclude)
     files = check_utils.extract_files(parsed_args, include, exclude, silent)
+    exclude += parsed_args.exclude or []  # also skip test files matching --exclude
     silent = silent or not (parsed_args.files or parsed_args.revisions)
 
     test_files = check_utils.get_test_files(files, exclude=exclude, silent=silent)
