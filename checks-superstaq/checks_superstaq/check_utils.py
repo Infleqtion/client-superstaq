@@ -265,6 +265,7 @@ def get_test_files(
     """For the given files, identify all associated test files.
 
     I.e. test files are those with the same name, but with a "_test.py" suffix or "test_" prefix.
+    Only Python files have test files.
 
     Args:
         files: The list of files to search for associated test files of, relative to `root_dir`.
@@ -277,13 +278,17 @@ def get_test_files(
     test_files = []
     for file in files:
         basename = os.path.basename(file).split("::")[0]
+        is_python_file = basename.endswith(".py")
 
-        if basename.endswith("_test.py") or basename.startswith("test_"):
+        if is_python_file and (basename.endswith("_test.py") or basename.startswith("test_")):
             test_files.append(file)
-        elif os.path.isfile(
-            os.path.join(root_dir, test_file := re.sub(r"\.py$", "_test.py", file))
-        ) or os.path.isfile(
-            os.path.join(root_dir, test_file := re.sub(rf"{basename}$", f"test_{basename}", file))
+        elif is_python_file and (
+            os.path.isfile(os.path.join(root_dir, test_file := re.sub(r"\.py$", "_test.py", file)))
+            or os.path.isfile(
+                os.path.join(
+                    root_dir, test_file := re.sub(rf"{basename}$", f"test_{basename}", file)
+                )
+            )
         ):
             test_files.append(test_file)
 
