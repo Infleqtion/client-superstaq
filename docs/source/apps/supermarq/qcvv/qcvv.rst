@@ -21,6 +21,7 @@ Alternatively for pre-build experiments that can be used out of the box see
     qcvv_ssb_css
     qcvv_su2_css
     qcvv_xeb_css
+    qcvv_cb_css
 
 .. note::
 
